@@ -1,0 +1,213 @@
+<link rel="stylesheet" href="style.css">
+<style>
+    #container > div {
+        width: 100%;
+        height: 100%;
+    }
+
+    .centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .row {
+        display: inline
+    }
+</style>
+
+<div id="container">
+    <div id="screen0">
+        <h1>Choose mode</h1>
+        <button onclick="switchScreen(1)">input</button>
+        <button onclick="window.location.href = './output.html'">output</button>
+    </div>
+    <div id="screen1">
+        <button onclick="switchScreen(2)">Start new trial</button>
+        <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
+        <button class="small" onclick="websocket.send('refresh')">Refresh this</button>
+        <button class="small" onclick="websocket.send('clear')">Clear data</button>
+        <button class="small" onclick="add()">Add raw</button>
+        <div id="leaderboard"></div>
+    </div>
+    <div id="screen2">
+        <div class="centered">
+            <p style="font-size: 120px; font-family: Consolas, Courier, monospace" id="timer">00:00.000</p>
+            <button id="timer-start-button" onclick="startTimer()">Start</button>
+            <p>When finished, press anywhere to stop the timer</p>
+        </div>
+    </div>
+    <div id="screen3">
+        <div class="centered">
+            <p>Your time: <span class="result"></span></p>
+            <p>Select class</p>
+            <!-- Generated -->
+        </div>
+    </div>
+    <div id="screen4">
+        <div class="centered">
+            <p>Your time: <span class="result"></span></p>
+            <p>Select class number</p>
+            <!-- Generated -->
+        </div>
+    </div>
+    <div id=screen5>
+        <div class="centered">
+            <h1><span id="confirm-class"></span> <span id="confirm-classno"></span> <span class="result"></span></h1>
+            <button onclick="sendNewRecord()">Confirm</button>
+        </div>
+    </div>
+    <div id="screen9">
+        <h1>Tower of Hanoi</h1>
+        <div id="leaderboard"></div>
+    </div>
+    
+</div>
+
+<script>
+    var leaderboard = [
+        {
+            name: "5E 17 Cheung Chun To",
+            score: "01:11",
+        }
+    ]
+
+    function switchScreen(n) {
+        for (const child of document.getElementById("container").children) {
+            child.style.display = "none";
+        }
+        document.getElementById(`screen${n}`).style.display = "block";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        switchScreen(0);
+        for (var i = 1; i <= 6; i++) {
+            const row = document.createElement("div");
+            row.classList.add("row");
+            for (const letter of "ABCDE") {
+                const btn = document.createElement("button");
+                btn.innerText = `${i}${letter}`;
+                if (i <= 3 && letter == "E") btn.style.opacity = 0;
+                else btn.onclick = (e) => {
+                    cls = e.target.innerText;
+                    document.getElementById("confirm-class").innerText = cls;
+                    switchScreen(4);
+                }
+                row.appendChild(btn);
+            }
+            document.getElementById("screen3").children[0].appendChild(row);
+        }
+        for (var i = 0; i <= 3; i++) {
+            const row = document.createElement("div");
+            row.classList.add("row");
+            for (var j = 0; j <= 9; j++) {
+                const btn = document.createElement("button");
+                // btn.classList.add("small");
+                btn.innerText = `${i}${j}`;
+                btn.onclick = (e) => {
+                    clsno = parseInt(e.target.innerText);
+                    document.getElementById("confirm-classno").innerText = clsno;
+                    switchScreen(5);
+                }
+                row.appendChild(btn);
+            }
+            document.getElementById("screen4").children[0].appendChild(row);
+        }
+    });
+
+    // global
+    var startTime = 0;
+    var timerInterval = 0;
+    var score = 0;
+    var cls = "";
+    var clsno = 0;
+
+    function add() {
+        name = prompt("enter name");
+        score = prompt("enter score")
+        websocket.send(JSON.stringify({
+            type: "add",
+            name: name,
+            score: score,
+        }));
+    }
+
+    function sendNewRecord() {
+        websocket.send(JSON.stringify({
+            type: "add",
+            name: `${cls} ${clsno}`,
+            score: score,
+        }));
+        switchScreen(1);
+    }
+
+    function parseTime(millis) {
+        const dur = new Date(millis);
+        return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
+    }
+
+    function timerClickListener() {
+        score = Date.now() - startTime;
+        clearInterval(timerInterval);
+        removeEventListener("mousedown", timerClickListener);
+        document.getElementById("timer-start-button").style.display = "block";
+        switchScreen(3);
+        document.querySelectorAll(".result").forEach(e => e.innerText = parseTime(score));
+    }
+
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            document.getElementById("timer").innerText = parseTime(Date.now() - startTime);
+        }, 57);
+        addEventListener("mousedown", timerClickListener);
+        document.getElementById("timer-start-button").style.display = "none";
+    }
+
+    function updateLeaderboard() {
+        const container = document.getElementById("leaderboard");
+        container.innerHTML = "";
+        for (const {name, score} of leaderboard) {
+            const record = document.createElement("div");
+            record.classList.add("record");
+            const recordName = document.createElement("span");
+            recordName.classList.add("record-name");
+            recordName.innerText = name;
+            const recordTime = document.createElement("span");
+            recordTime.classList.add("record-time");
+            recordTime.innerText = score;
+            record.appendChild(recordName);
+            record.appendChild(recordTime);
+            container.appendChild(record);
+        }
+        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
+        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
+    }
+    
+    const wsUri = "ws://large-ape-25.deno.dev";
+    const output = document.querySelector("#output");
+    const websocket = new WebSocket(wsUri);
+    
+    websocket.onopen = (e) => {
+        console.log("CONNECTED");
+    };
+
+    websocket.onclose = (e) => {
+        console.log("DISCONNECTED");
+    };
+
+    websocket.onmessage = (e) => {
+        console.log(`RECEIVED: ${e.data}`);
+        leaderboard = JSON.parse(e.data);
+        updateLeaderboard();
+    };
+
+    websocket.onerror = (e) => {
+        console.log(`ERROR: ${e.data}`);
+    };
+</script>

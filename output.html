@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="style.css">
+
+<div id="container">
+    <h1>Tower of Hanoi</h1>
+    <div id="leaderboard"></div>
+</div>
+
+<script>
+    var leaderboard = [
+        {
+            name: "5E 17 Cheung Chun To",
+            score: "01:11",
+        }
+    ]
+
+    function updateLeaderboard() {
+        const container = document.getElementById("leaderboard");
+        container.innerHTML = "";
+        for (const {name, score} of leaderboard) {
+            const record = document.createElement("div");
+            record.classList.add("record");
+            const recordName = document.createElement("span");
+            recordName.classList.add("record-name");
+            recordName.innerText = name;
+            const recordTime = document.createElement("span");
+            recordTime.classList.add("record-time");
+            recordTime.innerText = score;
+            record.appendChild(recordName);
+            record.appendChild(recordTime);
+            container.appendChild(record);
+        }
+    }
+    
+    const wsUri = "ws://large-ape-25.deno.dev";
+    const websocket = new WebSocket(wsUri);
+
+    websocket.onopen = (e) => {
+        console.log("CONNECTED");
+    };
+
+    websocket.onclose = (e) => {
+        console.log("DISCONNECTED");
+    };
+
+    websocket.onmessage = (e) => {
+        console.log(`RECEIVED: ${e.data}`);
+        leaderboard = JSON.parse(e.data);
+        updateLeaderboard();
+    };
+
+    websocket.onerror = (e) => {
+        console.log(`ERROR: ${e.data}`);
+    };
+</script>

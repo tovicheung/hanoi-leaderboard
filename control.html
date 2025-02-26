@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="style.css">
+
+<div id="container">
+    <h1>Tower of Hanoi</h1>
+    <button onclick="websocket.send('refresh-all')">Refresh All</button>
+    <button onclick="websocket.send('refresh')">Refresh this</button>
+    <button onclick="websocket.send('clear')">Clear data</button>
+    <button onclick="add()">Add</button>
+    <div id="leaderboard"></div>
+</div>
+
+<script>
+    var leaderboard = [
+        {
+            name: "5E 17 Cheung Chun To",
+            score: "01:11",
+        }
+    ]
+
+    function updateLeaderboard() {
+        const container = document.getElementById("leaderboard");
+        container.innerHTML = "";
+        for (const {name, score} of leaderboard) {
+            const record = document.createElement("div");
+            record.classList.add("record");
+            const recordName = document.createElement("span");
+            recordName.classList.add("record-name");
+            recordName.innerText = name;
+            const recordTime = document.createElement("span");
+            recordTime.classList.add("record-time");
+            recordTime.innerText = score;
+            record.appendChild(recordName);
+            record.appendChild(recordTime);
+            container.appendChild(record);
+        }
+    }
+    
+    const wsUri = "ws://large-ape-25.deno.dev";
+    const websocket = new WebSocket(wsUri);
+
+    websocket.onopen = (e) => {
+        console.log("CONNECTED");
+    };
+
+    websocket.onclose = (e) => {
+        console.log("DISCONNECTED");
+    };
+
+    websocket.onmessage = (e) => {
+        console.log(`RECEIVED: ${e.data}`);
+        leaderboard = JSON.parse(e.data);
+        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
+        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
+        updateLeaderboard();
+    };
+
+    websocket.onerror = (e) => {
+        console.log(`ERROR: ${e.data}`);
+    };
+    
+    function add() {
+        name = prompt("enter name");
+        score = prompt("enter score")
+        websocket.send(JSON.stringify({
+            type: "add",
+            name: name,
+            score: score,
+        }));
+    }
+</script>
