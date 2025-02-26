@@ -33,7 +33,7 @@
         <button class="small" onclick="websocket.send('refresh')">Refresh this</button>
         <button class="small" onclick="websocket.send('clear')">Clear data</button>
         <button class="small" onclick="add()">Add raw</button>
-        <div id="leaderboard"></div>
+        <div id="leaderboard">Connecting to server ...</div>
     </div>
     <div id="screen2">
         <div class="centered">
@@ -70,12 +70,7 @@
 </div>
 
 <script>
-    var leaderboard = [
-        {
-            name: "5E 17 Cheung Chun To",
-            score: "01:11",
-        }
-    ]
+    var leaderboard = [];
 
     function switchScreen(n) {
         for (const child of document.getElementById("container").children) {
@@ -107,7 +102,6 @@
             row.classList.add("row");
             for (var j = 0; j <= 9; j++) {
                 const btn = document.createElement("button");
-                // btn.classList.add("small");
                 btn.innerText = `${i}${j}`;
                 btn.onclick = (e) => {
                     clsno = parseInt(e.target.innerText);

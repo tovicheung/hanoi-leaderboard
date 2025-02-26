@@ -6,16 +6,11 @@
     <button onclick="websocket.send('refresh')">Refresh this</button>
     <button onclick="websocket.send('clear')">Clear data</button>
     <button onclick="add()">Add</button>
-    <div id="leaderboard"></div>
+    <div id="leaderboard">Connecting to server ...</div>
 </div>
 
 <script>
-    var leaderboard = [
-        {
-            name: "5E 17 Cheung Chun To",
-            score: "01:11",
-        }
-    ]
+    var leaderboard = [];
 
     function updateLeaderboard() {
         const container = document.getElementById("leaderboard");
@@ -35,7 +30,7 @@
         }
     }
     
-    const wsUri = "ws://large-ape-25.deno.dev";
+    const wsUri = "wss://large-ape-25.deno.dev";
     const websocket = new WebSocket(wsUri);
 
     websocket.onopen = (e) => {
