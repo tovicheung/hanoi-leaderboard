@@ -5,8 +5,8 @@ interface ScoreEntry {
 
 var scores: ScoreEntry[] = [
     {
-        name: "Tovi",
-        score: 1111,
+        name: "Placeholder",
+        score: 0,
     }
 ];
 
@@ -45,6 +45,12 @@ Deno.serve((req) => {
         }
         if (event.data == "refresh") {
             socket.send(JSON.stringify(scores));
+            return;
+        }
+        if (event.data == "clear") {
+            scores = [];
+            broadcastScores();
+            return;
         }
         const obj = JSON.parse(event.data);
         if (obj.type === "add") {
