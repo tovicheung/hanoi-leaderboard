@@ -121,22 +121,21 @@
     var cls = "";
     var clsno = 0;
 
-    function add() {
-        name = prompt("enter name");
-        score = prompt("enter score")
+    function sendData(name, score) {
         websocket.send(JSON.stringify({
             type: "add",
             name: name,
             score: score,
+            current: leaderboard,
         }));
     }
 
+    function add() {
+        sendData(prompt("enter name"), prompt("enter score"));
+    }
+
     function sendNewRecord() {
-        websocket.send(JSON.stringify({
-            type: "add",
-            name: `${cls} ${clsno}`,
-            score: score,
-        }));
+        sendData(`${cls} ${clsno}`, score);
         switchScreen(1);
     }
 
