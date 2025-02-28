@@ -24,6 +24,8 @@
             record.appendChild(recordTime);
             container.appendChild(record);
         }
+        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
+        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
     }
     
     const wsUri = "wss://large-ape-25.deno.dev";
