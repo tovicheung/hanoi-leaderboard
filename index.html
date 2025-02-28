@@ -33,6 +33,7 @@
         <button class="small" onclick="websocket.send('refresh')">Refresh this</button>
         <button class="small" onclick="websocket.send('clear')">Clear data</button>
         <button class="small" onclick="add()">Add raw</button>
+        <p># clients: <span id="nclients"></span></p>
         <div id="leaderboard">Connecting to server ...</div>
     </div>
     <div id="screen2">
@@ -151,6 +152,7 @@
         document.getElementById("timer-start-button").style.display = "block";
         switchScreen(3);
         document.querySelectorAll(".result").forEach(e => e.innerText = parseTime(score));
+        document.getElementById("timer").innerText = "00:00.000";
     }
 
     function startTimer() {
@@ -196,6 +198,12 @@
 
     websocket.onmessage = (e) => {
         console.log(`RECEIVED: ${e.data}`);
+        if (e.data.startsWith("@")) {
+            if (e.data.startsWith("@nclients:")) {
+                document.getElementById("nclients").innerText = e.data.slice(10);
+            }
+            return;
+        }
         leaderboard = JSON.parse(e.data);
         updateLeaderboard();
     };

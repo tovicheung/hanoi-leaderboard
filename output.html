@@ -41,6 +41,7 @@
 
     websocket.onmessage = (e) => {
         console.log(`RECEIVED: ${e.data}`);
+        if (e.data.startsWith("@")) return;
         leaderboard = JSON.parse(e.data);
         updateLeaderboard();
     };
