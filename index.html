@@ -161,7 +161,7 @@
     function addRaw() {
         pushRecord(
             prompt("enter name"),
-            prompt("enter score"),
+            parseInt(prompt("enter score")),
         );
     }
 
@@ -220,8 +220,8 @@
 
     function modifyRank(n) {
         const name = prompt("Enter new name");
-        const score = prompt(`Enter new score (int) current = ${leaderboard[n-1]}`);
-        leaderboard[n] = {name: name, score: score};
+        const score = prompt(`Enter new score (int) current = ${leaderboard[n-1].score}`);
+        leaderboard[n-1] = {name: name, score: parseInt(score)};
         sendUpdate();
     }
 
@@ -264,6 +264,7 @@
             modifyButton._rank = rank
             modifyButton.onclick = e => modifyRank(e.target._rank);
             
+            record.appendChild(modifyButton);
             record.appendChild(removeButton);
 
             container.appendChild(record);

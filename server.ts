@@ -3,12 +3,7 @@ interface ScoreEntry {
     score: number;
 }
 
-var scores: ScoreEntry[] = [
-    {
-        name: "Placeholder",
-        score: 0,
-    }
-];
+var scores: ScoreEntry[] = [];
 
 const clients = new Map();
 
@@ -19,11 +14,13 @@ function broadcast(msg) {
     });
 }
 
-function broadcastScores() {
+async function broadcastScores() {
+    const kv = await Deno.openKv();
     broadcast(JSON.stringify(scores));
+    kv.set(["scores"], scores);
 }
 
-Deno.serve((req) => {
+Deno.serve(async (req) => {
     if (req.headers.get("upgrade") != "websocket") {
         return new Response(null, { status: 501 });
     }
@@ -33,6 +30,8 @@ Deno.serve((req) => {
     const clientId = crypto.randomUUID();
     clients.set(clientId, socket);
 
+    const kv = await Deno.openKv();
+
     // Send current scores to newly connected client
     socket.addEventListener("open", () => {
         console.log(`client ${clientId} connected!`);
@@ -40,11 +39,12 @@ Deno.serve((req) => {
         broadcast(`@nclients:${clients.size}`)
     });
 
-    socket.addEventListener("message", (event) => {
+    socket.addEventListener("message", async (event) => {
         console.log(`received from ${clientId}`)
+        scores = await kv.get(["scores"]);
         if (event.data == "refresh-all") {
-            scores.sort((a, b) => b.score - a.score);
-            broadcastScores();
+            scores.sort((a, b) => a.score - b.score);
+            await broadcastScores();
             return;
         }
         if (event.data == "refresh") {
@@ -53,15 +53,16 @@ Deno.serve((req) => {
         }
         if (event.data == "clear") {
             scores = [];
-            broadcastScores();
+            await broadcastScores();
             return;
         }
         const obj = JSON.parse(event.data);
         if (obj.type === "update") { // new api
             scores = obj.leaderboard;
-            scores.sort((a, b) => b.score - a.score);
-            broadcastScores();
-        } else if (obj.type === "add") { // old api
+            scores.sort((a, b) => a.score - b.score);
+            await broadcastScores();
+        }
+        if (obj.type === "add") { // old api
             const name = obj.name;
             const score = obj.score;
             const current = obj.current;
