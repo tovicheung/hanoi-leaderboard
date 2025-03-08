@@ -12,12 +12,15 @@ var scores: ScoreEntry[] = [
 
 const clients = new Map();
 
-function broadcastScores() {
-    const message = JSON.stringify(scores);
+function broadcast(msg) {
     clients.forEach(websocket => {
         if (websocket.isClosed) return;
-        websocket.send(message);
+        websocket.send(msg);
     });
+}
+
+function broadcastScores() {
+    broadcast(JSON.stringify(scores));
 }
 
 Deno.serve((req) => {
@@ -34,6 +37,7 @@ Deno.serve((req) => {
     socket.addEventListener("open", () => {
         console.log(`client ${clientId} connected!`);
         socket.send(JSON.stringify(scores));
+        broadcast(`@nclients:${clients.size}`)
     });
 
     socket.addEventListener("message", (event) => {
@@ -53,9 +57,17 @@ Deno.serve((req) => {
             return;
         }
         const obj = JSON.parse(event.data);
-        if (obj.type === "add") {
+        if (obj.type === "update") { // new api
+            scores = obj.leaderboard;
+            scores.sort((a, b) => b.score - a.score);
+            broadcastScores();
+        } else if (obj.type === "add") { // old api
             const name = obj.name;
             const score = obj.score;
+            const current = obj.current;
+            if (scores.length != current.length) {
+                scores = current;
+            }
             scores.push({
                 name: name,
                 score: score,
@@ -68,6 +80,7 @@ Deno.serve((req) => {
     socket.addEventListener("close", () => {
         console.log(`client ${clientId} disconnected!`);
         clients.delete(clientId);
+        broadcast(`@nclients:${clients.size}`)
     })
   return response;
 });

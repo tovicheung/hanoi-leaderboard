@@ -1,5 +1,9 @@
 <link rel="stylesheet" href="style.css">
 <style>
+    * {
+        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    }
+
     #container > div {
         width: 100%;
         height: 100%;
@@ -19,6 +23,12 @@
     .row {
         display: inline
     }
+
+    #leaderboard button {
+        margin: 4px;
+        padding: 8px;
+        font-size: 20px;
+    }
 </style>
 
 <div id="container">
@@ -32,7 +42,7 @@
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
         <button class="small" onclick="websocket.send('refresh')">Refresh this</button>
         <button class="small" onclick="websocket.send('clear')">Clear data</button>
-        <button class="small" onclick="add()">Add raw</button>
+        <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <p># clients: <span id="nclients"></span></p>
         <div id="leaderboard">Connecting to server ...</div>
     </div>
@@ -70,6 +80,7 @@
     
 </div>
 
+<script src="common.js"></script>
 <script>
     var leaderboard = [];
 
@@ -98,14 +109,16 @@
             }
             document.getElementById("screen3").children[0].appendChild(row);
         }
-        for (var i = 0; i <= 3; i++) {
+        const width = 6;
+        const height = 6;
+        for (var i = 0; i < height; i++) {
             const row = document.createElement("div");
             row.classList.add("row");
-            for (var j = 0; j <= 9; j++) {
+            for (var j = 0; j < width; j++) {
                 const btn = document.createElement("button");
-                btn.innerText = `${i}${j}`;
+                btn.innerText = (i * width + j).toString().padStart(2, "0");
                 btn.onclick = (e) => {
-                    clsno = parseInt(e.target.innerText);
+                    clsno = e.target.innerText;
                     document.getElementById("confirm-classno").innerText = clsno;
                     switchScreen(5);
                 }
@@ -113,6 +126,15 @@
             }
             document.getElementById("screen4").children[0].appendChild(row);
         }
+
+    leaderboard = [
+        {name: "name1", score: 199},
+        {name: "name2", score: 199},
+        {name: "name3", score: 199},
+        {name: "name4", score: 199},
+    ]
+
+    updateLeaderboard();
     });
 
     // global
@@ -120,29 +142,33 @@
     var timerInterval = 0;
     var score = 0;
     var cls = "";
-    var clsno = 0;
+    var clsno = "00";
 
-    function sendData(name, score) {
+    function sendUpdate() {
         websocket.send(JSON.stringify({
-            type: "add",
-            name: name,
-            score: score,
-            current: leaderboard,
+            type: "update",
+            leaderboard: leaderboard,
         }));
     }
 
-    function add() {
-        sendData(prompt("enter name"), prompt("enter score"));
+    function pushRecord(name, score) {
+        leaderboard.push({
+            name: name,
+            score: score,
+        })
+    }
+
+    function addRaw() {
+        pushRecord(
+            prompt("enter name"),
+            prompt("enter score"),
+        );
     }
 
     function sendNewRecord() {
-        sendData(`${cls} ${clsno}`, score);
+        pushRecord(`${cls} ${clsno}`, score);
+        sendUpdate();
         switchScreen(1);
-    }
-
-    function parseTime(millis) {
-        const dur = new Date(millis);
-        return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
     }
 
     function timerClickListener() {
@@ -162,26 +188,6 @@
         }, 57);
         addEventListener("mousedown", timerClickListener);
         document.getElementById("timer-start-button").style.display = "none";
-    }
-
-    function updateLeaderboard() {
-        const container = document.getElementById("leaderboard");
-        container.innerHTML = "";
-        for (const {name, score} of leaderboard) {
-            const record = document.createElement("div");
-            record.classList.add("record");
-            const recordName = document.createElement("span");
-            recordName.classList.add("record-name");
-            recordName.innerText = name;
-            const recordTime = document.createElement("span");
-            recordTime.classList.add("record-time");
-            recordTime.innerText = score;
-            record.appendChild(recordName);
-            record.appendChild(recordTime);
-            container.appendChild(record);
-        }
-        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
-        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
     }
     
     const wsUri = "wss://large-ape-25.deno.dev";
@@ -211,4 +217,61 @@
     websocket.onerror = (e) => {
         console.log(`ERROR: ${e.data}`);
     };
+
+    function modifyRank(n) {
+        const name = prompt("Enter new name");
+        const score = prompt(`Enter new score (int) current = ${leaderboard[n-1]}`);
+        leaderboard[n] = {name: name, score: score};
+        sendUpdate();
+    }
+
+    function removeRank(n) {
+        temp = []
+        leaderboard.forEach((v, i) => {
+            if (i != (n - 1)) temp.push(v);
+        })
+        leaderboard = temp;
+        sendUpdate();
+    }
+    
+    function updateLeaderboard() {
+        const container = document.getElementById("leaderboard");
+        container.innerHTML = "";
+        var rank = 1;
+        for (const {name, score} of leaderboard) {
+            const record = document.createElement("div");
+            record.classList.add("record");
+            const recordRank = document.createElement("span");
+            recordRank.classList.add("record-rank");
+            recordRank.innerText = rank.toString();
+            const recordName = document.createElement("span");
+            recordName.classList.add("record-name");
+            recordName.innerText = name;
+            const recordTime = document.createElement("span");
+            recordTime.classList.add("record-time");
+            recordTime.innerText = parseTime(score);
+            record.appendChild(recordRank);
+            record.appendChild(recordName);
+            record.appendChild(recordTime);
+
+            const removeButton = document.createElement("button");
+            removeButton.innerText = "Del";
+            removeButton._rank = rank;
+            removeButton.onclick = e => removeRank(e.target._rank);
+
+            const modifyButton = document.createElement("button");
+            modifyButton.innerText = "Mod";
+            modifyButton._rank = rank
+            modifyButton.onclick = e => modifyRank(e.target._rank);
+            
+            record.appendChild(removeButton);
+
+            container.appendChild(record);
+
+            rank++;
+        }
+        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
+        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
+    }
+
 </script>

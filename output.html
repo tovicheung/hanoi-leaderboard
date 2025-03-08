@@ -1,32 +1,35 @@
 <link rel="stylesheet" href="style.css">
 
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+    @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap");
+    @import url('https://fonts.googleapis.com/css2?family=Geo:ital@0;1&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+    #leaderboard {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    #leaderboard > * {
+        font-family: "Orbitron";
+        font-weight: 600;
+        font-style: normal;
+    }
+
+    .record-time {
+        font-family: "Roboto", monospace;
+    }
+</style>
+
 <div id="container">
     <h1>Tower of Hanoi</h1>
     <div id="leaderboard">Connecting to server ...</div>
 </div>
 
+<script src="common.js"></script>
 <script>
     var leaderboard = [];
-
-    function updateLeaderboard() {
-        const container = document.getElementById("leaderboard");
-        container.innerHTML = "";
-        for (const {name, score} of leaderboard) {
-            const record = document.createElement("div");
-            record.classList.add("record");
-            const recordName = document.createElement("span");
-            recordName.classList.add("record-name");
-            recordName.innerText = name;
-            const recordTime = document.createElement("span");
-            recordTime.classList.add("record-time");
-            recordTime.innerText = score;
-            record.appendChild(recordName);
-            record.appendChild(recordTime);
-            container.appendChild(record);
-        }
-        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
-        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
-    }
     
     const wsUri = "wss://large-ape-25.deno.dev";
     const websocket = new WebSocket(wsUri);

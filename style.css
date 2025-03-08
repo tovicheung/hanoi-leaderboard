@@ -4,7 +4,6 @@
     border: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 #container {
@@ -22,6 +21,18 @@
     font-size: 24px;
 }
 
+.record-rank {
+    flex: 1 1 20%;
+}
+
+.record-name {
+    flex: 1 1 50%;
+}
+
+.record-time {
+    flex: 1 1 30%;
+}
+
 body {
     background-color: #f8fafc;
 }
@@ -37,6 +48,7 @@ p {
 .record {
     display: flex;
     flex-direction: row;
+    align-items: center;
     justify-content: space-between;
     padding: 15px;
 }
