@@ -16,6 +16,7 @@
     body {
         overflow: hidden;
         background-image: url("bg1.jpg");
+        background-position-x: center;
         background-size: cover;
     }
 
@@ -206,7 +207,9 @@
                 window.location.reload();
             } else if (e.data == "!disconnect-all") {
                 websocket.close();
-            }else if (e.data.startsWith("!reginit-")) {
+            } else if (e.data.startsWith("!adjust-height-")) {
+                height = parseInt(e.data.slice(15));
+            } else if (e.data.startsWith("!reginit-")) {
                 const ndisks = e.data[9];
                 const name = e.data.slice(10);
                 document.getElementById("banner-name").innerText = "";
