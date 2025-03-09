@@ -7,17 +7,17 @@ function broadcast(msg) {
     });
 }
 
-async function getData() {
+async function getScores() {
     const kv = await Deno.openKv();
-    const leaderboards = await kv.get(["leaderboards"]);
-    if (leaderboards.value === null) return [[], []];
-    return leaderboards.value
+    const scores = await kv.get(["scores"]);
+    if (scores === null) return [];
+    return scores.value
 }
 
-async function broadcastData(leaderboards) {
+async function broadcastScores(scores) {
     const kv = await Deno.openKv();
-    broadcast(JSON.stringify(leaderboards));
-    await kv.set(["leaderboards"], leaderboards);
+    broadcast(JSON.stringify(scores));
+    kv.set(["scores"], scores);
 }
 
 Deno.serve(async (req) => {
@@ -33,35 +33,33 @@ Deno.serve(async (req) => {
     // Send current scores to newly connected client
     socket.addEventListener("open", async () => {
         console.log(`client ${clientId} connected!`);
-        socket.send(JSON.stringify(await getData()));
+        socket.send(JSON.stringify(await getScores()));
         broadcast(`@nclients:${clients.size}`)
     });
 
     socket.addEventListener("message", async (event) => {
         console.log(`received from ${clientId}`)
-        console.log(event.data);
-        if (event.data.startsWith("!")) {
-            broadcast(event.data);
-        }
-        var leaderboards = await getData();
+        var scores = await getScores();
+        if (scores === null) scores = [];
         if (event.data == "refresh-all") {
-            leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
-            await broadcastData(leaderboards);
+            scores.sort((a, b) => a.score - b.score);
+            await broadcastScores(scores);
             return;
         }
         if (event.data == "refresh") {
-            socket.send(JSON.stringify(leaderboards));
+            socket.send(JSON.stringify(scores));
             return;
         }
         if (event.data == "clear") {
-            await broadcastData([[], []]);
+            scores = [];
+            await broadcastScores(scores);
             return;
         }
         const obj = JSON.parse(event.data);
         if (obj.type === "update") { // new api
-            leaderboards = obj.leaderboards;
-            leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
-            await broadcastData(leaderboards);
+            scores = obj.leaderboard;
+            scores.sort((a, b) => a.score - b.score);
+            await broadcastScores(scores);
         }
     });
 

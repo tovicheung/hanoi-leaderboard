@@ -24,9 +24,17 @@
         display: inline
     }
 
-    #leaderboard button {
+    .leaderboard button {
         margin: 4px;
         padding: 8px;
+        font-size: 14px;
+    }
+
+    .leaderboards {
+        gap: 10px;
+    }
+
+    .record > * {
         font-size: 20px;
     }
 </style>
@@ -38,33 +46,38 @@
         <button onclick="window.location.href = './output.html'">output</button>
     </div>
     <div id="screen1">
-        <button onclick="switchScreen(2)">Start new trial</button>
+        <button onclick="ndisks = 4; switchScreen(2)">Start new trial (4)</button>
+        <button onclick="ndisks = 5; switchScreen(2)">Start new trial (5)</button>
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
         <button class="small" onclick="websocket.send('refresh')">Refresh this</button>
-        <button class="small" onclick="websocket.send('clear')">Clear data</button>
+        <br>
+        <button class="small" onclick="leaderboard1 = []; sendUpdate();">Clear 1</button>
+        <button class="small" onclick="leaderboard2 = []; sendUpdate();">Clear 2</button>
+        <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();">Clear all</button>
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <p># clients: <span id="nclients"></span></p>
-        <div id="leaderboard">Connecting to server ...</div>
+        <div class="leaderboards">
+            <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
+            <div id="leaderboard2" class="leaderboard">Connecting to server ...</div>
+        </div>
     </div>
     <div id="screen2">
         <div class="centered">
-            <p style="font-size: 120px; font-family: Consolas, Courier, monospace" id="timer">00:00.000</p>
-            <button id="timer-start-button" onclick="startTimer()">Start</button>
-            <p>When finished, press anywhere to stop the timer</p>
+            <p>Select class</p>
+            <!-- Generated -->
         </div>
     </div>
     <div id="screen3">
         <div class="centered">
-            <p>Your time: <span class="result"></span></p>
-            <p>Select class</p>
+            <p>Select class number</p>
             <!-- Generated -->
         </div>
     </div>
     <div id="screen4">
         <div class="centered">
-            <p>Your time: <span class="result"></span></p>
-            <p>Select class number</p>
-            <!-- Generated -->
+            <p style="font-size: 120px; font-family: Consolas, Courier, monospace" id="timer">00:00.000</p>
+            <button id="timer-start-button" onclick="startTimer()">Start</button>
+            <p>When finished, press anywhere to stop the timer</p>
         </div>
     </div>
     <div id=screen5>
@@ -82,7 +95,8 @@
 
 <script src="common.js"></script>
 <script>
-    var leaderboard = [];
+    var leaderboard1 = [];
+    var leaderboard2 = [];
 
     function switchScreen(n) {
         for (const child of document.getElementById("container").children) {
@@ -103,11 +117,11 @@
                 else btn.onclick = (e) => {
                     cls = e.target.innerText;
                     document.getElementById("confirm-class").innerText = cls;
-                    switchScreen(4);
+                    switchScreen(3);
                 }
                 row.appendChild(btn);
             }
-            document.getElementById("screen3").children[0].appendChild(row);
+            document.getElementById("screen2").children[0].appendChild(row);
         }
         const width = 6;
         const height = 6;
@@ -120,24 +134,18 @@
                 btn.onclick = (e) => {
                     clsno = e.target.innerText;
                     document.getElementById("confirm-classno").innerText = clsno;
-                    switchScreen(5);
+                    switchScreen(4);
+
+                    websocket.send(`!regname-${cls} ${clsno}   (${ndisks} disks)`);
                 }
                 row.appendChild(btn);
             }
-            document.getElementById("screen4").children[0].appendChild(row);
+            document.getElementById("screen3").children[0].appendChild(row);
         }
-
-    leaderboard = [
-        {name: "name1", score: 199},
-        {name: "name2", score: 199},
-        {name: "name3", score: 199},
-        {name: "name4", score: 199},
-    ]
-
-    updateLeaderboard();
     });
 
     // global
+    var ndisks = 4;
     var startTime = 0;
     var timerInterval = 0;
     var score = 0;
@@ -147,11 +155,11 @@
     function sendUpdate() {
         websocket.send(JSON.stringify({
             type: "update",
-            leaderboard: leaderboard,
+            leaderboards: [leaderboard1, leaderboard2],
         }));
     }
 
-    function pushRecord(name, score) {
+    function pushRecord(leaderboard, name, score) {
         leaderboard.push({
             name: name,
             score: score,
@@ -160,13 +168,15 @@
 
     function addRaw() {
         pushRecord(
+            prompt("leaderboard 1 or 2") == "1" ? leaderboard1 : leaderboard2,
             prompt("enter name"),
             parseInt(prompt("enter score")),
         );
     }
 
     function sendNewRecord() {
-        pushRecord(`${cls} ${clsno}`, score);
+        websocket.send("!regdone"); // order matters??
+        pushRecord(ndisks == 4 ? leaderboard1 : leaderboard2, `${cls} ${clsno}`, score);
         sendUpdate();
         switchScreen(1);
     }
@@ -176,7 +186,8 @@
         clearInterval(timerInterval);
         removeEventListener("mousedown", timerClickListener);
         document.getElementById("timer-start-button").style.display = "block";
-        switchScreen(3);
+        websocket.send(`!regend-${score}`);
+        switchScreen(5);
         document.querySelectorAll(".result").forEach(e => e.innerText = parseTime(score));
         document.getElementById("timer").innerText = "00:00.000";
     }
@@ -188,6 +199,7 @@
         }, 57);
         addEventListener("mousedown", timerClickListener);
         document.getElementById("timer-start-button").style.display = "none";
+        websocket.send(`!regstart-${startTime}`);
     }
     
     const wsUri = "wss://large-ape-25.deno.dev";
@@ -210,22 +222,25 @@
             }
             return;
         }
-        leaderboard = JSON.parse(e.data);
-        updateLeaderboard();
+        if (e.data.startsWith("!")) return;
+        const data = JSON.parse(e.data);
+        leaderboard1 = data[0];
+        leaderboard2 = data[1];
+        updateLeaderboards();
     };
 
     websocket.onerror = (e) => {
         console.log(`ERROR: ${e.data}`);
     };
 
-    function modifyRank(n) {
+    function modifyRank(leaderboard, n) {
         const name = prompt("Enter new name");
         const score = prompt(`Enter new score (int) current = ${leaderboard[n-1].score}`);
         leaderboard[n-1] = {name: name, score: parseInt(score)};
         sendUpdate();
     }
 
-    function removeRank(n) {
+    function removeRank(leaderboard, n) {
         temp = []
         leaderboard.forEach((v, i) => {
             if (i != (n - 1)) temp.push(v);
@@ -234,8 +249,8 @@
         sendUpdate();
     }
     
-    function updateLeaderboard() {
-        const container = document.getElementById("leaderboard");
+    function updateLeaderboard(id, leaderboard) {
+        const container = document.getElementById(id);
         container.innerHTML = "";
         var rank = 1;
         for (const {name, score} of leaderboard) {
@@ -257,12 +272,12 @@
             const removeButton = document.createElement("button");
             removeButton.innerText = "Del";
             removeButton._rank = rank;
-            removeButton.onclick = e => removeRank(e.target._rank);
+            removeButton.onclick = e => removeRank(leaderboard, e.target._rank);
 
             const modifyButton = document.createElement("button");
             modifyButton.innerText = "Mod";
             modifyButton._rank = rank
-            modifyButton.onclick = e => modifyRank(e.target._rank);
+            modifyButton.onclick = e => modifyRank(leaderboard, e.target._rank);
             
             record.appendChild(modifyButton);
             record.appendChild(removeButton);
@@ -271,8 +286,11 @@
 
             rank++;
         }
-        document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
-        setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
+        if (leaderboard.length == 0) {
+            container.innerHTML = "<p>empty</p>";
+        }
+        container.style.backgroundColor = "lightgreen";
+        setTimeout(() => container.style.backgroundColor = "", 300);
     }
 
 </script>

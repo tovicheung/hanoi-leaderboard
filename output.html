@@ -7,32 +7,109 @@
     @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
-    #leaderboard {
-        background-color: rgba(255, 255, 255, 0.5);
-    }
-
-    #leaderboard > * {
+    * {
         font-family: "Orbitron";
         font-weight: 600;
         font-style: normal;
     }
 
+    .leaderboard {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .leaderboard > p {
+        margin: 16px;
+        text-align: center;
+    }
+
     .record-time {
+        font-family: "Roboto", monospace;
+    }
+
+    #container {
+        width: 1000px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .record:nth-child(2) {
+        background-color: gold;
+    }
+
+    .record:nth-child(3) {
+        background-color: silver;
+    }
+
+    .record:nth-child(4) {
+        background-color: #c98645;
+    }
+
+    .record:nth-child(n+2):nth-child(-n+4) .record-rank {
+        font-size: 30px;
+    }
+
+    #banner {
+        width: 100%;
+        height: fit-content;
+        background-color: #322641;
+        z-index: 9999;
+        position: absolute;
+        color: white;
+        padding: 20px 80px;
+
+        display: none;
+        flex-direction: row;
+    }
+
+    #banner * {
+        font-size: 44;
+    }
+
+    #banner-time {
         font-family: "Roboto", monospace;
     }
 </style>
 
 <div id="container">
-    <h1>Tower of Hanoi</h1>
-    <div id="leaderboard">Connecting to server ...</div>
+    <h1>Gojo's Challenge: Tower of Hanoi</h1>
+    <div class="leaderboards">
+        <div id="leaderboard1" class="leaderboard"><p>Connecting to server ...</p></div>
+        <div id="leaderboard2" class="leaderboard"><p>Connecting to server ...</p></div>
+    </div>
+    <div style="flex-grow: 2;"></div>
+</div>
+
+<div id="banner">
+    <p>Challenger:&nbsp;&nbsp;&nbsp;<span id="banner-name"></span></p>
+    <div style="flex-grow: 2;"></div>
+    <p id="banner-time">Waiting to start</p><span id="dots"></span>
 </div>
 
 <script src="common.js"></script>
 <script>
-    var leaderboard = [];
+    var leaderboard1 = [];
+    var leaderboard2 = [];
+
+    var regStart = 0;
+    var regInterval = 0;
     
     const wsUri = "wss://large-ape-25.deno.dev";
     const websocket = new WebSocket(wsUri);
+
+    var dotsInterval = 0;
+
+    function startDots() {
+        dotsInterval = setInterval(() => {
+            const dots = document.getElementById("dots");
+            dots.innerText = ".".repeat((dots.innerText.length) % 3 + 1);
+        }, 300);
+    }
+    
+    function stopDots() {
+        clearInterval(dotsInterval);
+        document.getElementById("dots").innerText = "";
+    }
 
     websocket.onopen = (e) => {
         console.log("CONNECTED");
@@ -40,13 +117,81 @@
 
     websocket.onclose = (e) => {
         console.log("DISCONNECTED");
+        window.location.href = "./disconnected.html"
     };
+
+    function test() {
+        websocket.onmessage({
+            data: "!regname-333 333"
+        })
+    }
+
+    function appendRegName(name, i) {
+        if (i == name.length + 1) {
+            document.getElementById("banner").animate([
+                {
+                    bottom: CSS.percent(50),
+                },
+                {
+                    bottom: 0,
+                },
+            ], {
+                duration: 400,
+                fill: "forwards"
+            });
+            return;
+        };
+        document.getElementById("banner-name").innerText = name.slice(0, i);
+        setTimeout(() => appendRegName(name, i+1), 200);
+    }
 
     websocket.onmessage = (e) => {
         console.log(`RECEIVED: ${e.data}`);
         if (e.data.startsWith("@")) return;
-        leaderboard = JSON.parse(e.data);
-        updateLeaderboard();
+        // @ - analytics
+        // ! - cross-node messages (server direct forward)
+        // else: leaderboard data
+        if (e.data.startsWith("!")) {
+            if (e.data.startsWith("!regname-")) {
+                const name = e.data.slice(9);
+                document.getElementById("banner-name").innerText = "";
+                document.getElementById("banner-time").innerText = "Waiting to start ";
+                document.getElementById("banner").style.display = "flex";
+                startDots();
+                document.getElementById("banner").animate([
+                    {
+                        left: CSS.percent(-200),
+                        bottom: CSS.percent(50),
+                    },
+                    {
+                        left: 0,
+                        bottom: CSS.percent(50),
+                    },
+                ], {
+                    duration: 600,
+                    fill: "forwards"
+                });
+                setTimeout(() => appendRegName(name, 0), 500);
+            } else if (e.data.startsWith("!regstart-")) {
+                regStart = parseInt(e.data.slice(10));
+                regInterval = setInterval(() => {
+                    document.getElementById("banner-time").innerText = parseTime(Date.now() - regStart);
+                }, 57);
+                stopDots();
+            } else if (e.data.startsWith("!regend-")) {
+                clearInterval(regInterval);
+                const result = parseInt(e.data.slice(8));
+                document.getElementById("banner-time").innerText = parseTime(result);
+                document.getElementById("banner-time").style.color = "lime";
+            } else if (e.data.startsWith("!regdone")) {
+                document.getElementById("banner").style.display = "none";
+            }
+            return;
+        }
+        const data = JSON.parse(e.data);
+        leaderboard1 = data[0];
+        leaderboard2 = data[1];
+        updateLeaderboards();
     };
 
     websocket.onerror = (e) => {

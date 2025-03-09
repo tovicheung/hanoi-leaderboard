@@ -3,16 +3,21 @@ function parseTime(millis) {
     return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
 }
 
-function updateLeaderboard() {
-    const container = document.getElementById("leaderboard");
-    container.innerHTML = "";
+const id2titles = {
+    "leaderboard1": "4 disks",
+    "leaderboard2": "5 disks",
+}
+
+function updateLeaderboard(id, leaderboard) {
+    const container = document.getElementById(id);
+    container.innerHTML = `<p>${id2titles[id]}</p>`;
     var rank = 1;
     for (const {name, score} of leaderboard) {
         const record = document.createElement("div");
         record.classList.add("record");
         const recordRank = document.createElement("span");
         recordRank.classList.add("record-rank");
-        recordRank.innerText = rank.toString();
+        recordRank.innerHTML = rank <= 3 ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1] : rank.toString();
         const recordName = document.createElement("span");
         recordName.classList.add("record-name");
         recordName.innerText = name;
@@ -27,8 +32,13 @@ function updateLeaderboard() {
         rank++;
     }
     if (leaderboard.length == 0) {
-        container.innerHTML = "Waiting for challengers ...";
+        container.innerHTML = "<p>Waiting for challengers ...</p>";
     }
-    document.getElementById("leaderboard").style.backgroundColor = "lightgreen";
-    setTimeout(() => document.getElementById("leaderboard").style.backgroundColor = "", 300);
+    container.style.backgroundColor = "lightgreen";
+    setTimeout(() => container.style.backgroundColor = "", 300);
+}
+
+function updateLeaderboards() {
+    updateLeaderboard("leaderboard1", leaderboard1);
+    updateLeaderboard("leaderboard2", leaderboard2);
 }
