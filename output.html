@@ -66,6 +66,10 @@
         font-size: 44;
     }
 
+    #banner-name {
+        color: yellow;
+    }
+
     #banner-time {
         font-family: "Roboto", monospace;
     }
@@ -81,7 +85,7 @@
 </div>
 
 <div id="banner">
-    <p>Challenger:&nbsp;&nbsp;&nbsp;<span id="banner-name"></span></p>
+    <p>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;<span id="banner-name"></span></p>
     <div style="flex-grow: 2;"></div>
     <p id="banner-time">Waiting to start</p><span id="dots"></span>
 </div>
@@ -152,9 +156,11 @@
         // ! - cross-node messages (server direct forward)
         // else: leaderboard data
         if (e.data.startsWith("!")) {
-            if (e.data.startsWith("!regname-")) {
-                const name = e.data.slice(9);
+            if (e.data.startsWith("!reginit-")) {
+                const ndisks = e.data[9];
+                const name = e.data.slice(10);
                 document.getElementById("banner-name").innerText = "";
+                document.getElementById("banner-ndisks").innerText = ndisks;
                 document.getElementById("banner-time").innerText = "Waiting to start ";
                 document.getElementById("banner").style.display = "flex";
                 startDots();

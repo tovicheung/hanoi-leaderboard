@@ -136,7 +136,7 @@
                     document.getElementById("confirm-classno").innerText = clsno;
                     switchScreen(4);
 
-                    websocket.send(`!regname-${cls} ${clsno}   (${ndisks} disks)`);
+                    websocket.send(`!reginit-${ndisks}${cls} ${clsno}`);
                 }
                 row.appendChild(btn);
             }
