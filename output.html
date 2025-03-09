@@ -180,8 +180,9 @@
                     fill: "forwards"
                 });
                 setTimeout(() => appendRegName(name, 0), 500);
-            } else if (e.data.startsWith("!regstart-")) {
-                regStart = parseInt(e.data.slice(10));
+            } else if (e.data.startsWith("!regstart")) {
+                // regStart = parseInt(e.data.slice(10));
+                regStart = Date.now(); // the latency will (probably) fix itself
                 regInterval = setInterval(() => {
                     document.getElementById("banner-time").innerText = parseTime(Date.now() - regStart);
                 }, 57);

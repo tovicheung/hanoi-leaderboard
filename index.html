@@ -200,7 +200,7 @@
         }, 57);
         addEventListener("mousedown", timerClickListener);
         document.getElementById("timer-start-button").style.display = "none";
-        websocket.send(`!regstart-${startTime}`);
+        websocket.send(`!regstart`);
     }
     
     const wsUri = "wss://large-ape-25.deno.dev";
