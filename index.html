@@ -46,17 +46,23 @@
         <button onclick="window.location.href = './output.html'">output</button>
     </div>
     <div id="screen1">
-        <button onclick="ndisks = 4; switchScreen(2)">Start new trial (4)</button>
-        <button onclick="ndisks = 5; switchScreen(2)">Start new trial (5)</button>
-        <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
-        <button class="small" onclick="window.location.reload()">Reload</button>
+        <button onclick="ndisks = 4; switchScreen(2)">New trial (4)</button>
+        <button onclick="ndisks = 5; switchScreen(2)">New trial (5)</button>
+        <button class="small" onclick="window.location.reload()">Reload this</button>
         <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
+        <button onclick="window.location.href = './output.html'">Switch to output</button>
         <br>
-        <button class="small" onclick="leaderboard1 = []; sendUpdate();">Clear 1</button>
-        <button class="small" onclick="leaderboard2 = []; sendUpdate();">Clear 2</button>
-        <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();">Clear all</button>
+        <button class="small" onclick="leaderboard1 = []; sendUpdate();">Reset 1</button>
+        <button class="small" onclick="leaderboard2 = []; sendUpdate();">Reset 2</button>
+        <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();">Reset all</button>
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
-        <p># clients: <span id="nclients"></span></p>
+        <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
+        <button class="small" onclick="websocket.send(prompt('Enter command (!... for cross-node)'))">Send command</button>
+        <br>
+        <p style="display: inline"># clients: <span id="nclients"></span></p>
+        <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
+        <button class="small" onclick="websocket.send('!reload-all')">Reload all</button>
+        <button class="small" onclick="websocket.send('!disconnect-all')">Disconnect all output</button>
         <div class="leaderboards">
             <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
             <div id="leaderboard2" class="leaderboard">Connecting to server ...</div>
@@ -65,6 +71,7 @@
     <div id="screen2">
         <div class="centered">
             <p>Select class</p>
+            <button class="small" onclick="customName()">Custom name</button>
             <!-- Generated -->
         </div>
     </div>
@@ -84,7 +91,10 @@
     <div id=screen5>
         <div class="centered">
             <h1><span id="confirm-class"></span> <span id="confirm-classno"></span> <span class="result"></span></h1>
-            <button onclick="sendNewRecord()">Confirm</button>
+            <div class="row">
+                <button onclick="sendNewRecord()">Confirm</button>
+                <button onclick="websocket.send('!regcancel');switchScreen(1);">Cancel</button>
+            </div>
         </div>
     </div>
     <div id="screen9">
@@ -99,6 +109,14 @@
     var leaderboard1 = [];
     var leaderboard2 = [];
 
+    function customName() {
+        const custom = prompt("Enter name:");
+        cls = custom;
+        clsno = "";
+        switchScreen(4);
+        websocket.send(`!reginit-${ndisks}${custom}`);
+    }
+
     function switchScreen(n) {
         for (const child of document.getElementById("container").children) {
             child.style.display = "none";
@@ -107,7 +125,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        switchScreen(0);
+        switchScreen(1);
         for (var i = 1; i <= 6; i++) {
             const row = document.createElement("div");
             row.classList.add("row");
@@ -176,7 +194,6 @@
     }
 
     function sendNewRecord() {
-        websocket.send("!regdone"); // order matters??
         pushRecord(ndisks == 4 ? leaderboard1 : leaderboard2, `${cls} ${clsno}`, score);
         sendUpdate();
         switchScreen(1);
@@ -224,7 +241,12 @@
             }
             return;
         }
-        if (e.data.startsWith("!")) return;
+        if (e.data.startsWith("!")) {
+            if (e.data == "!reload-all") {
+                window.location.reload();
+            }
+            return;
+        };
         const data = JSON.parse(e.data);
         leaderboard1 = data[0];
         leaderboard2 = data[1];

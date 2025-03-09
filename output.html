@@ -93,6 +93,7 @@
 
     #banner-time {
         font-family: "Roboto", monospace;
+        font-size: 44;
     }
 
     #nah {
@@ -146,6 +147,7 @@
     const websocket = new WebSocket(wsUri);
 
     var dotsInterval = 0;
+    var tempanim = null; // the animation played after regend, so that it can be canceled on regcancel
 
     function startDots() {
         dotsInterval = setInterval(() => {
@@ -203,9 +205,11 @@
         // ! - cross-node messages (server direct forward)
         // else: leaderboard data
         if (e.data.startsWith("!")) {
-            if (e.data.startsWith("!reginit-")) {
-                // cleanup
-                clearInterval(regInterval);
+            if (e.data == "!reload-all") {
+                window.location.reload();
+            } else if (e.data == "!disconnect-all") {
+                websocket.close();
+            }else if (e.data.startsWith("!reginit-")) {
                 const ndisks = e.data[9];
                 const name = e.data.slice(10);
                 document.getElementById("banner-name").innerText = "";
@@ -240,8 +244,44 @@
                 const result = parseInt(e.data.slice(8));
                 document.getElementById("banner-time").innerText = parseTime(result);
                 document.getElementById("banner-time").style.color = "lime";
-            } else if (e.data.startsWith("!regdone")) {
+
+                
+                document.getElementById("banner").animate([
+                    {
+                        bottom: 0,
+                    },
+                    {
+                        bottom: CSS.percent(40),
+                    },
+                ], {
+                    duration: 400,
+                    fill: "forwards"
+                });
+                document.getElementById("overlay").style.display = "block";
+
+                setTimeout(() => {
+                    tempanim = document.getElementById("banner").animate([
+                        {
+                            left: 0,
+                            bottom: CSS.percent(40),
+                        },
+                        {
+                            left: CSS.percent(-200),
+                            bottom: CSS.percent(40),
+                        },
+                    ], {
+                        duration: 600,
+                        fill: "forwards"
+                    });
+                    document.getElementById("overlay").style.display = "none";
+                    console.log(tempanim);
+                }, 4000);
+            } else if (e.data.startsWith("!regcancel")) {
                 document.getElementById("banner").style.display = "none";
+                document.getElementById("overlay").style.display = "none";
+                tempanim?.cancel();
+                clearInterval(regInterval);
+                stopDots();
             }
             return;
         }
