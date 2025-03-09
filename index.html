@@ -52,9 +52,9 @@
         <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
         <button onclick="window.location.href = './output.html'">Switch to output</button>
         <br>
-        <button class="small" onclick="leaderboard1 = []; sendUpdate();">Reset 1</button>
-        <button class="small" onclick="leaderboard2 = []; sendUpdate();">Reset 2</button>
-        <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();">Reset all</button>
+        <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset 1</button>
+        <button class="small" onclick="leaderboard2 = []; sendUpdate();" dangerous>Reset 2</button>
+        <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button>
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
         <button class="small" onclick="websocket.send(prompt('Enter command (!... for cross-node)'))">Send command</button>
@@ -161,6 +161,16 @@
             }
             document.getElementById("screen3").children[0].appendChild(row);
         }
+
+        document.querySelectorAll("button[dangerous]").forEach(e => {
+            e._onclick = e.onclick;
+            e.onclick = () => {
+                const ans = prompt("Are you sure? Type 'yes' to confirm.");
+                if (ans == "yes") {
+                    e._onclick();
+                }
+            }
+        })
     });
 
     // global

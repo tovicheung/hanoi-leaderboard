@@ -88,3 +88,11 @@ button.small {
     font-size: 20px;
     border-radius: 12px;
 }
+
+button[dangerous]:not(.small) {
+    background-color: red;
+}
+
+button[dangerous].small {
+    color: red;
+}
