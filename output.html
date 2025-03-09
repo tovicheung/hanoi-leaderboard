@@ -1,16 +1,14 @@
 <link rel="stylesheet" href="style.css">
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
     @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap");
-    @import url('https://fonts.googleapis.com/css2?family=Geo:ital@0;1&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
     * {
         font-family: "Orbitron";
         font-weight: 600;
         font-style: normal;
+        cursor: none;
     }
 
     body {
@@ -144,6 +142,11 @@
     const wsUri = "wss://large-ape-25.deno.dev";
     const websocket = new WebSocket(wsUri);
 
+    const id2titles = {
+        "leaderboard1": "4 disks",
+        "leaderboard2": "5 disks",
+    }
+
     var dotsInterval = 0;
     var tempanim = null; // the animation played after regend, so that it can be canceled on regcancel
 
@@ -168,11 +171,25 @@
         window.location.href = "./disconnected.html"
     };
 
-    function test() {
-        websocket.onmessage({
-            data: "!reginit-4Ms Chan CL"
-        })
-    }
+    websocket.onmessage = (e) => {
+        console.log(`RECEIVED: ${e.data}`);
+        if (e.data.startsWith("@")) return;
+        // @ - analytics
+        // ! - cross-node messages (server direct forward)
+        // else: leaderboard data
+        if (e.data.startsWith("!")) {
+            handleCommand(e.data);
+            return;
+        }
+        const data = JSON.parse(e.data);
+        leaderboard1 = data[0];
+        leaderboard2 = data[1];
+        updateLeaderboards();
+    };
+
+    websocket.onerror = (e) => {
+        console.log(`ERROR: ${e.data}`);
+    };
 
     function appendRegName(name, i) {
         if (i == name.length + 1) {
@@ -196,105 +213,87 @@
         setTimeout(() => appendRegName(name, i+1), name[i] == " " ? 0 : 200);
     }
 
-    websocket.onmessage = (e) => {
-        console.log(`RECEIVED: ${e.data}`);
-        if (e.data.startsWith("@")) return;
-        // @ - analytics
-        // ! - cross-node messages (server direct forward)
-        // else: leaderboard data
-        if (e.data.startsWith("!")) {
-            if (e.data == "!reload-all") {
-                window.location.reload();
-            } else if (e.data == "!disconnect-all") {
-                websocket.close();
-            } else if (e.data.startsWith("!adjust-height-")) {
-                height = parseInt(e.data.slice(15));
-            } else if (e.data.startsWith("!reginit-")) {
-                const ndisks = e.data[9];
-                const name = e.data.slice(10);
-                document.getElementById("banner-name").innerText = "";
-                document.getElementById("banner-ndisks").innerText = ndisks;
-                document.getElementById("banner-time").innerText = "Waiting to start ";
-                document.getElementById("banner").style.display = "flex";
-                startDots();
-                tempanim?.cancel();
-                document.getElementById("banner").animate([
+    function handleCommand(cmd) {
+        if (cmd == "!reload-all") {
+            window.location.reload();
+        } else if (cmd == "!disconnect-all") {
+            websocket.close();
+        } else if (cmd.startsWith("!adjust-height-")) {
+            height = parseInt(cmd.slice(15));
+        } else if (cmd.startsWith("!reginit-")) {
+            const ndisks = cmd[9];
+            const name = cmd.slice(10);
+            document.getElementById("banner-name").innerText = "";
+            document.getElementById("banner-ndisks").innerText = ndisks;
+            document.getElementById("banner-time").innerText = "Waiting to start ";
+            document.getElementById("banner").style.display = "flex";
+            startDots();
+            tempanim?.cancel();
+            document.getElementById("banner").animate([
+                {
+                    left: CSS.percent(-200),
+                    bottom: CSS.percent(40),
+                },
+                {
+                    left: 0,
+                    bottom: CSS.percent(40),
+                },
+            ], {
+                duration: 600,
+                fill: "forwards"
+            });
+            setTimeout(() => appendRegName(name, 0), 500);
+            document.getElementById("overlay").style.display = "block";
+        } else if (cmd.startsWith("!regstart")) {
+            // regStart = parseInt(cmd.slice(10));
+            regStart = Date.now(); // the latency will (probably) fix itself
+            regInterval = setInterval(() => {
+                document.getElementById("banner-time").innerText = parseTime(Date.now() - regStart);
+            }, 57);
+            stopDots();
+        } else if (cmd.startsWith("!regend-")) {
+            clearInterval(regInterval);
+            const result = parseInt(cmd.slice(8));
+            document.getElementById("banner-time").innerText = parseTime(result);
+            document.getElementById("banner-time").style.color = "lime";
+            document.getElementById("banner").animate([
+                {
+                    bottom: 0,
+                },
+                {
+                    bottom: CSS.percent(40),
+                },
+            ], {
+                duration: 400,
+                fill: "forwards"
+            });
+            document.getElementById("overlay").style.display = "block";
+
+            setTimeout(() => {
+                tempanim = document.getElementById("banner").animate([
                     {
-                        left: CSS.percent(-200),
+                        left: 0,
                         bottom: CSS.percent(40),
                     },
                     {
-                        left: 0,
+                        left: CSS.percent(-200),
                         bottom: CSS.percent(40),
                     },
                 ], {
                     duration: 600,
                     fill: "forwards"
                 });
-                setTimeout(() => appendRegName(name, 0), 500);
-                document.getElementById("overlay").style.display = "block";
-            } else if (e.data.startsWith("!regstart")) {
-                // regStart = parseInt(e.data.slice(10));
-                regStart = Date.now(); // the latency will (probably) fix itself
-                regInterval = setInterval(() => {
-                    document.getElementById("banner-time").innerText = parseTime(Date.now() - regStart);
-                }, 57);
-                stopDots();
-            } else if (e.data.startsWith("!regend-")) {
-                clearInterval(regInterval);
-                const result = parseInt(e.data.slice(8));
-                document.getElementById("banner-time").innerText = parseTime(result);
-                document.getElementById("banner-time").style.color = "lime";
-
-                
-                document.getElementById("banner").animate([
-                    {
-                        bottom: 0,
-                    },
-                    {
-                        bottom: CSS.percent(40),
-                    },
-                ], {
-                    duration: 400,
-                    fill: "forwards"
-                });
-                document.getElementById("overlay").style.display = "block";
-
-                setTimeout(() => {
-                    tempanim = document.getElementById("banner").animate([
-                        {
-                            left: 0,
-                            bottom: CSS.percent(40),
-                        },
-                        {
-                            left: CSS.percent(-200),
-                            bottom: CSS.percent(40),
-                        },
-                    ], {
-                        duration: 600,
-                        fill: "forwards"
-                    });
-                    document.getElementById("overlay").style.display = "none";
-                    console.log(tempanim);
-                }, 4000);
-            } else if (e.data.startsWith("!regcancel")) {
-                document.getElementById("banner").style.display = "none";
                 document.getElementById("overlay").style.display = "none";
-                tempanim?.cancel();
-                clearInterval(regInterval);
-                stopDots();
-            }
-            return;
+                console.log(tempanim);
+            }, 4000);
+        } else if (cmd.startsWith("!regcancel")) {
+            document.getElementById("banner").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
+            tempanim?.cancel();
+            clearInterval(regInterval);
+            stopDots();
         }
-        const data = JSON.parse(e.data);
-        leaderboard1 = data[0];
-        leaderboard2 = data[1];
-        updateLeaderboards();
-    };
-
-    websocket.onerror = (e) => {
-        console.log(`ERROR: ${e.data}`);
-    };
+    }
 
     function renderRecord(container, rank, name, score) {
         const record = document.createElement("div");
@@ -312,14 +311,6 @@
         record.appendChild(recordName);
         record.appendChild(recordTime);
         container.appendChild(record);
-    }
-
-    function min(a, b) {
-        return a < b ? a : b;
-    }
-
-    function max(a, b) {
-        return -min(-a, -b); // ha ha ha
     }
 
     function updateLeaderboard(id, leaderboard) {
@@ -358,5 +349,11 @@
         page = page.map((p, i) => (p + 1) % pages[i]);
         loadPages();
     }, max(3000, height * 800));
+
+    function test() {
+        websocket.onmessage({
+            data: "!reginit-4Ms Chan CL"
+        })
+    }
     
 </script>
