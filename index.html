@@ -57,7 +57,7 @@
         <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button>
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
-        <button class="small" onclick="websocket.send(prompt('Enter command (!... for cross-node)'))">Send command</button>
+        <button class="small" onclick="const cmd = prompt('Enter command (!... for cross-node)'); if (cmd !== null) websocket.send()">Send command</button>
         <br>
         <p style="display: inline"># clients: <span id="nclients"></span></p>
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
