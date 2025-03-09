@@ -33,7 +33,7 @@
     }
 
     #container {
-        width: 1000px;
+        width: 1200px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -120,12 +120,6 @@
 <div id="overlay"></div>
 
 <div id="banner">
-    <!--
-    <div style="position: relative">
-        <img src="gojosmall.webp" style="width: 120px; transform: scaleX(-1) translateY(-90%); position: absolute;">
-    </div>
-    -->
-    
     <p>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;</p>
     <span id="banner-name"></span>
     <div style="position: relative">
@@ -217,6 +211,7 @@
                 document.getElementById("banner-time").innerText = "Waiting to start ";
                 document.getElementById("banner").style.display = "flex";
                 startDots();
+                tempanim?.cancel();
                 document.getElementById("banner").animate([
                     {
                         left: CSS.percent(-200),
@@ -294,4 +289,68 @@
     websocket.onerror = (e) => {
         console.log(`ERROR: ${e.data}`);
     };
+
+    function renderRecord(container, rank, name, score) {
+        const record = document.createElement("div");
+        record.classList.add("record");
+        const recordRank = document.createElement("span");
+        recordRank.classList.add("record-rank");
+        recordRank.innerHTML = rank <= 3 ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1] : rank.toString();
+        const recordName = document.createElement("span");
+        recordName.classList.add("record-name");
+        recordName.innerText = name;
+        const recordTime = document.createElement("span");
+        recordTime.classList.add("record-time");
+        recordTime.innerText = parseTime(score);
+        record.appendChild(recordRank);
+        record.appendChild(recordName);
+        record.appendChild(recordTime);
+        container.appendChild(record);
+    }
+
+    function min(a, b) {
+        return a < b ? a : b;
+    }
+
+    function max(a, b) {
+        return -min(-a, -b); // ha ha ha
+    }
+
+    function updateLeaderboard(id, leaderboard) {
+        const container = document.getElementById(id);
+        container.innerHTML = `<p>${id2titles[id]}</p>`;
+        if (leaderboard.length == 0) {
+            container.innerHTML = "<p>Waiting for challengers ...</p>";
+        } else for (var rank = 1; rank <= min(3, leaderboard.length); rank++) {
+            const {name, score} = leaderboard[rank-1];
+            renderRecord(container, rank, name, score);
+        }
+        container.style.backgroundColor = "lightgreen";
+        loadPages();
+        setTimeout(() => container.style.backgroundColor = "", 300);
+    }
+
+    function loadPage(lb, elem, page) {
+        while (elem.childElementCount > 4) {
+            elem.removeChild(elem.lastChild);
+        }
+        for (var i = page * height + 3; i < ((a, b) => a < b ? a : b)((page + 1) * height + 3, lb.length); i++) {
+            const {name, score} = lb[i];
+            renderRecord(elem, i + 1, name, score);
+        }
+    }
+
+    function loadPages() {
+        loadPage(leaderboard1, document.getElementById("leaderboard1"), page[0]);
+        loadPage(leaderboard2, document.getElementById("leaderboard2"), page[1]);
+    }
+
+    var height = 7;
+    var page = [0, 0];
+    setInterval(() => {
+        const pages = [leaderboard1, leaderboard2].map(l => Math.ceil((l.length - 3) / height));
+        page = page.map((p, i) => (p + 1) % pages[i]);
+        loadPages();
+    }, max(3000, height * 800));
+    
 </script>

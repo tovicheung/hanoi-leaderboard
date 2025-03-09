@@ -179,10 +179,16 @@
     }
 
     function pushRecord(leaderboard, name, score) {
+        leaderboard.forEach((data, i) => {
+            if (data.name == name) {
+                if (data.score < score) score = data.score;
+                leaderboard.splice(i, 1);
+            }
+        });
         leaderboard.push({
             name: name,
             score: score,
-        })
+        });
     }
 
     function addRaw() {
