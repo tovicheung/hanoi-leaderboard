@@ -13,6 +13,12 @@
         font-style: normal;
     }
 
+    body {
+        overflow: hidden;
+        background-image: url("bg1.jpg");
+        background-size: 100%;
+    }
+
     .leaderboard {
         background-color: rgba(255, 255, 255, 0.5);
     }
@@ -49,6 +55,19 @@
         font-size: 30px;
     }
 
+    #overlay {
+        z-index: 999;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        opacity: 0.7;
+
+        display: none;
+    }
+
     #banner {
         width: 100%;
         height: fit-content;
@@ -56,27 +75,40 @@
         z-index: 9999;
         position: absolute;
         color: white;
-        padding: 20px 80px;
+        padding: 20px 40px;
 
         display: none;
         flex-direction: row;
+        align-items: center;
     }
 
     #banner * {
-        font-size: 44;
+        font-size: 28;
     }
 
     #banner-name {
         color: yellow;
+        font-size: 44;
     }
 
     #banner-time {
         font-family: "Roboto", monospace;
     }
+
+    #nah {
+        height: 50%;
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+
+        display: none;
+    }
 </style>
 
 <div id="container">
-    <h1>Gojo's Challenge: Tower of Hanoi</h1>
+    <h1 style="color: white; margin: 12px;">Gojo's Challenge: Tower of Hanoi</h1>
     <div class="leaderboards">
         <div id="leaderboard1" class="leaderboard"><p>Connecting to server ...</p></div>
         <div id="leaderboard2" class="leaderboard"><p>Connecting to server ...</p></div>
@@ -84,8 +116,20 @@
     <div style="flex-grow: 2;"></div>
 </div>
 
+<div id="overlay"></div>
+
 <div id="banner">
-    <p>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;<span id="banner-name"></span></p>
+    <!--
+    <div style="position: relative">
+        <img src="gojosmall.webp" style="width: 120px; transform: scaleX(-1) translateY(-90%); position: absolute;">
+    </div>
+    -->
+    
+    <p>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;</p>
+    <span id="banner-name"></span>
+    <div style="position: relative">
+        <img src="nahidwin.png" style="width: 120px; transform: translateY(-90%); position: absolute;">
+    </div>
     <div style="flex-grow: 2;"></div>
     <p id="banner-time">Waiting to start</p><span id="dots"></span>
 </div>
@@ -107,7 +151,7 @@
         dotsInterval = setInterval(() => {
             const dots = document.getElementById("dots");
             dots.innerText = ".".repeat((dots.innerText.length) % 3 + 1);
-        }, 300);
+        }, 400);
     }
     
     function stopDots() {
@@ -126,27 +170,30 @@
 
     function test() {
         websocket.onmessage({
-            data: "!regname-333 333"
+            data: "!reginit-4Ms Chan CL"
         })
     }
 
     function appendRegName(name, i) {
         if (i == name.length + 1) {
-            document.getElementById("banner").animate([
-                {
-                    bottom: CSS.percent(50),
-                },
-                {
-                    bottom: 0,
-                },
-            ], {
-                duration: 400,
-                fill: "forwards"
-            });
+            setTimeout(() => {
+                document.getElementById("banner").animate([
+                    {
+                        bottom: CSS.percent(40),
+                    },
+                    {
+                        bottom: 0,
+                    },
+                ], {
+                    duration: 400,
+                    fill: "forwards"
+                });
+                document.getElementById("overlay").style.display = "none";
+            }, 1000);
             return;
         };
         document.getElementById("banner-name").innerText = name.slice(0, i);
-        setTimeout(() => appendRegName(name, i+1), 200);
+        setTimeout(() => appendRegName(name, i+1), name[i] == " " ? 0 : 200);
     }
 
     websocket.onmessage = (e) => {
@@ -169,17 +216,18 @@
                 document.getElementById("banner").animate([
                     {
                         left: CSS.percent(-200),
-                        bottom: CSS.percent(50),
+                        bottom: CSS.percent(40),
                     },
                     {
                         left: 0,
-                        bottom: CSS.percent(50),
+                        bottom: CSS.percent(40),
                     },
                 ], {
                     duration: 600,
                     fill: "forwards"
                 });
                 setTimeout(() => appendRegName(name, 0), 500);
+                document.getElementById("overlay").style.display = "block";
             } else if (e.data.startsWith("!regstart")) {
                 // regStart = parseInt(e.data.slice(10));
                 regStart = Date.now(); // the latency will (probably) fix itself
