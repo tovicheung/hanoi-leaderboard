@@ -157,6 +157,8 @@
         // else: leaderboard data
         if (e.data.startsWith("!")) {
             if (e.data.startsWith("!reginit-")) {
+                // cleanup
+                clearInterval(regInterval);
                 const ndisks = e.data[9];
                 const name = e.data.slice(10);
                 document.getElementById("banner-name").innerText = "";

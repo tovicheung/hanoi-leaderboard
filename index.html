@@ -50,6 +50,7 @@
         <button onclick="ndisks = 5; switchScreen(2)">Start new trial (5)</button>
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
         <button class="small" onclick="websocket.send('refresh')">Refresh this</button>
+        <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
         <br>
         <button class="small" onclick="leaderboard1 = []; sendUpdate();">Clear 1</button>
         <button class="small" onclick="leaderboard2 = []; sendUpdate();">Clear 2</button>

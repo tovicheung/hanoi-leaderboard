@@ -1,0 +1,9 @@
+<link rel="stylesheet" href="style.css">
+
+<p>Date.now() = <span id="it"></span></p>
+
+<script>
+    setInterval(() => {
+        document.getElementById("it").innerText = Date.now().toString();
+    }, 20);
+</script>
