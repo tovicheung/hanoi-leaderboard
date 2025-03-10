@@ -198,8 +198,12 @@
         setTimeout(() => appendRegName(name, i+1), name[i] == " " ? 0 : 200);
     }
 
-    function toggleDisplay(elem, disp) {
-        elem.style.display = elem.style.display == "none" ? disp : "none";
+    function toggleDisplay(elem) {
+        if (elem.classList.contains("hidden")) {
+            elem.classList.remove("hidden");
+        } else {
+            elem.classList.add("hidden");
+        }
     }
 
     function handleCommand(cmd) {
@@ -210,9 +214,9 @@
         } else if (cmd.startsWith("!adjust-height-")) {
             baseHeight = parseInt(cmd.slice(15));
         } else if (cmd == "!toggle-l4") {
-            toggleDisplay(document.getElementById("leaderboard1"), "flex");
+            toggleDisplay(document.getElementById("leaderboard1"));
         } else if (cmd == "!toggle-l5") {
-            toggleDisplay(document.getElementById("leaderboard2"), "flex");
+            toggleDisplay(document.getElementById("leaderboard2"));
         } else if (cmd.startsWith("!reginit-")) {
             const ndisks = cmd[9];
             const name = cmd.slice(10);

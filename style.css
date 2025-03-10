@@ -10,6 +10,10 @@ body::backdrop { /* for fullscreen */
     background-color: #f8fafc;
 }
 
+.hidden {
+    display: none !important;
+}
+
 #container {
     width: 1000px;
     height: 100%;
