@@ -6,6 +6,10 @@
     box-sizing: border-box;
 }
 
+body::backdrop { /* for fullscreen */
+    background-color: #f8fafc;
+}
+
 #container {
     width: 1000px;
     height: 100%;

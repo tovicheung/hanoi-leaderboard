@@ -50,6 +50,7 @@
         <button onclick="ndisks = 5; switchScreen(2)">New trial (5)</button>
         <button class="small" onclick="window.location.reload()">Reload this</button>
         <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
+        <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
         <button onclick="window.location.href = './output.html'">Switch to output</button>
         <br>
         <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset L4</button>
@@ -169,7 +170,7 @@
             e._onclick = e.onclick;
             e.onclick = () => {
                 const ans = prompt("Are you sure? Type 'yes' to confirm.");
-                if (ans == "yes") {
+                if (ans == "yes!") {
                     e._onclick();
                 }
             }

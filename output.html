@@ -328,7 +328,7 @@
         const container = document.getElementById(id);
         container.innerHTML = `<p>${id2titles[id]}</p>`;
         if (leaderboard.length == 0) {
-            container.innerHTML = "<p>Waiting for challengers ...</p>";
+            container.innerHTML += "<p>Waiting for challengers ...</p>";
         } else for (var rank = 1; rank <= min(3, leaderboard.length); rank++) {
             const {name, score} = leaderboard[rank-1];
             renderRecord(container, rank, name, score);
@@ -397,6 +397,6 @@
         setTimeout(() => titleAnim(n + 1), 30);
     }
 
-    setInterval(() => titleAnim(1), 20000);
+    setInterval(() => titleAnim(1), 30000);
     
 </script>
