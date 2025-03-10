@@ -148,9 +148,10 @@
     }
 
     var dotsInterval = 0;
-    var tempanim = null; // the animation played after regend, so that it can be canceled on regcancel
+    var timeoutToClean = null; // used in !regcancel
 
     function startDots() {
+        stopDots();
         dotsInterval = setInterval(() => {
             const dots = document.getElementById("dots");
             dots.innerText = ".".repeat((dots.innerText.length) % 3 + 1);
@@ -192,23 +193,7 @@
     };
 
     function appendRegName(name, i) {
-        if (i == name.length + 1) {
-            setTimeout(() => {
-                document.getElementById("banner").animate([
-                    {
-                        bottom: CSS.percent(40),
-                    },
-                    {
-                        bottom: 0,
-                    },
-                ], {
-                    duration: 400,
-                    fill: "forwards"
-                });
-                document.getElementById("overlay").style.display = "none";
-            }, 1000);
-            return;
-        };
+        if (i == name.length + 1) return;
         document.getElementById("banner-name").innerText = name.slice(0, i);
         setTimeout(() => appendRegName(name, i+1), name[i] == " " ? 0 : 200);
     }
@@ -233,10 +218,10 @@
             const name = cmd.slice(10);
             document.getElementById("banner-name").innerText = "";
             document.getElementById("banner-ndisks").innerText = ndisks;
+            clearInterval(regInterval);
             document.getElementById("banner-time").innerText = "Waiting to start ";
             document.getElementById("banner").style.display = "flex";
             startDots();
-            tempanim?.cancel();
             document.getElementById("banner").animate([
                 {
                     left: CSS.percent(-200),
@@ -253,12 +238,25 @@
             setTimeout(() => appendRegName(name, 0), 500);
             document.getElementById("overlay").style.display = "block";
         } else if (cmd.startsWith("!regstart")) {
-            // regStart = parseInt(cmd.slice(10));
             regStart = Date.now(); // the latency will (probably) fix itself
             regInterval = setInterval(() => {
                 document.getElementById("banner-time").innerText = parseTime(Date.now() - regStart);
             }, 57);
             stopDots();
+            timeoutToClean = setTimeout(() => {
+                document.getElementById("banner").animate([
+                    {
+                        bottom: CSS.percent(40),
+                    },
+                    {
+                        bottom: 0,
+                    },
+                ], {
+                    duration: 400,
+                    fill: "forwards"
+                });
+                document.getElementById("overlay").style.display = "none";
+            }, 1000);
         } else if (cmd.startsWith("!regend-")) {
             clearInterval(regInterval);
             const result = parseInt(cmd.slice(8));
@@ -276,30 +274,32 @@
                 fill: "forwards"
             });
             document.getElementById("overlay").style.display = "block";
-
-            setTimeout(() => {
-                tempanim = document.getElementById("banner").animate([
-                    {
-                        left: 0,
-                        bottom: CSS.percent(40),
-                    },
-                    {
-                        left: CSS.percent(-200),
-                        bottom: CSS.percent(40),
-                    },
-                ], {
-                    duration: 600,
-                    fill: "forwards"
-                });
-                document.getElementById("overlay").style.display = "none";
-                console.log(tempanim);
-            }, 4000);
-        } else if (cmd.startsWith("!regcancel")) {
-            document.getElementById("banner").style.display = "none";
-            document.getElementById("overlay").style.display = "none";
-            tempanim?.cancel();
+        } else if (cmd == "!regconfirm") {
             clearInterval(regInterval);
+            document.getElementById("banner").animate([
+                {
+                    left: 0,
+                    bottom: CSS.percent(40),
+                },
+                {
+                    left: CSS.percent(-200),
+                    bottom: CSS.percent(40),
+                },
+            ], {
+                duration: 600,
+                fill: "forwards"
+            });
+            setTimeout(() => {
+                document.getElementById("overlay").style.display = "none";
+                document.getElementById("banner").style.display = "none";
+            }, 600);
+        } else if (cmd == "!regcancel") {
+            // should clean up everything regardless of current state
+            document.getElementById("overlay").style.display = "none";
+            document.getElementById("banner").style.display = "none";
             stopDots();
+            clearTimeout(timeoutToClean);
+            clearInterval(regInterval);
         }
     }
 

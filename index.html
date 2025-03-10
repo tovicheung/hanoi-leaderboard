@@ -213,6 +213,7 @@
     }
 
     function sendNewRecord() {
+        websocket.send("!regconfirm");
         pushRecord(ndisks == 4 ? leaderboard1 : leaderboard2, `${cls} ${clsno}`, score);
         sendUpdate();
         switchScreen(1);

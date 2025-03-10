@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
         console.log(event.data);
         if (event.data.startsWith("!")) {
             broadcast(event.data);
+            return;
         }
         var leaderboards = await getData();
         if (event.data == "refresh-all") {
@@ -57,8 +58,13 @@ Deno.serve(async (req) => {
             await broadcastData([[], []]);
             return;
         }
-        const obj = JSON.parse(event.data);
-        if (obj.type === "update") { // new api
+        var obj;
+        try {
+            obj = JSON.parse(event.data);
+        } catch {
+            return;
+        }
+        if ("type" in obj && obj.type === "update") { // new api
             leaderboards = obj.leaderboards;
             leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
             await broadcastData(leaderboards);
