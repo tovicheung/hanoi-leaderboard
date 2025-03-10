@@ -111,7 +111,7 @@
 </style>
 
 <div id="container">
-    <h1 style="color: white; margin: 12px;">Gojo's Challenge: Tower of Hanoi</h1>
+    <h1 id="title" style="color: white; margin: 12px;">Gojo's Challenge: Tower of Hanoi</h1>
     <div class="leaderboards">
         <div id="leaderboard1" class="leaderboard"><p>Connecting to server ...</p></div>
         <div id="leaderboard2" class="leaderboard"><p>Connecting to server ...</p></div>
@@ -363,5 +363,36 @@
             data: "!reginit-4Ms Chan CL"
         })
     }
+
+    function rand(length) {
+        let result = '';
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()[]{}\|;:,./<>?`~-=_+ ";
+        const charactersLength = characters.length;
+        let counter = 0;
+        while (counter < length) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            counter += 1;
+        }
+        return result;
+    }
+
+    const title = "Gojo's Challenge: Tower of Hanoi";
+
+    function titleAnim2(n) {
+        if (n == -1) return;
+        document.getElementById("title").innerText = title.slice(0, title.length - n) + document.getElementById("title").innerText.slice(title.length - n);
+        setTimeout(() => titleAnim2(n - 1), 30);
+    }
+
+    function titleAnim(n) {
+        if (n == title.length) {
+            titleAnim2(n);
+            return;
+        }
+        document.getElementById("title").innerText = rand(n);
+        setTimeout(() => titleAnim(n + 1), 30);
+    }
+
+    setInterval(() => titleAnim(1), 30000);
     
 </script>
