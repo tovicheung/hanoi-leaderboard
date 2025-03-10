@@ -19,7 +19,7 @@
     }
 
     .leaderboard {
-        background-color: rgba(255, 255, 255, 0.5);
+        background-color: rgba(255, 255, 255, 0.7);
     }
 
     .leaderboard > p {
@@ -213,6 +213,10 @@
         setTimeout(() => appendRegName(name, i+1), name[i] == " " ? 0 : 200);
     }
 
+    function toggleDisplay(elem, disp) {
+        elem.style.display = elem.style.display == "none" ? disp : "none";
+    }
+
     function handleCommand(cmd) {
         if (cmd == "!reload-all") {
             window.location.reload();
@@ -220,6 +224,10 @@
             websocket.close();
         } else if (cmd.startsWith("!adjust-height-")) {
             height = parseInt(cmd.slice(15));
+        } else if (cmd == "!toggle-l4") {
+            toggleDisplay(document.getElementById("leaderboard1"), "flex");
+        } else if (cmd == "!toggle-l5") {
+            toggleDisplay(document.getElementById("leaderboard2"), "flex");
         } else if (cmd.startsWith("!reginit-")) {
             const ndisks = cmd[9];
             const name = cmd.slice(10);

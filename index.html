@@ -52,8 +52,8 @@
         <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
         <button onclick="window.location.href = './output.html'">Switch to output</button>
         <br>
-        <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset 1</button>
-        <button class="small" onclick="leaderboard2 = []; sendUpdate();" dangerous>Reset 2</button>
+        <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset L4</button>
+        <button class="small" onclick="leaderboard2 = []; sendUpdate();" dangerous>Reset L5</button>
         <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button>
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
@@ -63,6 +63,8 @@
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
         <button class="small" onclick="websocket.send('!reload-all')">Reload all</button>
         <button class="small" onclick="websocket.send('!disconnect-all')">Disconnect all output</button>
+        <button class="small" onclick="websocket.send('!toggle-l4')">Toggle L4</button>
+        <button class="small" onclick="websocket.send('!toggle-l5')">Toggle L5</button>
         <button class="small" onclick="const n = prompt('Enter new height (default 6)'); if (n !== null) websocket.send(`!adjust-height-${n}`)">Adjust height</button>
         <div class="leaderboards">
             <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
