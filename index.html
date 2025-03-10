@@ -117,6 +117,8 @@
         const custom = prompt("Enter name:");
         cls = custom;
         clsno = "";
+        document.getElementById("confirm-class").innerText = cls;
+        document.getElementById("confirm-classno").innerText = clsno;
         switchScreen(4);
         websocket.send(`!reginit-${ndisks}${custom}`);
     }
