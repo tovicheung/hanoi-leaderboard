@@ -105,7 +105,6 @@
         <h1>Tower of Hanoi</h1>
         <div id="leaderboard"></div>
     </div>
-    
 </div>
 
 <script src="common.js"></script>
@@ -256,6 +255,8 @@
     websocket.onclose = (e) => {
         console.log("DISCONNECTED");
         document.getElementById("nclients").innerText = "DISCONNECTED";
+        document.getElementById("nclients").style.color = "red";
+        document.getElementById("nclients").style.fontSize = "48px";
     };
 
     websocket.onmessage = (e) => {
