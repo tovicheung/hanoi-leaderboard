@@ -213,7 +213,9 @@
         } else if (cmd == "!disconnect-all") {
             websocket.close();
         } else if (cmd.startsWith("!adjust-height-")) {
-            baseHeight = parseInt(cmd.slice(15));
+            const newBaseHeight = parseInt(cmd.slice(15));
+            height = newBaseHeight + (height - baseHeight);
+            baseHeight = newBaseHeight;
         } else if (cmd == "!toggle-l4") {
             toggleDisplay(document.getElementById("leaderboard1"));
         } else if (cmd == "!toggle-l5") {
