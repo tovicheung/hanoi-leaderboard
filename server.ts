@@ -1,10 +1,21 @@
 const clients = new Map();
+var adminId = null;
 
 function broadcast(msg) {
     clients.forEach(websocket => {
         if (websocket.isClosed) return;
         websocket.send(msg);
     });
+}
+
+async function serverIsLocked() {
+    const kv = await Deno.openKv();
+    const locked = await kv.get(["locked"]);
+    if (locked.value === null) {
+        await kv.set(["locked"], false);
+        return false;
+    }
+    return locked.value;
 }
 
 async function getData() {
@@ -18,6 +29,19 @@ async function broadcastData(leaderboards) {
     const kv = await Deno.openKv();
     broadcast(JSON.stringify(leaderboards));
     await kv.set(["leaderboards"], leaderboards);
+}
+
+async function adminUpdate() {
+    const socket = clients.get(adminId);
+    const info = {
+        serverStatus: "unknown",
+    };
+    if (await serverIsLocked()) {
+        info.serverStatus = "locked";
+    } else {
+        info.serverStatus = "open";
+    }
+    socket.send(`ADMIN:${JSON.stringify(info)}`);
 }
 
 Deno.serve(async (req) => {
@@ -35,11 +59,27 @@ Deno.serve(async (req) => {
         console.log(`client ${clientId} connected!`);
         socket.send(JSON.stringify(await getData()));
         broadcast(`@nclients:${clients.size}`)
+        if (await serverIsLocked()) {
+            console.log(serverIsLocked());
+            socket.send("!locked");
+            console.log(`locked ${clientId}`);
+        }
     });
 
     socket.addEventListener("message", async (event) => {
         console.log(`received from ${clientId}`)
         console.log(event.data);
+        if (event.data == `ADMIN:Deno.env.get("ADMIN")`) {
+            adminId = clientId;
+        }
+        if (adminId != clientId && await serverIsLocked()) {
+            socket.send("!locked");
+            console.log(`locked ${clientId}`);
+            return;
+        }
+        if (adminId == clientId) {
+            await adminUpdate();
+        }
         if (event.data.startsWith("!")) {
             broadcast(event.data);
             return;

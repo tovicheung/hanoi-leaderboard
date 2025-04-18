@@ -37,9 +37,21 @@
     .record > * {
         font-size: 20px;
     }
+
+    .smalltext {
+        font-size: 16px;
+    }
 </style>
 
 <div id="container">
+    <div id="screen999">
+        <div class="centered">
+            <h1>Input is locked by admin</h1>
+            <button onclick="window.location.href = './output.html'">Switch to output</button>
+            <br>
+            <p class="smalltext">All input requests are ignored by the server <a style="color: blue; cursor: pointer" onclick="switchScreen(1)">[view controller anyways]</a></p>
+        </div>
+    </div>
     <div id="screen0">
         <h1>Choose mode</h1>
         <button onclick="switchScreen(1)">input</button>
@@ -58,7 +70,7 @@
         <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button>
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
-        <button class="small" onclick="const cmd = prompt('Enter command (!... for cross-node)'); if (cmd !== null) websocket.send()">Send command</button>
+        <button class="small" onclick="const cmd = prompt('Enter command (!... for cross-node)'); if (cmd !== null) websocket.send(cmd)">Send command</button>
         <br>
         <p style="display: inline"># clients: <span id="nclients"></span></p>
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
@@ -270,6 +282,8 @@
         if (e.data.startsWith("!")) {
             if (e.data == "!reload-all") {
                 window.location.reload();
+            } else if (e.data == "!locked") {
+                switchScreen(999);
             }
             return;
         };
