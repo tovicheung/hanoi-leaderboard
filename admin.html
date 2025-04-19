@@ -23,6 +23,16 @@
         padding: 8px;
         margin: 8px;
         font-size: 18px;
+        cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+        opacity: 0.8;
+    }
+
+    button:disabled, button[disabled] {
+        opacity: 0.4;
+        cursor: auto;
     }
 </style>
 <body>
@@ -35,10 +45,10 @@
     <div>
         <h3>Connection status: <span id="connection-status"></span></h3>
         <h3>Connection ID: <span id="connection-id"></span></h3>
-        <h3>Server status: <span id="server-status"></span></h3>
+        <h3>Server status: <span id="server-status" style="color: red;"></span></h3>
         <br>
-        <button onclick="websocket.send('ADMIN:lock')">Lock server</button>
-        <button onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
+        <button id="button-lock" onclick="websocket.send('ADMIN:lock')">Lock server</button>
+        <button id="button-unlock" onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
     </div>
 </body>
 
@@ -73,6 +83,16 @@
         document.getElementById("connection-status").innerText = info.connectionStatus;
         document.getElementById("connection-id").innerText = info.connectionId;
         document.getElementById("server-status").innerText = info.serverStatus;
+
+        if (info.connectionId == "unknown") return;
+
+        document.getElementById("button-lock").disabled = false;
+        document.getElementById("button-unlock").disabled = false;
+        if (info.serverStatus == "locked") {
+            document.getElementById("button-lock").disabled = true;
+        } else if (info.serverStatus == "open") {
+            document.getElementById("button-unlock").disabled = true;
+        }
     }
 
 
@@ -82,7 +102,7 @@
 
     websocket.onopen = (e) => {
         console.log("CONNECTED");
-        info.connectionStatus = "connected";
+        info.connectionStatus = "connected (not admin)";
         updateInfo();
     };
 
@@ -100,5 +120,9 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", updateInfo);
+    document.addEventListener("DOMContentLoaded", () => {
+        updateInfo();
+        document.getElementById("button-lock").disabled = true;
+        document.getElementById("button-unlock").disabled = true;
+    });
 </script>

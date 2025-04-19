@@ -49,7 +49,7 @@
             <h1>Input is locked by admin</h1>
             <button onclick="window.location.href = './output.html'">Switch to output</button>
             <br>
-            <p class="smalltext">All input requests are ignored by the server <a style="color: blue; cursor: pointer" onclick="switchScreen(1)">[view controller anyways]</a></p>
+            <p class="smalltext">All input requests are ignored by the server <span style="color: blue; cursor: pointer"><a onclick="switchScreen(1)">[view controller anyways]</a><a href="./admin.html">[admin]</a></span></p>
         </div>
     </div>
     <div id="screen0">
@@ -112,10 +112,6 @@
                 <button onclick="websocket.send('!regcancel');switchScreen(1);">Cancel</button>
             </div>
         </div>
-    </div>
-    <div id="screen9">
-        <h1>Tower of Hanoi</h1>
-        <div id="leaderboard"></div>
     </div>
 </div>
 
