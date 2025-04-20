@@ -35,8 +35,8 @@
     }
 
     #timer {
-         font-size: 120px;
-         font-family: Consolas, Courier, monospace"
+        font-size: 120px;
+        font-family: Consolas, Courier, monospace;
     }
 
     .action {
@@ -150,7 +150,7 @@
                 const btn = document.createElement("button");
                 btn.innerText = `${i}${letter}`;
                 if (i <= 3 && letter == "E") btn.style.opacity = 0;
-                else btn.onclick = (e) => {
+                else btn.onclick = e => {
                     cls = e.target.innerText;
                     document.getElementById("confirm-class").innerText = cls;
                     switchScreen(3);
@@ -167,7 +167,7 @@
             for (var j = 0; j < width; j++) {
                 const btn = document.createElement("button");
                 btn.innerText = (i * width + j + 1).toString().padStart(2, "0");
-                btn.onclick = (e) => {
+                btn.onclick = e => {
                     clsno = e.target.innerText;
                     document.getElementById("confirm-classno").innerText = clsno;
                     switchScreen(4);
@@ -183,7 +183,7 @@
             e._onclick = e.onclick;
             e.onclick = () => {
                 const ans = prompt("Are you sure? Type 'yes' to confirm.");
-                if (ans == "yes!") {
+                if (ans == "yes!") { // intentional
                     e._onclick();
                 }
             }
@@ -257,21 +257,20 @@
     }
     
     const wsUri = "wss://large-ape-25.deno.dev";
-    const output = document.querySelector("#output");
     const websocket = new WebSocket(wsUri);
     
-    websocket.onopen = (e) => {
+    websocket.onopen = e => {
         console.log("CONNECTED");
     };
 
-    websocket.onclose = (e) => {
+    websocket.onclose = e => {
         console.log("DISCONNECTED");
         document.getElementById("nclients").innerText = "DISCONNECTED";
         document.getElementById("nclients").style.color = "red";
         document.getElementById("nclients").style.fontSize = "48px";
     };
 
-    websocket.onmessage = (e) => {
+    websocket.onmessage = e => {
         console.log(`RECEIVED: ${e.data}`);
         if (e.data.startsWith("@")) {
             if (e.data.startsWith("@nclients:")) {
@@ -293,7 +292,7 @@
         updateLeaderboards();
     };
 
-    websocket.onerror = (e) => {
+    websocket.onerror = e => {
         console.log(`ERROR: ${e.data}`);
     };
 

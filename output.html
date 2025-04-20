@@ -51,10 +51,6 @@
         background-color: #e0a469;
     }
 
-    .record:nth-child(n+2):nth-child(-n+4) .record-rank {
-        font-size: 30px;
-    }
-
     #overlay {
         z-index: 999;
         position: absolute;
@@ -69,12 +65,12 @@
     }
 
     #banner {
-        width: 100%;
-        height: fit-content;
-        background-color: #322641;
         z-index: 9999;
         position: absolute;
+        width: 100%;
+        height: fit-content;
         color: white;
+        background-color: #322641;
         padding: 20px 40px;
 
         display: none;
@@ -164,16 +160,16 @@
         document.getElementById("dots").innerText = "";
     }
 
-    websocket.onopen = (e) => {
+    websocket.onopen = e => {
         console.log("CONNECTED");
     };
 
-    websocket.onclose = (e) => {
+    websocket.onclose = e => {
         console.log("DISCONNECTED");
         window.location.href = "./disconnected.html"
     };
 
-    websocket.onmessage = (e) => {
+    websocket.onmessage = e => {
         console.log(`RECEIVED: ${e.data}`);
         if (e.data.startsWith("@")) return;
         // @ - analytics
@@ -189,7 +185,7 @@
         updateLeaderboards();
     };
 
-    websocket.onerror = (e) => {
+    websocket.onerror = e => {
         console.log(`ERROR: ${e.data}`);
     };
 
@@ -368,12 +364,6 @@
         currentPages = currentPages.map((p, i) => (p + 1) % pages[i]);
         loadPages();
     }, Math.max(5000, height * 900));
-
-    function test() {
-        websocket.onmessage({
-            data: "!reginit-4Ms Chan CL"
-        })
-    }
 
     function rand(length) {
         let result = '';

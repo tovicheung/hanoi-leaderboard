@@ -1,9 +1,12 @@
 <link rel="stylesheet" href="style.css">
 
-<p>Date.now() = <span id="it"></span></p>
+<h1>Date.now() = <span id="time"></span> (<span id="millis"></span>)</h1>
 
+<script src="common.js"></script>
 <script>
     setInterval(() => {
-        document.getElementById("it").innerText = Date.now().toString();
+        const millis = Date.now();
+        document.getElementById("time").innerText = parseTime(millis);
+        document.getElementById("millis").innerText = millis.toString();
     }, 20);
 </script>

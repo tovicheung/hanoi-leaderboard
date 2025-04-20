@@ -42,8 +42,8 @@
         <h3>Connection ID: <span id="connection-id"></span></h3>
         <h3>Server status: <span id="server-status" style="color: red;"></span></h3>
         <br>
-        <button id="button-lock" onclick="websocket.send('ADMIN:lock')">Lock server</button>
-        <button id="button-unlock" onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
+        <button id="button-lock" style="background-color: red;" onclick="websocket.send('ADMIN:lock')">Lock server</button>
+        <button id="button-unlock" style="background-color: green;" onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
         <br>
         <button onclick="window.location.href = './index.html'">Back</button>
     </div>
@@ -92,24 +92,30 @@
         }
     }
 
-
     function checkAdmin() {
         websocket.send(`ADMIN:${__(document.getElementById("password").value)}`);
     }
 
-    websocket.onopen = (e) => {
+    websocket.onopen = e => {
         console.log("CONNECTED");
         info.connectionStatus = "connected (not admin)";
         updateInfo();
     };
 
-    websocket.onclose = (e) => {
+    websocket.onclose = e => {
         console.log("DISCONNECTED");
+        info.connectionStatus = "disconnected";
     };
 
-    websocket.onmessage = (e) => {
+    websocket.onmessage = e => {
         console.log(`RECEIVED: ${e.data}`);
         if (e.data.startsWith("ADMIN:")) {
+            if (e.data == "ADMIN:OVERRIDDEN") {
+                websocket.close();
+                info.connectionStatus = "disconnected; admin session overriden (reload to reconnect)";
+                init();
+                return;
+            }
             info.connectionStatus = "connected as admin";
             const newInfo = JSON.parse(e.data.slice(6));
             info = { ...info, ...newInfo };
@@ -117,9 +123,12 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    const init = () => {
+        info.serverStatus = "unknown";
         updateInfo();
         document.getElementById("button-lock").disabled = true;
         document.getElementById("button-unlock").disabled = true;
-    });
+    };
+
+    document.addEventListener("DOMContentLoaded", init);
 </script>

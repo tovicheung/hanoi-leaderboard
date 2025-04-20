@@ -34,6 +34,7 @@ async function broadcastData(leaderboards) {
 async function adminUpdate() {
     const socket = clients.get(adminId);
     const info = {
+        connectionId: adminId,
         serverStatus: "unknown",
     };
     if (await serverIsLocked()) {
@@ -60,7 +61,6 @@ Deno.serve(async (req) => {
         socket.send(JSON.stringify(await getData()));
         broadcast(`@nclients:${clients.size}`)
         if (await serverIsLocked()) {
-            console.log(serverIsLocked());
             socket.send("!locked");
             console.log(`locked ${clientId}`);
         }
@@ -69,8 +69,21 @@ Deno.serve(async (req) => {
     socket.addEventListener("message", async (event) => {
         console.log(`received from ${clientId}`)
         console.log(event.data);
-        if (event.data == `ADMIN:Deno.env.get("ADMIN")`) {
+        if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
+            if (adminId !== null && clients.has(adminId)) {
+                const oldClient = clients.get(adminId);
+                oldClient.send("ADMIN:OVERRIDDEN");
+            }
             adminId = clientId;
+        } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
+            // admin scope
+            const data = event.data.slice(6);
+            const kv = await Deno.openKv();
+            if (data == "lock") {
+                await kv.set(["locked"], true);
+            } else if (data == "unlock") {
+                await kv.set(["locked"], false);
+            }
         }
         if (adminId != clientId && await serverIsLocked()) {
             socket.send("!locked");
