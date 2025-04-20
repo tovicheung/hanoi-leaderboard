@@ -8,6 +8,10 @@
         padding: 40px;
     }
 
+    #msg {
+        color: blue;
+    }
+
     input[type = password] {
         height: 40px;
         width: 300px;
@@ -35,9 +39,10 @@
     <div>
         <p>Verify your identity:</p>
         <input id="password" type="password">
-        <button onclick="checkAdmin()">Send to server</button>
+        <button id="button-verify" onclick="checkAdmin()">Send to server</button>
     </div>
     <div>
+        <h2 id="msg"></h2>
         <h3>Connection status: <span id="connection-status"></span></h3>
         <h3>Connection ID: <span id="connection-id"></span></h3>
         <h3>Server status: <span id="server-status" style="color: red;"></span></h3>
@@ -45,7 +50,7 @@
         <button id="button-lock" style="background-color: red;" onclick="websocket.send('ADMIN:lock')">Lock server</button>
         <button id="button-unlock" style="background-color: green;" onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
         <br>
-        <button onclick="window.location.href = './index.html'">Back</button>
+        <button onclick="window.location.href = './index.html'">Back to controller</button>
     </div>
 </body>
 
@@ -100,11 +105,12 @@
         console.log("CONNECTED");
         info.connectionStatus = "connected (not admin)";
         updateInfo();
+        document.getElementById("button-verify").disabled = false;
     };
 
     websocket.onclose = e => {
         console.log("DISCONNECTED");
-        info.connectionStatus = "disconnected";
+        reset();
     };
 
     websocket.onmessage = e => {
@@ -112,8 +118,7 @@
         if (e.data.startsWith("ADMIN:")) {
             if (e.data == "ADMIN:OVERRIDDEN") {
                 websocket.close();
-                info.connectionStatus = "disconnected; admin session overriden (reload to reconnect)";
-                init();
+                document.getElementById("msg").innerText = "Session overriden - another client has connected as admin, reload to reconnect"
                 return;
             }
             info.connectionStatus = "connected as admin";
@@ -123,12 +128,19 @@
         }
     }
 
-    const init = () => {
+    const reset = () => {
+        info.connectionStatus = "disconnected";
+        info.connectionId = "unknown";
         info.serverStatus = "unknown";
         updateInfo();
+        document.getElementById("button-verify").disabled = true;
         document.getElementById("button-lock").disabled = true;
         document.getElementById("button-unlock").disabled = true;
     };
 
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", () => {
+        reset();
+        info.connectionStatus = "connecting ...";
+        updateInfo();
+    });
 </script>
