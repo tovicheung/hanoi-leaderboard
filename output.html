@@ -13,7 +13,7 @@
 
     body {
         overflow: hidden;
-        background-image: url("bg1.jpg");
+        background-image: url("assets/bg1.jpg");
         background-position-x: center;
         background-size: cover;
     }
@@ -23,7 +23,7 @@
         background-color: rgba(255, 255, 255, 0.7);
     }
 
-    .leaderboard > p {
+    .leaderboard > h2 {
         margin: 16px;
         text-align: center;
     }
@@ -114,8 +114,8 @@
 <div id="container">
     <h1 id="title" style="color: white; margin: 12px;">Gojo's Challenge: Tower of Hanoi</h1>
     <div class="leaderboards">
-        <div id="leaderboard1" class="leaderboard"><p>Connecting to server ...</p></div>
-        <div id="leaderboard2" class="leaderboard"><p>Connecting to server ...</p></div>
+        <div id="leaderboard1" class="leaderboard"><h2>Connecting to server ...</h2></div>
+        <div id="leaderboard2" class="leaderboard"><h2>Connecting to server ...</h2></div>
     </div>
     <div style="flex-grow: 2;"></div>
 </div>
@@ -123,13 +123,13 @@
 <div id="overlay"></div>
 
 <div id="banner">
-    <p>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;</p>
+    <h2>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;</h2>
     <span id="banner-name"></span>
     <div style="position: relative">
-        <img src="nahidwin.png" style="width: 120px; transform: translateY(-90%); position: absolute;">
+        <img src="assets/nahidwin.png" style="width: 120px; transform: translateY(-90%); position: absolute;">
     </div>
     <div style="flex-grow: 2;"></div>
-    <p id="banner-time">Waiting to start</p><span id="dots"></span>
+    <h2 id="banner-time">Waiting to start</h2><span id="dots"></span>
 </div>
 
 <script src="common.js"></script>
@@ -333,10 +333,10 @@
 
     function updateLeaderboard(id, leaderboard) {
         const container = document.getElementById(id);
-        container.innerHTML = `<p>${id2titles[id]}</p>`;
+        container.innerHTML = `<h2>${id2titles[id]}</h2>`;
         if (leaderboard.length == 0) {
-            container.innerHTML += "<p>Waiting for challengers ...</p>";
-        } else for (var rank = 1; rank <= min(3, leaderboard.length); rank++) {
+            container.innerHTML += "<h2>Waiting for challengers ...</h2>";
+        } else for (var rank = 1; rank <= Math.min(3, leaderboard.length); rank++) {
             const {name, score} = leaderboard[rank-1];
             renderRecord(container, rank, name, score);
         }
@@ -349,25 +349,25 @@
         while (elem.childElementCount > 4) {
             elem.removeChild(elem.lastChild);
         }
-        for (var i = page * height + 3; i < ((a, b) => a < b ? a : b)((page + 1) * height + 3, lb.length); i++) {
+        for (var i = page * height + 3; i < Math.min((page + 1) * height + 3, lb.length); i++) {
             const {name, score} = lb[i];
             renderRecord(elem, i + 1, name, score);
         }
     }
 
     function loadPages() {
-        loadPage(leaderboard1, document.getElementById("leaderboard1"), page[0]);
-        loadPage(leaderboard2, document.getElementById("leaderboard2"), page[1]);
+        loadPage(leaderboard1, document.getElementById("leaderboard1"), currentPages[0]);
+        loadPage(leaderboard2, document.getElementById("leaderboard2"), currentPages[1]);
     }
 
     var baseHeight = 7;
     var height = baseHeight;
-    var page = [0, 0];
+    var currentPages = [0, 0];
     setInterval(() => {
         const pages = [leaderboard1, leaderboard2].map(l => Math.ceil((l.length - 3) / height));
-        page = page.map((p, i) => (p + 1) % pages[i]);
+        currentPages = currentPages.map((p, i) => (p + 1) % pages[i]);
         loadPages();
-    }, max(5000, height * 900));
+    }, Math.max(5000, height * 900));
 
     function test() {
         websocket.onmessage({
@@ -405,5 +405,4 @@
     }
 
     setInterval(() => titleAnim(1), 30000);
-    
 </script>

@@ -7,11 +7,3 @@ function updateLeaderboards() {
     updateLeaderboard("leaderboard1", leaderboard1);
     updateLeaderboard("leaderboard2", leaderboard2);
 }
-
-function min(a, b) {
-    return a < b ? a : b;
-}
-
-function max(a, b) {
-    return -min(-a, -b); // ha ha ha
-}

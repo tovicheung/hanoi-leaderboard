@@ -1,9 +1,5 @@
 <link rel="stylesheet" href="style.css">
 <style>
-    * {
-        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-    }
-
     #container > div {
         width: 100%;
         height: 100%;
@@ -38,8 +34,14 @@
         font-size: 20px;
     }
 
-    .smalltext {
-        font-size: 16px;
+    #timer {
+         font-size: 120px;
+         font-family: Consolas, Courier, monospace"
+    }
+
+    .action {
+        color: blue;
+        cursor: pointer;
     }
 </style>
 
@@ -47,9 +49,10 @@
     <div id="screen999">
         <div class="centered">
             <h1>Input is locked by admin</h1>
+            <p>All input requests are ignored by the server.</p>
             <button onclick="window.location.href = './output.html'">Switch to output</button>
             <br>
-            <p class="smalltext">All input requests are ignored by the server <span style="color: blue; cursor: pointer"><a onclick="switchScreen(1)">[view controller anyways]</a><a href="./admin.html">[admin]</a></span></p>
+            <a class="action" onclick="switchScreen(1)">[view controller anyways]</a><a class="action" href="./admin.html">[admin]</a></span>
         </div>
     </div>
     <div id="screen0">
@@ -63,6 +66,7 @@
         <button class="small" onclick="window.location.reload()">Reload this</button>
         <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
         <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
+        <button class="small" onclick="window.location.href = './admin.html'">Admin</button>
         <button onclick="window.location.href = './output.html'">Switch to output</button>
         <br>
         <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset L4</button>
@@ -72,7 +76,7 @@
         <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
         <button class="small" onclick="const cmd = prompt('Enter command (!... for cross-node)'); if (cmd !== null) websocket.send(cmd)">Send command</button>
         <br>
-        <p style="display: inline"># clients: <span id="nclients"></span></p>
+        <h2 style="display: inline"># clients: <span id="nclients"></span></h2>
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
         <button class="small" onclick="websocket.send('!reload-all')">Reload all</button>
         <button class="small" onclick="websocket.send('!disconnect-all')">Disconnect all output</button>
@@ -86,22 +90,22 @@
     </div>
     <div id="screen2">
         <div class="centered">
-            <p>Select class</p>
+            <h2>Select class</h2>
             <button class="small" onclick="customName()">Custom name</button>
             <!-- Generated -->
         </div>
     </div>
     <div id="screen3">
         <div class="centered">
-            <p>Select class number</p>
+            <h2>Select class number</h2>
             <!-- Generated -->
         </div>
     </div>
     <div id="screen4">
         <div class="centered">
-            <p style="font-size: 120px; font-family: Consolas, Courier, monospace" id="timer">00:00.000</p>
+            <h2 id="timer">00:00.000</h2>
             <button id="timer-start-button" onclick="startTimer()">Start</button>
-            <p>When finished, press anywhere to stop the timer</p>
+            <h2>When finished, press anywhere to stop the timer</h2>
         </div>
     </div>
     <div id=screen5>
@@ -343,7 +347,7 @@
             rank++;
         }
         if (leaderboard.length == 0) {
-            container.innerHTML = "<p>empty</p>";
+            container.innerHTML = "<h2>empty</h2>";
         }
         container.style.backgroundColor = "lightgreen";
         setTimeout(() => container.style.backgroundColor = "", 300);
