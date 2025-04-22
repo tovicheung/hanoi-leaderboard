@@ -4,7 +4,7 @@
         display: flex;
         flex-direction: column;
         align-items: start;
-        gap: 40px;
+        gap: 20px;
         padding: 40px;
     }
 
@@ -21,8 +21,9 @@
 
     button {
         padding: 8px;
-        margin: 8px;
+        margin: 4px;
         font-size: 18px;
+        border-radius: 8px;
     }
 
     button:hover:not(:disabled) {
@@ -32,6 +33,34 @@
     button:disabled, button[disabled] {
         opacity: 0.4;
         cursor: auto;
+    }
+
+    .segment {
+        display: inline-flex;
+        flex-direction: row;
+        gap: 0;
+    }
+
+    .segment > button {
+        box-sizing: content-box;
+        padding: 6px 12px;
+        border: #322641 solid 1px;
+        border-radius: 0;
+        margin: 0;
+        margin-left: -1px;
+        font-family: "Noto Emoji", "Open Sans", "Microsoft JhengHei", dotum;
+        color: #322641;
+        background-color: transparent;
+    }
+
+    .segment > button:hover {
+        color: white;
+        background-color: #322641 !important;
+        opacity: 1;
+    }
+
+    .segment > button.selected {
+        background-color: rgb(179, 255, 179);
     }
 </style>
 <body>
@@ -49,9 +78,14 @@
         <br>
         <button id="button-lock" style="background-color: red;" onclick="websocket.send('ADMIN:lock')">Lock server</button>
         <button id="button-unlock" style="background-color: green;" onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
-        <br>
-        <button onclick="window.location.href = './index.html'">Back to controller</button>
     </div>
+    <div id="instance-management">
+        <h2>Instance management</h2>
+        <button onclick="instanceUpdate(createNewInstance)">Create new</button>
+        <div id="instances" class="segment"></div>
+        <button onclick="instanceUpdate(deleteInstance)">Delete an instance</button>
+    </div>
+    <button onclick="window.location.href = './index.html'">Back to controller</button>
 </body>
 
 <script>
@@ -101,6 +135,33 @@
         websocket.send(`ADMIN:${__(document.getElementById("password").value)}`);
     }
 
+    function createNewInstance() {
+        const name = prompt("Enter name for new instance:");
+        websocket.send(`ADMIN:inst-create:${name}`);
+    }
+
+    function deleteInstance() {
+        const name = prompt("Enter name of instance to delete (cannot be current instance):");
+        websocket.send(`ADMIN:inst-delete:${name}`);
+    }
+
+    var waiting = false;
+
+    function waitForInstanceUpdate() {
+        document.getElementById("instance-management").style.opacity = 0.5;
+        waiting = true;
+    }
+
+    function instanceUpdate(func) {
+        if (waiting) {
+            alert("Waiting for previous write to finish ...");
+            return;
+        }
+        const ret = func();
+        waitForInstanceUpdate();
+        return ret;
+    }
+
     websocket.onopen = e => {
         console.log("CONNECTED");
         info.connectionStatus = "connected (not admin)";
@@ -120,11 +181,34 @@
                 websocket.close();
                 document.getElementById("msg").innerText = "Session overriden - another client has connected as admin, reload to reconnect"
                 return;
+            } else if (e.data.startsWith("ADMIN:INSTANCES:")) {
+                const instanceData = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
+                const segment = document.getElementById("instances");
+                while (segment.children.length) {
+                    segment.removeChild(segment.children[0]);
+                }
+                for (const name of instanceData["instances"]) {
+                    const btn = document.createElement("button");
+                    btn.innerText = name;
+                    btn.value = name;
+                    btn.onclick = e => instanceUpdate(() => {
+                        websocket.send(`ADMIN:inst-switch:${e.target.value}`);
+                    });
+                    segment.appendChild(btn);
+                    if (name == instanceData["current"]) {
+                        btn.classList.add("selected");
+                    }
+                }
+            } else if (e.data == "ADMIN:DONE") {
+                waiting = false;
+                document.getElementById("instance-management").style.opacity = 1;
+
+            } else {
+                info.connectionStatus = "connected as admin";
+                const newInfo = JSON.parse(e.data.slice(6));
+                info = { ...info, ...newInfo };
+                updateInfo();
             }
-            info.connectionStatus = "connected as admin";
-            const newInfo = JSON.parse(e.data.slice(6));
-            info = { ...info, ...newInfo };
-            updateInfo();
         }
     }
 

@@ -45,6 +45,45 @@ async function adminUpdate() {
     socket.send(`ADMIN:${JSON.stringify(info)}`);
 }
 
+async function getInstances(kv) {
+    const entries = kv.list({ prefix: ["instances"] });
+    const names = [];
+    for await (const entry of entries) {
+        names.push(entry.key[1]);
+    }
+    return names;
+}
+
+async function switchInstance(kv, newInstance) {
+    const newData = (await kv.get(["instances", newInstance])).value;
+    if (newData === null) return;
+
+    const currentInstance = (await kv.get(["instanceName"])).value;
+    await kv.set(["instances", currentInstance], (await kv.get(["leaderboards"])).value);
+    await kv.atomic()
+        .set(["instanceName"], newInstance)
+        .set(["leaderboards"], newData)
+        .commit();
+
+    broadcast("!reload-all");
+    await adminDone();
+}
+
+async function sendInstanceData(socket) {
+    const kv = await Deno.openKv();
+    socket.send(`ADMIN:INSTANCES:${JSON.stringify({
+        "instances": await getInstances(kv),
+        "current": (await kv.get(["instanceName"])).value,
+    })}`);
+}
+
+async function adminDone() {
+    if (adminId == null) return;
+    const socket = clients.get(adminId);
+    socket.send("ADMIN:DONE");
+    sendInstanceData(socket);
+}
+
 Deno.serve(async (req) => {
     if (req.headers.get("upgrade") != "websocket") {
         return new Response(null, { status: 501 });
@@ -75,6 +114,7 @@ Deno.serve(async (req) => {
                 oldClient.send("ADMIN:OVERRIDDEN");
             }
             adminId = clientId;
+            sendInstanceData(socket);
         } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
             // admin scope
             const data = event.data.slice(6);
@@ -83,6 +123,22 @@ Deno.serve(async (req) => {
                 await kv.set(["locked"], true);
             } else if (data == "unlock") {
                 await kv.set(["locked"], false);
+            } else if (data.startsWith("inst-create:")) {
+                const name = data.slice("inst-create:".length);
+                console.log(`creating instance with name ${name}`)
+                if (name.length == 0) return;
+                if ((await kv.get(["instances", name])).value !== null) return;
+                await kv.set(["instances", name], [[], []]);
+                await adminDone();
+            } else if (data.startsWith("inst-switch:")) {
+                const newName = data.slice("inst-switch:".length);
+                if (newName.length == 0) return;
+                await switchInstance(kv, newName);
+            } else if (data.startsWith("inst-delete:")) {
+                const name = data.slice("inst-delete:".length);
+                if (name == (await kv.get(["instanceName"])).value) return;
+                await kv.delete(["instances", name]);
+                await adminDone();
             }
         }
         if (adminId != clientId && await serverIsLocked()) {
