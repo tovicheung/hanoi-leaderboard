@@ -84,6 +84,7 @@
         <button onclick="instanceUpdate(createNewInstance)">Create new</button>
         <div id="instances" class="segment"></div>
         <button onclick="instanceUpdate(deleteInstance)">Delete an instance</button>
+        <button onclick="instanceUpdate(cloneInstance)">Clone to</button>
     </div>
     <button onclick="window.location.href = './index.html'">Back to controller</button>
 </body>
@@ -143,6 +144,11 @@
     function deleteInstance() {
         const name = prompt("Enter name of instance to delete (cannot be current instance):");
         websocket.send(`ADMIN:inst-delete:${name}`);
+    }
+
+    function cloneInstance() {
+        const name = prompt("Enter name of clone of current:");
+        websocket.send(`ADMIN:inst-clone-to:${name}`);
     }
 
     var waiting = false;

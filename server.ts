@@ -125,7 +125,6 @@ Deno.serve(async (req) => {
                 await kv.set(["locked"], false);
             } else if (data.startsWith("inst-create:")) {
                 const name = data.slice("inst-create:".length);
-                console.log(`creating instance with name ${name}`)
                 if (name.length == 0) return;
                 if ((await kv.get(["instances", name])).value !== null) return;
                 await kv.set(["instances", name], [[], []]);
@@ -138,6 +137,12 @@ Deno.serve(async (req) => {
                 const name = data.slice("inst-delete:".length);
                 if (name == (await kv.get(["instanceName"])).value) return;
                 await kv.delete(["instances", name]);
+                await adminDone();
+            } else if (data.startsWith("inst-clone-to:")) {
+                const name = data.slice("inst-clone-to:".length);
+                if (name.length == 0) return;
+                if ((await kv.get(["instances", name])).value !== null) return;
+                await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
                 await adminDone();
             }
         }
