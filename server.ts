@@ -66,7 +66,6 @@ async function switchInstance(kv, newInstance) {
         .commit();
 
     broadcast("!reload-all");
-    await adminDone();
 }
 
 async function sendInstanceData(socket) {
@@ -125,24 +124,27 @@ Deno.serve(async (req) => {
                 await kv.set(["locked"], false);
             } else if (data.startsWith("inst-create:")) {
                 const name = data.slice("inst-create:".length);
-                if (name.length == 0) return;
-                if ((await kv.get(["instances", name])).value !== null) return;
-                await kv.set(["instances", name], [[], []]);
+                if (name.length != 0 && (await kv.get(["instances", name])).value == null) {
+                    await kv.set(["instances", name], [[], []]);
+                };
                 await adminDone();
             } else if (data.startsWith("inst-switch:")) {
                 const newName = data.slice("inst-switch:".length);
-                if (newName.length == 0) return;
-                await switchInstance(kv, newName);
+                if (newName.length != 0) {
+                    await switchInstance(kv, newName);
+                }
+                await adminDone();
             } else if (data.startsWith("inst-delete:")) {
                 const name = data.slice("inst-delete:".length);
-                if (name == (await kv.get(["instanceName"])).value) return;
-                await kv.delete(["instances", name]);
+                if (name != (await kv.get(["instanceName"])).value) {
+                    await kv.delete(["instances", name]);
+                }
                 await adminDone();
             } else if (data.startsWith("inst-clone-to:")) {
                 const name = data.slice("inst-clone-to:".length);
-                if (name.length == 0) return;
-                if ((await kv.get(["instances", name])).value !== null) return;
-                await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
+                if (name.length != 0 && (await kv.get(["instances", name])).value === null) {
+                    await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
+                }
                 await adminDone();
             }
         }
