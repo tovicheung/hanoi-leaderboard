@@ -77,10 +77,22 @@ async function sendInstanceData(socket) {
 }
 
 async function adminDone() {
-    if (adminId == null) return;
+    if (adminId === null) return;
     const socket = clients.get(adminId);
     socket.send("ADMIN:DONE");
     sendInstanceData(socket);
+}
+
+function adminSendClientsData() {
+    if (adminId === null) return;
+    const data = [];
+    for (const id of clients.keys()) {
+        data.push({
+            id: id,
+        });
+    }
+    const socket = clients.get(adminId);
+    socket.send(`ADMIN:CLIENTS:${JSON.stringify(data)}`);
 }
 
 Deno.serve(async (req) => {
@@ -102,6 +114,7 @@ Deno.serve(async (req) => {
             socket.send("!locked");
             console.log(`locked ${clientId}`);
         }
+        adminSendClientsData();
     });
 
     socket.addEventListener("message", async (event) => {
@@ -113,7 +126,8 @@ Deno.serve(async (req) => {
                 oldClient.send("ADMIN:OVERRIDDEN");
             }
             adminId = clientId;
-            sendInstanceData(socket);
+            await sendInstanceData(socket);
+            adminSendClientsData();
         } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
             // admin scope
             const data = event.data.slice(6);
@@ -190,7 +204,8 @@ Deno.serve(async (req) => {
     socket.addEventListener("close", () => {
         console.log(`client ${clientId} disconnected!`);
         clients.delete(clientId);
-        broadcast(`@nclients:${clients.size}`)
+        broadcast(`@nclients:${clients.size}`);
+        adminSendClientsData();
     })
   return response;
 });
