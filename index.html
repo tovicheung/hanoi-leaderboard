@@ -76,6 +76,8 @@
         <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
         <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
         <button class="small" onclick="const cmd = prompt('Enter command (!... for cross-node)'); if (cmd !== null) websocket.send(cmd)">Send command</button>
+        <button class="small" onclick="announce()">Announce</button>
+        <button class="small" onclick="websocket.send('!announcement-hide')">&lt;-- Hide</button>
         <br>
         <h2 style="display: inline"># clients: <span id="nclients"></span></h2>
         <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
@@ -127,6 +129,7 @@
 
     function customName() {
         const custom = prompt("Enter name:");
+        if (custom === null) return;
         cls = custom;
         clsno = "";
         document.getElementById("confirm-class").innerText = cls;
@@ -219,11 +222,24 @@
         });
     }
 
+    function announce() {
+        const msg = prompt("Enter announcement:", "Announcement: ");
+        if (msg === null) return;
+        if (msg.length == 0) return;
+        websocket.send(`!announcement-show:${msg}`);
+    }
+
     function addRaw() {
+        const leaderboard = prompt("Leaderboard 1 or 2?");
+        if (leaderboard === null) return;
+        const name = prompt("Enter name:");
+        if (name === null) return;
+        const score = prompt("Enter score:");
+        if (score === null) return;
         pushRecord(
-            prompt("leaderboard 1 or 2") == "1" ? leaderboard1 : leaderboard2,
-            prompt("enter name"),
-            parseInt(prompt("enter score")),
+            leaderboard == "1" ? leaderboard1 : leaderboard2,
+            name,
+            parseInt(score),
         );
     }
 
@@ -299,7 +315,9 @@
 
     function modifyRank(leaderboard, n) {
         const name = prompt("Enter new name");
+        if (name === null) return;
         const score = prompt(`Enter new score (int) current = ${leaderboard[n-1].score}`);
+        if (score === null) return;
         leaderboard[n-1] = {name: name, score: parseInt(score)};
         sendUpdate();
     }

@@ -105,10 +105,23 @@
 
         display: none;
     }
+
+    #title {
+        color: white;
+        margin: 12px;
+    }
+
+    #announcement {
+        max-width: 90%;
+        margin: 12px;
+        color: yellow;
+        word-wrap: break-word;
+    }
 </style>
 
 <div id="container">
-    <h1 id="title" style="color: white; margin: 12px;">Gojo's Challenge: Tower of Hanoi</h1>
+    <h1 id="title">Gojo's Challenge: Tower of Hanoi</h1>
+    <h1 id="announcement" class="hidden">Announcement</h1>
     <div class="leaderboards">
         <div id="leaderboard1" class="leaderboard"><h2>Connecting to server ...</h2></div>
         <div id="leaderboard2" class="leaderboard"><h2>Connecting to server ...</h2></div>
@@ -212,10 +225,18 @@
             const newBaseHeight = parseInt(cmd.slice(15));
             height = newBaseHeight + (height - baseHeight);
             baseHeight = newBaseHeight;
+            shiftPages();
         } else if (cmd == "!toggle-l4") {
             toggleDisplay(document.getElementById("leaderboard1"));
         } else if (cmd == "!toggle-l5") {
             toggleDisplay(document.getElementById("leaderboard2"));
+        } else if (cmd.startsWith("!announcement-show:")) {
+            const msg = cmd.slice("!announcement-show:".length);
+            document.getElementById("announcement").innerText = msg;
+            document.getElementById("announcement").classList.remove("hidden");
+        } else if (cmd == "!announcement-hide") {
+            document.getElementById("announcement").classList.add("hidden");
+            document.getElementById("announcement").innerText = "";
         } else if (cmd.startsWith("!reginit-")) {
             const ndisks = cmd[9];
             const name = cmd.slice(10);
@@ -356,14 +377,16 @@
         loadPage(leaderboard2, document.getElementById("leaderboard2"), currentPages[1]);
     }
 
-    var baseHeight = 7;
-    var height = baseHeight;
-    var currentPages = [0, 0];
-    setInterval(() => {
+    function shiftPages() {
         const pages = [leaderboard1, leaderboard2].map(l => Math.ceil((l.length - 3) / height));
         currentPages = currentPages.map((p, i) => (p + 1) % pages[i]);
         loadPages();
-    }, Math.max(5000, height * 900));
+    }
+
+    var baseHeight = 7;
+    var height = baseHeight;
+    var currentPages = [0, 0];
+    setInterval(shiftPages, Math.max(5000, height * 900));
 
     function rand(length) {
         let result = '';
