@@ -56,6 +56,12 @@
             <a class="action" onclick="switchScreen(1)">[view controller anyways]</a><a class="action" href="./admin.html">[admin]</a></span>
         </div>
     </div>
+    <div id="screen998">
+        <div class="centered">
+            <h1>Input permission granted by admin</h1>
+            <button onclick="switchScreen(1)">Ok</button>
+        </div>
+    </div>
     <div id="screen0">
         <h1>Choose mode</h1>
         <button onclick="switchScreen(1)">input</button>
@@ -300,6 +306,8 @@
                 window.location.reload();
             } else if (e.data == "!locked") {
                 switchScreen(999);
+            } else if (e.data == "!allow-input") {
+                switchScreen(998);
             }
             return;
         };

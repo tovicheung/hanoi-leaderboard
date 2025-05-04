@@ -1,4 +1,5 @@
 const clients = new Map();
+const clientsTimestamp = new Map();
 var adminId = null;
 
 function broadcast(msg) {
@@ -89,6 +90,7 @@ function adminSendClientsData() {
     for (const id of clients.keys()) {
         data.push({
             id: id,
+            timestamp: clientsTimestamp.get(id),
         });
     }
     const socket = clients.get(adminId);
@@ -104,6 +106,7 @@ Deno.serve(async (req) => {
 
     const clientId = crypto.randomUUID();
     clients.set(clientId, socket);
+    clientsTimestamp.set(clientId, Date.now());
 
     // Send current scores to newly connected client
     socket.addEventListener("open", async () => {
@@ -160,6 +163,11 @@ Deno.serve(async (req) => {
                     await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
                 }
                 await adminDone();
+            } else if (data.startsWith("clients-disconnect:")) {
+                const id = data.slice("clients-disconnect:".length);
+                if (!clients.has(id)) return;
+                const sock = clients.get(id);
+                sock.close();
             }
         }
         if (adminId != clientId && await serverIsLocked()) {
@@ -204,7 +212,9 @@ Deno.serve(async (req) => {
     socket.addEventListener("close", () => {
         console.log(`client ${clientId} disconnected!`);
         clients.delete(clientId);
+        clientsTimestamp.delete(clientId);
         broadcast(`@nclients:${clients.size}`);
+        if (clientId === adminId) adminId = null;
         adminSendClientsData();
     })
   return response;
