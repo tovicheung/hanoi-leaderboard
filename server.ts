@@ -1,6 +1,16 @@
 const clients = new Map();
 const clientsTimestamp = new Map();
 var adminId = null;
+var inputWhitelist = new Map();
+
+const DEFAULT_CONFIG = {
+    inputAccess: "restricted",
+    outputAccess: "everyone",
+}
+
+// none: function is only accessible by admin
+// restricted: function is only accessible by admin and admin-approved sessions
+// everyone: function is accessible by all sessions
 
 function broadcast(msg) {
     clients.forEach(websocket => {
@@ -32,21 +42,20 @@ async function broadcastData(leaderboards) {
     await kv.set(["leaderboards"], leaderboards);
 }
 
-async function adminUpdate() {
+async function adminSendServerConfig(kv) {
+    if (adminId === null) return;
+    if (kv === undefined) kv = await Deno.openKv();
     const socket = clients.get(adminId);
-    const info = {
-        connectionId: adminId,
-        serverStatus: "unknown",
-    };
-    if (await serverIsLocked()) {
-        info.serverStatus = "locked";
-    } else {
-        info.serverStatus = "open";
+    var config = (await kv.get(["config"])).value;
+    if (config === null) {
+        config = structuredClone(DEFAULT_CONFIG);
+        await kv.set(["config"], config);
     }
-    socket.send(`ADMIN:${JSON.stringify(info)}`);
+    socket.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
 }
 
 async function getInstances(kv) {
+    if (kv === undefined) kv = await Deno.openKv();
     const entries = kv.list({ prefix: ["instances"] });
     const names = [];
     for await (const entry of entries) {
@@ -69,8 +78,10 @@ async function switchInstance(kv, newInstance) {
     broadcast("!reload-all");
 }
 
-async function sendInstanceData(socket) {
-    const kv = await Deno.openKv();
+async function adminSendInstancesData(kv) {
+    if (adminId === null) return;
+    if (kv === undefined) kv = await Deno.openKv();
+    const socket = clients.get(adminId);
     socket.send(`ADMIN:INSTANCES:${JSON.stringify({
         "instances": await getInstances(kv),
         "current": (await kv.get(["instanceName"])).value,
@@ -81,7 +92,7 @@ async function adminDone() {
     if (adminId === null) return;
     const socket = clients.get(adminId);
     socket.send("ADMIN:DONE");
-    sendInstanceData(socket);
+    adminSendInstancesData();
 }
 
 function adminSendClientsData() {
@@ -124,12 +135,13 @@ Deno.serve(async (req) => {
         console.log(`received from ${clientId}`)
         console.log(event.data);
         if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
-            if (adminId !== null && clients.has(adminId)) {
+            if (adminId !== null && clients.has(adminId) && clientId != adminId) {
                 const oldClient = clients.get(adminId);
                 oldClient.send("ADMIN:OVERRIDDEN");
             }
             adminId = clientId;
-            await sendInstanceData(socket);
+            await adminSendServerConfig();
+            await adminSendInstancesData();
             adminSendClientsData();
         } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
             // admin scope
@@ -168,15 +180,23 @@ Deno.serve(async (req) => {
                 if (!clients.has(id)) return;
                 const sock = clients.get(id);
                 sock.close();
+            } else if (data.startsWith("clients-allow-input:")) {
+                const id = data.slice("clients-allow-input:".length);
+                if (!clients.has(id)) return;
+                const sock = clients.get(id);
+                inputWhitelist.set(id, crypto.randomUUID());
+                sock.send("!allow-input");
+            } else if (data.startsWith("config-update:")) {
+                const newConfig = JSON.parse(data.slice("config-update:".length));
+                const config = (await kv.get(["config"])).value;
+                await kv.set(["config"], { ...config, ...newConfig });
+                await adminSendServerConfig(kv);
             }
         }
-        if (adminId != clientId && await serverIsLocked()) {
+        if (adminId != clientId && await serverIsLocked() && !inputWhitelist.has(clientId)) {
             socket.send("!locked");
             console.log(`locked ${clientId}`);
             return;
-        }
-        if (adminId == clientId) {
-            await adminUpdate();
         }
         if (event.data.startsWith("!")) {
             broadcast(event.data);
@@ -215,6 +235,7 @@ Deno.serve(async (req) => {
         clientsTimestamp.delete(clientId);
         broadcast(`@nclients:${clients.size}`);
         if (clientId === adminId) adminId = null;
+        if (inputWhitelist.has(clientId)) inputWhitelist.delete(clientId);
         adminSendClientsData();
     })
   return response;
