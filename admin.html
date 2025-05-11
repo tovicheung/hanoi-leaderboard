@@ -1,4 +1,5 @@
 <title>Hanoi Admin</title>
+<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <link rel="stylesheet" href="style.css">
 <style>
     body {
@@ -108,10 +109,12 @@
     <div>
         <h2 id="msg"></h2>
         <h3>Connection status: <span id="connection-status"></span></h3>
-        <h3>Connection ID: <span id="connection-id"></span></h3>
-        <h3>Server status: <span id="server-status" style="color: red;"></span></h3>
-        <button id="button-lock" style="background-color: red;" onclick="websocket.send('ADMIN:lock')">Lock server</button>
-        <button id="button-unlock" style="background-color: green;" onclick="websocket.send('ADMIN:unlock')">Unlock server</button>
+        <h3>Input access: <span id="input-access"></span></h3>
+        <h3 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h3>
+        
+        <button style="background-color: red;" onclick="configUpdate({ inputAccess: 'none' })">Lock input</button>
+        <button style="background-color: #1896bb;" onclick="configUpdate({ inputAccess: 'restricted' })">Restrict input</button>
+        <button style="background-color: #2e9a2e;" onclick="configUpdate({ inputAccess: 'everyone' })">Unlock input</button>
     </div>
     <div id="instance-management">
         <h2>Instance management</h2>
@@ -153,24 +156,29 @@
 
     var info = {
         connectionStatus: "not connected",
-        connectionId: "unknown",
-        serverStatus: "unknown",
+    }
+
+    var serverConfig = {
+        inputAccess: "unknown",
+        outputAccess: "unknown",
     }
 
     function updateInfo() {
         document.getElementById("connection-status").innerText = info.connectionStatus;
-        document.getElementById("connection-id").innerText = info.connectionId;
-        document.getElementById("server-status").innerText = info.serverStatus;
+        // document.getElementById("connection-id").innerText = info.connectionId;
+        // document.getElementById("server-status").innerText = info.serverStatus;
+        document.getElementById("input-access").innerText = serverConfig.inputAccess;
+        document.getElementById("output-access").innerText = serverConfig.outputAccess;
 
         if (info.connectionId == "unknown") return;
 
-        document.getElementById("button-lock").disabled = false;
-        document.getElementById("button-unlock").disabled = false;
-        if (info.serverStatus == "locked") {
-            document.getElementById("button-lock").disabled = true;
-        } else if (info.serverStatus == "open") {
-            document.getElementById("button-unlock").disabled = true;
-        }
+        // document.getElementById("button-lock").disabled = false;
+        // document.getElementById("button-unlock").disabled = false;
+        // if (info.serverStatus == "locked") {
+        //     document.getElementById("button-lock").disabled = true;
+        // } else if (info.serverStatus == "open") {
+        //     document.getElementById("button-unlock").disabled = true;
+        // }
     }
 
     function checkAdmin() {
@@ -211,6 +219,10 @@
         if (ret === null) return;
         waitForInstanceUpdate();
         return ret;
+    }
+
+    function configUpdate(newConfig) {
+        websocket.send(`ADMIN:config-update:${JSON.stringify(newConfig)}`);
     }
 
     function fullDateFmt(date) {
@@ -270,10 +282,9 @@
             } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
                 const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
                 updateClientData(data);
-            } else {
+            } else if (e.data.startsWith("ADMIN:SERVERCONFIG:")){
                 info.connectionStatus = "connected as admin";
-                const newInfo = JSON.parse(e.data.slice(6));
-                info = { ...info, ...newInfo };
+                serverConfig = JSON.parse(e.data.slice("ADMIN:SERVERCONFIG:".length));
                 updateInfo();
             }
         }
