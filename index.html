@@ -50,16 +50,19 @@
     <div id="screen999">
         <div class="centered">
             <h1>Input: Permission Denied</h1>
-            <p>All input requests are ignored by the server.</p>
+            <h3>All input requests from this device are ignored by the server.</h3>
             <button onclick="window.location.href = './output.html'">Switch to output</button>
             <br>
-            <p><span class="action" onclick="switchScreen(1)">[view controller anyways]</span> <a class="action" href="./admin.html">[admin]</a></p>
+            <p>
+                <span class="action" onclick="switchScreen(1)">[view controller anyways]</span>
+                <a class="action" href="./admin.html">[admin]</a>
+            </p>
         </div>
     </div>
     <div id="screen998">
         <div class="centered">
             <h1>Input permission granted by admin</h1>
-            <button onclick="switchScreen(1)">Ok</button>
+            <button onclick="switchScreen(1)">Proceed</button>
         </div>
     </div>
     <div id="screen0">
@@ -306,7 +309,7 @@
                 window.location.reload();
             } else if (e.data == "!input-denied") {
                 switchScreen(999);
-            } else if (e.data == "!allow-input") {
+            } else if (e.data == "!input-granted") {
                 switchScreen(998);
             }
             return;
@@ -378,5 +381,4 @@
         container.style.backgroundColor = "lightgreen";
         setTimeout(() => container.style.backgroundColor = "", 300);
     }
-
 </script>

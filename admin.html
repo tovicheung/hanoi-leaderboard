@@ -79,6 +79,7 @@
         width: 100%;
         border-spacing: 1px;
         font-size: 18px;
+        white-space: nowrap;
     }
 
     .table td:nth-child(n-1) {
@@ -124,9 +125,19 @@
     </div>
     <div id="client-management">
         <h2>Client management</h2>
-        <table class="table">
-            <tbody id="clients-data"></tbody>
-        </table>
+        <div style="width: 100%; overflow-x: scroll;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Short ID</th>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Full ID</th>
+                    </tr>
+                </thead>
+                <tbody id="clients-data"></tbody>
+            </table>
+        </div>
     </div>
     <button onclick="window.location.href = './index.html'" style="background-color: rgb(0, 30, 181);">Back to controller</button>
     <div id="logs"></div>
@@ -224,13 +235,15 @@
         websocket.send(`ADMIN:config-update:${JSON.stringify(newConfig)}`);
     }
 
-    function fullDateFmt(date) {
-        return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")} ${date.toLocaleTimeString("en-US", { hour12: false })}.${date.getMilliseconds().toString().padStart(3, "0")}`;
+    function fullDateFmt(date, millis = false) {
+        var str = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")} ${date.toLocaleTimeString("en-US", { hour12: false })}`;
+        if (millis) str += "." + date.getMilliseconds().toString().padStart(3, "0");
+        return str;
     }
 
     function pushLog(msg) {
         const line = document.createElement("p");
-        line.innerText = `[${fullDateFmt(new Date)}] ${msg}`;
+        line.innerText = `[${fullDateFmt(new Date, millis = true)}] ${msg}`;
         const logs = document.getElementById("logs");
         logs.prepend(line);
     }
@@ -281,12 +294,19 @@
             } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
                 const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
                 updateClientData(data);
-            } else if (e.data.startsWith("ADMIN:SERVERCONFIG:")){
+            } else if (e.data.startsWith("ADMIN:SERVERCONFIG:")) {
                 info.connectionStatus = "connected as admin";
                 serverConfig = JSON.parse(e.data.slice("ADMIN:SERVERCONFIG:".length));
                 updateInfo();
+            } else if (e.data.startsWith("ADMIN:request-session:")) {
+                const sessionName = e.data.slice("ADMIN:request-session:");
+                const ans = prompt(`[Session request] \"${sessionName}\".\n\nm`)
             }
         }
+    }
+
+    function shortenId(id) {
+        return id.split("-").slice(1, 4).join("-");
     }
 
     function updateClientData(data) {
@@ -298,7 +318,7 @@
             const tr = document.createElement("tr");
 
             const tdId = document.createElement("td");
-            tdId.innerText = entry.id;
+            tdId.innerText = shortenId(entry.id);
             tr.appendChild(tdId);
 
             const tdTimestamp = document.createElement("td");
@@ -327,6 +347,10 @@
 
             tr.appendChild(tdAction);
 
+            const tdFullId = document.createElement("td");
+            tdFullId.innerText = entry.id;
+            tr.appendChild(tdFullId);
+
             tbody.appendChild(tr);
         }
     }
@@ -337,8 +361,8 @@
         info.serverStatus = "unknown";
         updateInfo();
         document.getElementById("button-verify").disabled = true;
-        document.getElementById("button-lock").disabled = true;
-        document.getElementById("button-unlock").disabled = true;
+        // document.getElementById("button-lock").disabled = true;
+        // document.getElementById("button-unlock").disabled = true;
     };
 
     document.addEventListener("DOMContentLoaded", () => {

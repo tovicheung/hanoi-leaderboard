@@ -3,6 +3,9 @@ const clientsTimestamp = new Map();
 var adminId = null;
 var inputWhitelist = new Map();
 
+const kv = await Deno.openKv();
+var config = (await kv.get(["config"])).value;
+
 const DEFAULT_CONFIG = {
     inputAccess: "restricted",
     outputAccess: "everyone",
@@ -20,7 +23,6 @@ function broadcast(msg) {
 }
 
 async function serverIsLocked() {
-    const kv = await Deno.openKv();
     const locked = await kv.get(["locked"]);
     if (locked.value === null) {
         await kv.set(["locked"], false);
@@ -30,21 +32,18 @@ async function serverIsLocked() {
 }
 
 async function getData() {
-    const kv = await Deno.openKv();
     const leaderboards = await kv.get(["leaderboards"]);
     if (leaderboards.value === null) return [[], []];
     return leaderboards.value
 }
 
 async function broadcastData(leaderboards) {
-    const kv = await Deno.openKv();
     broadcast(JSON.stringify(leaderboards));
     await kv.set(["leaderboards"], leaderboards);
 }
 
-async function adminSendServerConfig(kv) {
+async function adminSendServerConfig() {
     if (adminId === null) return;
-    if (kv === undefined) kv = await Deno.openKv();
     const socket = clients.get(adminId);
     var config = (await kv.get(["config"])).value;
     if (config === null) {
@@ -54,8 +53,7 @@ async function adminSendServerConfig(kv) {
     socket.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
 }
 
-async function getInstances(kv) {
-    if (kv === undefined) kv = await Deno.openKv();
+async function getInstances() {
     const entries = kv.list({ prefix: ["instances"] });
     const names = [];
     for await (const entry of entries) {
@@ -78,9 +76,8 @@ async function switchInstance(kv, newInstance) {
     broadcast("!reload-all");
 }
 
-async function adminSendInstancesData(kv) {
+async function adminSendInstancesData() {
     if (adminId === null) return;
-    if (kv === undefined) kv = await Deno.openKv();
     const socket = clients.get(adminId);
     socket.send(`ADMIN:INSTANCES:${JSON.stringify({
         "instances": await getInstances(kv),
@@ -124,9 +121,9 @@ Deno.serve(async (req) => {
         console.log(`client ${clientId} connected!`);
         socket.send(JSON.stringify(await getData()));
         broadcast(`@nclients:${clients.size}`)
-        if (await serverIsLocked()) {
-            socket.send("!locked");
-            console.log(`locked ${clientId}`);
+        if (config.inputAccess != "everyone") {
+            socket.send("!input-denied");
+            console.log(`denied input from ${clientId}`);
         }
         adminSendClientsData();
     });
@@ -146,7 +143,6 @@ Deno.serve(async (req) => {
         } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
             // admin scope
             const data = event.data.slice(6);
-            const kv = await Deno.openKv();
             if (data == "lock") {
                 await kv.set(["locked"], true);
             } else if (data == "unlock") {
@@ -188,14 +184,20 @@ Deno.serve(async (req) => {
                 sock.send("!allow-input");
             } else if (data.startsWith("config-update:")) {
                 const newConfig = JSON.parse(data.slice("config-update:".length));
-                const config = (await kv.get(["config"])).value;
-                await kv.set(["config"], { ...config, ...newConfig });
+                config = { ...config, ...newConfig };
+                await kv.set(["config"], config);
                 await adminSendServerConfig(kv);
             }
         }
-        if (adminId != clientId && await serverIsLocked() && !inputWhitelist.has(clientId)) {
-            socket.send("!locked");
-            console.log(`locked ${clientId}`);
+        if (event.data.startsWith("AUTH:")) {
+            if (adminId === null) return; // no admin active to authenticate
+            if (event.data.startsWith("AUTH:request-session:")) {
+                const sessionName = event.data.slice("AUTH:request-session:".length);
+            }
+        }
+        if (adminId != clientId && config.inputAccess != "everyone") {
+            socket.send("!input-denied");
+            console.log(`denied input from ${clientId}`);
             return;
         }
         if (event.data.startsWith("!")) {
