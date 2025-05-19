@@ -126,9 +126,11 @@ Deno.serve(async (req) => {
         console.log(`client ${clientId} connected!`);
         socket.send(JSON.stringify(await getData()));
         broadcast(`@nclients:${clients.size}`)
-        if (config.inputAccess != "everyone") {
+        if (config.inputAccess == "everyone") {
+            socket.send("AUTH:success");
+        } else {
             socket.send("AUTH:required");
-            console.log(`requesting auth from ${clientId}`);
+            console.log(`requiring auth from ${clientId}`);
         }
         adminSendClientsData();
     });
@@ -214,7 +216,7 @@ Deno.serve(async (req) => {
         }
         
         if (adminId != clientId && (
-            (config.inputAccess != "restricted" && !clientsAuth.has(clientId))
+            (config.inputAccess == "restricted" && !clientsAuth.has(clientId))
             || config.inputAccess == "none"
         )) {
             // unauthenticated client intends to send input
