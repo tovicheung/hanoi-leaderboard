@@ -125,6 +125,7 @@
     </div>
     <div id="client-management">
         <h2>Client management</h2>
+        <button onclick="createToken()">Create Token</button>
         <div style="width: 100%; overflow-x: scroll;">
             <table class="table">
                 <thead>
@@ -353,6 +354,21 @@
 
             tbody.appendChild(tr);
         }
+    }
+
+    function createToken() {
+        const token = prompt("Enter access token (8-256 chars):");
+        if (token === null) return;
+        if (token.length < 8 || token.length > 256) return;
+        const tonight = new Date;
+        tonight.setHours(23, 59, 59);
+        // const today = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
+        const dateString = prompt("Enter expiry date (also accept YYYY-MM-DD hh:mm:ss)", fullDateFmt(tonight));
+        const expireIn = Date.parse(dateString);
+        websocket.send("ADMIN:create-token:" + JSON.stringify({
+            token,
+            expireIn,
+        }));
     }
 
     const reset = () => {
