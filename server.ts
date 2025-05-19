@@ -1,6 +1,7 @@
 const clients = new Map();
 const clientsTimestamp = new Map();
 const clientsAuth = new Map();
+const clientsExpire = new Map();
 
 var adminId = null;
 
@@ -91,6 +92,7 @@ function adminSendClientsData() {
         data.push({
             id: id,
             timestamp: clientsTimestamp.get(id),
+            expireIn: clientsExpire.get(id),
         });
     }
     const socket = clients.get(adminId);
@@ -105,9 +107,8 @@ function adminCreateToken(token, expireIn) {
 async function authCheckToken(token) {
     const tok = await kv.get(["tokens", token]);
     if (tok.value === null) return false;
-    console.log("checking token", Date.now(), tok.value)
     if (Date.now() >= tok.value) return false; // expired
-    return true;
+    return tok.value;
 }
 
 Deno.serve(async (req) => {
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
         return new Response(null, { status: 501 });
     }
     const { socket, response } = Deno.upgradeWebSocket(req);
-
+    
     const clientId = crypto.randomUUID();
     clients.set(clientId, socket);
     clientsTimestamp.set(clientId, Date.now());
@@ -177,13 +178,13 @@ Deno.serve(async (req) => {
                 const sock = clients.get(id);
                 sock.close();
             } else if (data.startsWith("clients-allow-input:")) {
-                // unsupported rn
-                return;
                 const id = data.slice("clients-allow-input:".length);
                 if (!clients.has(id)) return;
                 const sock = clients.get(id);
-                inputWhitelist.set(id, crypto.randomUUID());
-                sock.send("!allow-input");
+                clientsAuth.set(id, `@admin:${Date.now()}`);
+                clientsExpire.set(id, `@admin:${Date.now()}`);
+                sock.send("AUTH:success");
+                adminSendClientsData();
             } else if (data.startsWith("config-update:")) {
                 const newConfig = JSON.parse(data.slice("config-update:".length));
                 config = { ...config, ...newConfig };
@@ -200,16 +201,22 @@ Deno.serve(async (req) => {
         if (event.data.startsWith("AUTH:") && config.inputAccess != "none") {
             if (event.data.startsWith("AUTH:token:")) {
                 const token = event.data.slice("AUTH:token:".length);
-                if (await authCheckToken(token)) {
+                const tokExpireIn = await authCheckToken(token);
+                if (tokExpireIn) {
                     socket.send("AUTH:success");
                     clientsAuth.set(clientId, token);
+                    clientsExpire.set(clientId, tokExpireIn);
                 } else {
                     socket.send("AUTH:failure");
                 }
             }
             return;
         }
-        if (adminId != clientId && config.inputAccess != "everyone" && !clientsAuth.has(clientId)) {
+        
+        if (adminId != clientId && (
+            (config.inputAccess != "restricted" && !clientsAuth.has(clientId))
+            || config.inputAccess == "none"
+        )) {
             // unauthenticated client intends to send input
             socket.send("AUTH:failure");
             console.log(`denied input from ${clientId}`);

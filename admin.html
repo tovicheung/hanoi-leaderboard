@@ -131,7 +131,8 @@
                 <thead>
                     <tr>
                         <th>Short ID</th>
-                        <th>Timestamp</th>
+                        <th>Connected</th>
+                        <th>Input Permission Expires</th>
                         <th>Action</th>
                         <th>Full ID</th>
                     </tr>
@@ -325,6 +326,16 @@
             const tdTimestamp = document.createElement("td");
             tdTimestamp.innerText = fullDateFmt(new Date(entry.timestamp));
             tr.appendChild(tdTimestamp);
+            
+            const tdExpireIn = document.createElement("td");
+            if (entry.expireIn === undefined) {
+                tdExpireIn.innerText = "/";
+            } else if (entry.expireIn.startsWith("@admin:")) {
+                tdExpireIn.innerText = "Granted at " + fullDateFmt(new Date(parseInt(entry.expireIn.slice("@admin:".length))))
+            } else {
+                tdExpireIn.innerText = fullDateFmt(new Date(entry.expireIn));
+            }
+            tr.appendChild(tdExpireIn);
 
             const tdAction = document.createElement("td");
 
