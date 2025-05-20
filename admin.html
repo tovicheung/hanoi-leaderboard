@@ -24,7 +24,7 @@
     button {
         padding: 8px;
         margin: 4px;
-        font-size: 18px;
+        font-size: 14px;
         border-radius: 8px;
     }
 
@@ -77,9 +77,9 @@
 
     .table {
         width: 100%;
+        max-width: 100%;
         border-spacing: 1px;
-        font-size: 18px;
-        white-space: nowrap;
+        font-size: 14px;
     }
 
     .table td:nth-child(n-1) {
@@ -100,7 +100,7 @@
     }
 </style>
 <body>
-    <h1>Admin dashboard</h1>
+    <h2>Admin dashboard</h2>
     <div>
         <p>Verify your identity:</p>
         <input id="password" type="password">
@@ -108,13 +108,14 @@
     </div>
     <div>
         <h2 id="msg"></h2>
-        <h3>Connection status: <span id="connection-status"></span></h3>
-        <h3>Input access: <span id="input-access"></span></h3>
-        <h3 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h3>
+        <h4>Connection status: <span id="connection-status"></span></h4>
+        <h4>Input access: <span id="input-access"></span></h4>
         
-        <button style="background-color: red;" onclick="configUpdate({ inputAccess: 'none' })">Lock input</button>
-        <button style="background-color: #1896bb;" onclick="configUpdate({ inputAccess: 'restricted' })">Restrict input</button>
-        <button style="background-color: #2e9a2e;" onclick="configUpdate({ inputAccess: 'everyone' })">Unlock input</button>
+        <button style="background-color: red;" onclick="configUpdate({ inputAccess: 'none' })">Lock</button>
+        <button style="background-color: #1896bb;" onclick="configUpdate({ inputAccess: 'restricted' })">Restrict</button>
+        <button style="background-color: #2e9a2e;" onclick="configUpdate({ inputAccess: 'everyone' })">Unlock</button>
+        
+        <h4 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h4>
     </div>
     <div id="instance-management">
         <h2>Instance management</h2>
@@ -126,7 +127,7 @@
     <div id="client-management">
         <h2>Client management</h2>
         <button onclick="createToken()">Create Token</button>
-        <div style="width: 100%; overflow-x: scroll;">
+        <div>
             <table class="table">
                 <thead>
                     <tr>
