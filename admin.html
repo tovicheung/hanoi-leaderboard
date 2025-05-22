@@ -87,13 +87,10 @@
     }
 
     .table td {
-        padding-right: 20px;
-    }
-
-    .table td:nth-child(n+3) {
+        padding: 0px 10px;
         text-align: center;
     }
-
+    
     .table button {
         font-size: 14px;
         padding: 4px 8px;
@@ -131,8 +128,9 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Short ID</th>
                         <th>Connected</th>
+                        <th>Role</th>
+                        <th>Platform</th>
                         <th>Input Permission Expires</th>
                         <th>Action</th>
                         <th>Full ID</th>
@@ -308,8 +306,50 @@
         }
     }
 
-    function shortenId(id) {
-        return id.split("-").slice(1, 4).join("-");
+    function uasniff(userAgentString) {
+        const ua = userAgentString.toLowerCase();
+        
+        const result = {
+            os: null,
+            deviceType: null,
+            browser: null,
+            mobile: false
+        };
+        
+        if (/iphone|ipod|ipad/.test(ua)) {
+            result.os = 'iOS';
+        } else if (/windows/.test(ua)) {
+            result.os = 'Windows';
+        } else if (/macintosh|mac os x/.test(ua)) {
+            result.os = 'MacOS';
+        } else if (/android/.test(ua)) {
+            result.os = 'Android';
+        } else if (/linux/.test(ua)) {
+            result.os = 'Linux';
+        }
+        
+        if (/mobile|android|iphone|ipad|ipod/.test(ua)) {
+            result.mobile = true;
+            if (/ipad/.test(ua)) {
+                result.deviceType = 'Tablet';
+            } else {
+                result.deviceType = 'Mobile';
+            }
+        } else {
+            result.deviceType = 'Desktop';
+        }
+        
+        if (/chrome\/([0-9]+)/.test(ua)) {
+            result.browser = 'Chrome';
+        } else if (/firefox\/([0-9]+)/.test(ua)) {
+            result.browser = 'Firefox';
+        } else if (/safari\/([0-9]+)/.test(ua)) {
+            result.browser = 'Safari';
+        } else if (/edge\/([0-9]+)/.test(ua)) {
+            result.browser = 'Edge';
+        }
+        
+        return result;
     }
 
     function updateClientData(data) {
@@ -320,18 +360,31 @@
         for (const entry of data) {
             const tr = document.createElement("tr");
 
-            const tdId = document.createElement("td");
-            tdId.innerText = shortenId(entry.id);
-            tr.appendChild(tdId);
+            // const tdId = document.createElement("td");
+            // tdId.innerText = shortenId(entry.id);
+            // tr.appendChild(tdId);
 
             const tdTimestamp = document.createElement("td");
             tdTimestamp.innerText = fullDateFmt(new Date(entry.timestamp));
             tr.appendChild(tdTimestamp);
+
+            const tdRole = document.createElement("td");
+            if (entry.role === undefined) {
+                tdRole.innerText = "Unknown";
+            } else {
+                tdRole.innerText = entry.role;
+            }
+            tr.appendChild(tdRole);
+
+            const tdUA = document.createElement("td");
+            const sniffed = uasniff(entry.userAgent);
+            tdUA.innerText = `${sniffed.os}, ${sniffed.browser}`;
+            tr.appendChild(tdUA);
             
             const tdExpireIn = document.createElement("td");
             if (entry.expireIn === undefined) {
                 tdExpireIn.innerText = "/";
-            } else if (entry.expireIn.startsWith("@admin:")) {
+            } else if (typeof entry.expireIn === "string" && entry.expireIn.startsWith("@admin:")) {
                 tdExpireIn.innerText = "Granted at " + fullDateFmt(new Date(parseInt(entry.expireIn.slice("@admin:".length))))
             } else {
                 tdExpireIn.innerText = fullDateFmt(new Date(entry.expireIn));

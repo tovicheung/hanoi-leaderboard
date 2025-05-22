@@ -1,7 +1,11 @@
 const clients = new Map();
 const clientsTimestamp = new Map();
 const clientsAuth = new Map();
+const clientsRole = new Map();
+const clientsUA = new Map();
 const clientsExpire = new Map();
+
+// TODO: merge maps
 
 var adminId = null;
 
@@ -93,6 +97,8 @@ function adminSendClientsData() {
             id: id,
             timestamp: clientsTimestamp.get(id),
             expireIn: clientsExpire.get(id),
+            role: clientsRole.get(id),
+            userAgent: clientsUA.get(id),
         });
     }
     const socket = clients.get(adminId);
@@ -120,6 +126,7 @@ Deno.serve(async (req) => {
     const clientId = crypto.randomUUID();
     clients.set(clientId, socket);
     clientsTimestamp.set(clientId, Date.now());
+    clientsUA.set(clientId, req.headers.get("user-agent"));
 
     // Send current scores to newly connected client
     socket.addEventListener("open", async () => {
@@ -200,6 +207,7 @@ Deno.serve(async (req) => {
                 adminCreateToken(token, expireIn);
             }
         }
+
         if (event.data.startsWith("AUTH:") && config.inputAccess != "none") {
             if (event.data.startsWith("AUTH:token:")) {
                 const token = event.data.slice("AUTH:token:".length);
@@ -212,6 +220,12 @@ Deno.serve(async (req) => {
                     socket.send("AUTH:failure");
                 }
             }
+            return;
+        }
+
+        if (event.data.startsWith("REPORT-ROLE:")) {
+            const role = event.data.slice("REPORT-ROLE:".length);
+            clientsRole.set(clientId, role);
             return;
         }
         
@@ -262,6 +276,9 @@ Deno.serve(async (req) => {
         broadcast(`@nclients:${clients.size}`);
         if (clientId === adminId) adminId = null;
         if (clientsAuth.has(clientId)) clientsAuth.delete(clientId);
+        if (clientsUA.has(clientId)) clientsUA.delete(clientId);
+        if (clientsRole.has(clientId)) clientsRole.delete(clientId);
+        if (clientsExpire.has(clientId)) clientsExpire.delete(clientId);
         adminSendClientsData();
     })
   return response;
