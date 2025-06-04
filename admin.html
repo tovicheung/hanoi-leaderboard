@@ -75,9 +75,14 @@
         font-family: "Montserrat", monospace;
     }
 
-    .table {
+    div:has(.table) {
         width: 100%;
-        max-width: 100%;
+    }
+
+    .table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
         border-spacing: 1px;
         font-size: 14px;
     }
@@ -121,9 +126,12 @@
         <button onclick="instanceUpdate(deleteInstance)">Delete an instance</button>
         <button onclick="instanceUpdate(cloneInstance)">Clone to</button>
     </div>
-    <div id="client-management">
-        <h2>Client management</h2>
+    <div id="access-control">
+        <h2 style="display: inline">Access Control</h2>
         <button onclick="createToken()">Create Token</button>
+    </div>
+    <div id="client-management">
+        <h2>Connected clients</h2>
         <div>
             <table class="table">
                 <thead>
@@ -131,7 +139,7 @@
                         <th>Connected</th>
                         <th>Role</th>
                         <th>Platform</th>
-                        <th>Input Permission Expires</th>
+                        <th>Input Permission</th>
                         <th>Action</th>
                         <th>Full ID</th>
                     </tr>
@@ -383,11 +391,15 @@
             
             const tdExpireIn = document.createElement("td");
             if (entry.expireIn === undefined) {
-                tdExpireIn.innerText = "/";
+                if (entry.role == "Admin") {
+                    tdExpireIn.innerText = "Admin";
+                } else {
+                    tdExpireIn.innerText = "None";
+                }
             } else if (typeof entry.expireIn === "string" && entry.expireIn.startsWith("@admin:")) {
-                tdExpireIn.innerText = "Granted at " + fullDateFmt(new Date(parseInt(entry.expireIn.slice("@admin:".length))))
+                tdExpireIn.innerText = "Granted " + fullDateFmt(new Date(parseInt(entry.expireIn.slice("@admin:".length))))
             } else {
-                tdExpireIn.innerText = fullDateFmt(new Date(entry.expireIn));
+                tdExpireIn.innerText = "Until " + fullDateFmt(new Date(entry.expireIn));
             }
             tr.appendChild(tdExpireIn);
 
@@ -429,6 +441,7 @@
         tonight.setHours(23, 59, 59);
         // const today = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
         const dateString = prompt("Enter expiry date (also accept YYYY-MM-DD hh:mm:ss)", fullDateFmt(tonight));
+        if (dateString === null) return;
         const expireIn = Date.parse(dateString);
         websocket.send("ADMIN:create-token:" + JSON.stringify({
             token,

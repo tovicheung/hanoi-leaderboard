@@ -59,7 +59,7 @@ async function getInstances() {
     return names;
 }
 
-async function switchInstance(kv, newInstance) {
+async function switchInstance(newInstance) {
     const newData = (await kv.get(["instances", newInstance])).value;
     if (newData === null) return;
 
@@ -77,7 +77,7 @@ async function adminSendInstancesData() {
     if (adminId === null) return;
     const socket = clients.get(adminId);
     socket.send(`ADMIN:INSTANCES:${JSON.stringify({
-        "instances": await getInstances(kv),
+        "instances": await getInstances(),
         "current": (await kv.get(["instanceName"])).value,
     })}`);
 }
@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
                 oldClient.send("ADMIN:OVERRIDDEN");
             }
             adminId = clientId;
+            clientsRole.set(adminId, "Admin");
             await adminSendServerConfig();
             await adminSendInstancesData();
             adminSendClientsData();
@@ -166,7 +167,7 @@ Deno.serve(async (req) => {
             } else if (data.startsWith("inst-switch:")) {
                 const newName = data.slice("inst-switch:".length);
                 if (newName.length != 0) {
-                    await switchInstance(kv, newName);
+                    await switchInstance(newName);
                 }
                 await adminDone();
             } else if (data.startsWith("inst-delete:")) {
@@ -198,7 +199,7 @@ Deno.serve(async (req) => {
                 const newConfig = JSON.parse(data.slice("config-update:".length));
                 config = { ...config, ...newConfig };
                 await kv.set(["config"], config);
-                await adminSendServerConfig(kv);
+                await adminSendServerConfig();
             } else if (data.startsWith("create-token:")) {
                 // TODO: switch to using forms and POST!!
                 const {token, expireIn} = JSON.parse(data.slice("create-token:".length));
@@ -216,6 +217,7 @@ Deno.serve(async (req) => {
                     socket.send("AUTH:success");
                     clientsAuth.set(clientId, token);
                     clientsExpire.set(clientId, tokExpireIn);
+                    adminSendClientsData();
                 } else {
                     socket.send("AUTH:failure");
                 }
