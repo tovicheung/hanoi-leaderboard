@@ -117,10 +117,7 @@ async function authCheckToken(token) {
     return tok.value;
 }
 
-Deno.serve(async (req) => {
-    if (req.headers.get("upgrade") != "websocket") {
-        return new Response(null, { status: 501 });
-    }
+async function connectSocket(req: Request) {
     const { socket, response } = Deno.upgradeWebSocket(req);
     
     const clientId = crypto.randomUUID();
@@ -284,4 +281,35 @@ Deno.serve(async (req) => {
         adminSendClientsData();
     })
   return response;
+}
+
+Deno.serve(async (req) => {
+    if (req.headers.get("upgrade") == "websocket") {
+        return await connectSocket(req);
+        // return new Response(null, { status: 501 });
+    }
+
+  let path = (new URL(req.url)).pathname;
+  console.log("request to path:", path);
+
+  // Serve static files
+  if (path === "/") {
+    path = "/index.html";
+  } else if (path === "/admin") {
+    path = "/admin.html";
+  } else if (path === "/sync") {
+    path = "/sync.html";
+  } else if (path === "/output") {
+    path = "/output.html";
+  } else if (path === "/disconnected") {
+    path = "/disconnected.html";
+  }
+
+  try {
+    const file = await Deno.open(Deno.cwd() + path);
+    return new Response(file.readable);
+  } catch (e) {
+    console.error(`Error serving file ${path}:`, e);
+    return new Response("Not Found", { status: 404 });
+  }
 });

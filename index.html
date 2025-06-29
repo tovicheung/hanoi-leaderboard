@@ -57,12 +57,12 @@
         <div class="centered">
             <h1>Input: Permission Denied</h1>
             <h3>All input requests from this device are ignored by the server.</h3>
-            <button onclick="window.location.href = './output.html'">Switch to output</button>
+            <button onclick="window.location.href = './output'">Switch to output</button>
             <br>
             <p>
                 <span class="action" onclick="switchScreen(1)">[ view controller anyways ]</span>
                 <span class="action" onclick="useAccessToken()">[ use access token ]</span>
-                <a class="action" href="./admin.html">[ admin ]</a>
+                <a class="action" href="./admin">[ admin ]</a>
             </p>
         </div>
     </div>
@@ -75,16 +75,16 @@
     <div id="screen0">
         <h1>Choose mode</h1>
         <button onclick="switchScreen(1)">input</button>
-        <button onclick="window.location.href = './output.html'">output</button>
+        <button onclick="window.location.href = './output'">output</button>
     </div>
     <div id="screen1">
         <button onclick="ndisks = 4; switchScreen(2)">New trial (4)</button>
         <button onclick="ndisks = 5; switchScreen(2)">New trial (5)</button>
         <button class="small" onclick="window.location.reload()">Reload this</button>
-        <button class="small" onclick="window.location.href = './sync.html'">Sync</button>
+        <button class="small" onclick="window.location.href = './sync'">Sync</button>
         <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
-        <button class="small" onclick="window.location.href = './admin.html'">Admin</button>
-        <button onclick="window.location.href = './output.html'">Switch to output</button>
+        <button class="small" onclick="window.location.href = './admin'">Admin</button>
+        <button onclick="window.location.href = './output'">Switch to output</button>
         <br>
         <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset L4</button>
         <button class="small" onclick="leaderboard2 = []; sendUpdate();" dangerous>Reset L5</button>
