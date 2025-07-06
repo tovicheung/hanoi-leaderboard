@@ -170,7 +170,7 @@
     const __ = (str) => _(str, _(str));
 
     
-    const wsUri = "wss://large-ape-25.deno.dev";
+    const wsUri = "wss://hanoi-lb.deno.dev";
     const websocket = new WebSocket(wsUri);
 
     var info = {
@@ -184,20 +184,10 @@
 
     function updateInfo() {
         document.getElementById("connection-status").innerText = info.connectionStatus;
-        // document.getElementById("connection-id").innerText = info.connectionId;
-        // document.getElementById("server-status").innerText = info.serverStatus;
         document.getElementById("input-access").innerText = serverConfig.inputAccess;
         document.getElementById("output-access").innerText = serverConfig.outputAccess;
 
         if (info.connectionId == "unknown") return;
-
-        // document.getElementById("button-lock").disabled = false;
-        // document.getElementById("button-unlock").disabled = false;
-        // if (info.serverStatus == "locked") {
-        //     document.getElementById("button-lock").disabled = true;
-        // } else if (info.serverStatus == "open") {
-        //     document.getElementById("button-unlock").disabled = true;
-        // }
     }
 
     function checkAdmin() {
@@ -368,10 +358,6 @@
         for (const entry of data) {
             const tr = document.createElement("tr");
 
-            // const tdId = document.createElement("td");
-            // tdId.innerText = shortenId(entry.id);
-            // tr.appendChild(tdId);
-
             const tdTimestamp = document.createElement("td");
             tdTimestamp.innerText = fullDateFmt(new Date(entry.timestamp));
             tr.appendChild(tdTimestamp);
@@ -418,7 +404,6 @@
             const btnAllowInput = document.createElement("button");
             btnAllowInput.innerText = "Allow input";
             btnAllowInput.onclick = () => {
-                // alert(entry.id);
                 websocket.send(`ADMIN:clients-allow-input:${entry.id}`);
             };
             tdAction.appendChild(btnAllowInput);
@@ -439,7 +424,6 @@
         if (token.length < 8 || token.length > 256) return;
         const tonight = new Date;
         tonight.setHours(23, 59, 59);
-        // const today = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
         const dateString = prompt("Enter expiry date (also accept YYYY-MM-DD hh:mm:ss)", fullDateFmt(tonight));
         if (dateString === null) return;
         const expireIn = Date.parse(dateString);
@@ -455,8 +439,6 @@
         info.serverStatus = "unknown";
         updateInfo();
         document.getElementById("button-verify").disabled = true;
-        // document.getElementById("button-lock").disabled = true;
-        // document.getElementById("button-unlock").disabled = true;
     };
 
     document.addEventListener("DOMContentLoaded", () => {
