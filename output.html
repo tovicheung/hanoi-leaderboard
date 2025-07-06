@@ -149,8 +149,12 @@
     var regStart = 0;
     var regInterval = 0;
     
-    const wsUri = "wss://large-ape-25.deno.dev";
-    const websocket = new WebSocket(wsUri);
+    const websocket = (() => {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}/ws`; // Example: ws://localhost:8080/ws
+        return new WebSocket(wsUrl);
+    })();
 
     const id2titles = {
         "leaderboard1": "4 disks",

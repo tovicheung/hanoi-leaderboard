@@ -123,6 +123,7 @@
         <h2>Instance management</h2>
         <button onclick="instanceUpdate(createNewInstance)">Create new</button>
         <div id="instances" class="segment"></div>
+        <button onclick="instanceUpdate(importAndOverwrite)">Import and overwrite</button>
         <button onclick="instanceUpdate(deleteInstance)">Delete an instance</button>
         <button onclick="instanceUpdate(cloneInstance)">Clone to</button>
     </div>
@@ -201,6 +202,12 @@
         const name = prompt("Enter name for new instance:");
         if (name === null) return null;
         websocket.send(`ADMIN:inst-create:${name}`);
+    }
+
+    function importAndOverwrite() {
+        const data = prompt("Enter JSON of data:");
+        if (data === null) return null;
+        websocket.send(`ADMIN:inst-import:${data}`);
     }
 
     function deleteInstance() {

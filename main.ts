@@ -198,6 +198,10 @@ async function connectSocket(req: Request) {
                     await switchInstance(newName);
                 }
                 await adminDone();
+            } else if (data.startsWith("inst-import:")) {
+                const newJson = data.slice("inst-import:".length);
+                await kv.set(["leaderboards"], JSON.parse(newJson));
+                await adminDone();
             } else if (data.startsWith("inst-delete:")) {
                 const name = data.slice("inst-delete:".length);
                 if (name != (await kv.get(["instanceName"])).value) {
