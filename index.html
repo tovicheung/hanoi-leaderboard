@@ -309,8 +309,10 @@
     }
     
     const websocket = (() => {
-        const wsUri = "wss://hanoi-lb.deno.dev";
-        return new WebSocket(wsUri);
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}/ws`; // Example: ws://localhost:8080/ws
+        return new WebSocket(wsUrl);
     })();
     
     websocket.onopen = e => {

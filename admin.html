@@ -168,10 +168,13 @@
         return 4294967296 * (2097151 & h2) + (h1 >>> 0);
     };
     const __ = (str) => _(str, _(str));
-
     
-    const wsUri = "wss://hanoi-lb.deno.dev";
-    const websocket = new WebSocket(wsUri);
+    const websocket = (() => {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}/ws`; // Example: ws://localhost:8080/ws
+        return new WebSocket(wsUrl);
+    })();
 
     var info = {
         connectionStatus: "not connected",

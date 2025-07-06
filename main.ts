@@ -315,32 +315,31 @@ async function connectSocket(req: Request) {
 }
 
 Deno.serve(async (req) => {
-    if (req.headers.get("upgrade") == "websocket") {
-        return await connectSocket(req);
-        // return new Response(null, { status: 501 });
+    let path = (new URL(req.url)).pathname;
+    console.log("request to path:", path);
+
+    if (path === "/ws") {
+        if (req.headers.get("upgrade") == "websocket") {
+            return await connectSocket(req);
+        }
+        return new Response(null, { status: 501 });
+    } else if (path === "/") { // Serve static files
+        path = "/index.html";
+    } else if (path === "/admin") {
+        path = "/admin.html";
+    } else if (path === "/sync") {
+        path = "/sync.html";
+    } else if (path === "/output") {
+        path = "/output.html";
+    } else if (path === "/disconnected") {
+        path = "/disconnected.html";
     }
 
-  let path = (new URL(req.url)).pathname;
-  console.log("request to path:", path);
-
-  // Serve static files
-  if (path === "/") {
-    path = "/index.html";
-  } else if (path === "/admin") {
-    path = "/admin.html";
-  } else if (path === "/sync") {
-    path = "/sync.html";
-  } else if (path === "/output") {
-    path = "/output.html";
-  } else if (path === "/disconnected") {
-    path = "/disconnected.html";
-  }
-
-  try {
-    const file = await Deno.open(Deno.cwd() + path);
-    return new Response(file.readable);
-  } catch (e) {
-    console.error(`Error serving file ${path}:`, e);
-    return new Response("Not Found", { status: 404 });
-  }
+    try {
+        const file = await Deno.open(Deno.cwd() + path);
+        return new Response(file.readable);
+    } catch (e) {
+        console.error(`Error serving file ${path}:`, e);
+        return new Response("Not Found", { status: 404 });
+    }
 });
