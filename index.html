@@ -78,8 +78,8 @@
         <button onclick="window.location.href = './output'">output</button>
     </div>
     <div id="screen1">
-        <button onclick="ndisks = 4; switchScreen(2)">New trial (4)</button>
-        <button onclick="ndisks = 5; switchScreen(2)">New trial (5)</button>
+        <button onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
+        <button onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
         <button class="small" onclick="window.location.reload()">Reload this</button>
         <button class="small" onclick="window.location.href = './sync'">Sync</button>
         <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
@@ -164,12 +164,12 @@
     function customName() {
         const custom = prompt("Enter name:");
         if (custom === null) return;
-        cls = custom;
-        clsno = "";
-        document.getElementById("confirm-class").innerText = cls;
-        document.getElementById("confirm-classno").innerText = clsno;
+        trialOptions.cls = custom;
+        trialOptions.clsno = "";
+        document.getElementById("confirm-class").innerText = trialOptions.cls;
+        document.getElementById("confirm-classno").innerText = trialOptions.clsno;
         switchScreen(4);
-        websocket.send(`!reginit-${ndisks}${custom}`);
+        websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
     }
 
     function switchScreen(n) {
@@ -189,8 +189,8 @@
                 btn.innerText = `${i}${letter}`;
                 if (i <= 3 && letter == "E") btn.style.opacity = 0;
                 else btn.onclick = e => {
-                    cls = e.target.innerText;
-                    document.getElementById("confirm-class").innerText = cls;
+                    trialOptions.cls = e.target.innerText;
+                    document.getElementById("confirm-class").innerText = trialOptions.cls;
                     switchScreen(3);
                 }
                 row.appendChild(btn);
@@ -206,11 +206,11 @@
                 const btn = document.createElement("button");
                 btn.innerText = (i * width + j + 1).toString().padStart(2, "0");
                 btn.onclick = e => {
-                    clsno = e.target.innerText;
-                    document.getElementById("confirm-classno").innerText = clsno;
+                    trialOptions.clsno = e.target.innerText;
+                    document.getElementById("confirm-classno").innerText = trialOptions.clsno;
                     switchScreen(4);
 
-                    websocket.send(`!reginit-${ndisks}${cls} ${clsno}`);
+                    websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.cls} ${trialOptions.clsno}`);
                 }
                 row.appendChild(btn);
             }
@@ -228,14 +228,15 @@
         })
     });
 
-    // global
-    var ndisks = 4;
-    var startTime = 0;
-    var timerInterval = 0;
-    var score = 0;
-    var cls = "";
-    var clsno = "00";
-
+    const trialOptions = {
+        ndisks: 4,
+        startTime: 0,
+        timerInterval: 0,
+        score: 0,
+        cls: "",
+        clsno: "",
+    }
+    
     function sendUpdate() {
         websocket.send(JSON.stringify({
             type: "update",
@@ -279,14 +280,14 @@
 
     function sendNewRecord() {
         websocket.send("!regconfirm");
-        pushRecord(ndisks == 4 ? leaderboard1 : leaderboard2, `${cls} ${clsno}`, score);
+        pushRecord(trialOptions.ndisks == 4 ? leaderboard1 : leaderboard2, `${trialOptions.cls} ${trialOptions.clsno}`, score);
         sendUpdate();
         switchScreen(1);
     }
 
     function timerClickListener() {
-        score = Date.now() - startTime;
-        clearInterval(timerInterval);
+        score = Date.now() - trialOptions.startTime;
+        clearInterval(trialOptions.timerInterval);
         removeEventListener("mousedown", timerClickListener);
         removeEventListener("touchstart", timerClickListener);
         document.getElementById("timer-start-button").style.display = "block";
@@ -297,9 +298,9 @@
     }
 
     function startTimer() {
-        startTime = Date.now();
-        timerInterval = setInterval(() => {
-            document.getElementById("timer").innerText = parseTime(Date.now() - startTime);
+        trialOptions.startTime = Date.now();
+        trialOptions.timerInterval = setInterval(() => {
+            document.getElementById("timer").innerText = parseTime(Date.now() - trialOptions.startTime);
         }, 57);
         addEventListener("mousedown", timerClickListener);
         addEventListener("touchstart", timerClickListener);
@@ -308,7 +309,7 @@
     }
     
     const websocket = (() => {
-        const wsUri = "wss://large-ape-25.deno.dev?test=1";
+        const wsUri = "wss://hanoi-lb.deno.dev";
         return new WebSocket(wsUri);
     })();
     

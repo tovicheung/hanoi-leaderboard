@@ -7,7 +7,7 @@ const clientsExpire = new Map();
 
 // TODO: merge maps
 
-var adminId = null;
+var adminId: string | null = null;
 
 const kv = await Deno.openKv();
 var config = (await kv.get(["config"])).value;
@@ -20,6 +20,42 @@ const DEFAULT_CONFIG = {
 // none: function is only accessible by admin
 // restricted: function is only accessible by admin and admin-approved sessions
 // everyone: function is accessible by all sessions
+
+interface Record {
+    name: string;
+    score: number;
+}
+
+type Leaderboard = Record[];
+
+async function setupKv() {
+    let config = (await kv.get(["config"])).value;
+    if (config === null) {
+        config = structuredClone(DEFAULT_CONFIG);
+        await kv.set(["config"], config);
+    }
+    
+    const entries = kv.list({ prefix: ["instances"] });
+    const names = [];
+    for await (const entry of entries) {
+        names.push(entry.key[1]);
+    }
+    if (names.length == 0) {
+        await kv.set(["instances", "_default"], [[], []]);
+    }
+    
+    let instanceName = (await kv.get(["instancName"])).value;
+    if (instanceName === null) {
+        await kv.set(["instanceName"], "_default");
+    }
+
+    let leaderboards = (await kv.get(["leaderboards"])).value;
+    if (leaderboards === null) {
+        await kv.set(["leaderboards"], [[], []]);
+    }
+}
+
+await setupKv();
 
 function broadcast(msg) {
     clients.forEach(websocket => {
@@ -42,11 +78,6 @@ async function broadcastData(leaderboards) {
 async function adminSendServerConfig() {
     if (adminId === null) return;
     const socket = clients.get(adminId);
-    var config = (await kv.get(["config"])).value;
-    if (config === null) {
-        config = structuredClone(DEFAULT_CONFIG);
-        await kv.set(["config"], config);
-    }
     socket.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
 }
 
@@ -255,14 +286,14 @@ async function connectSocket(req: Request) {
             await broadcastData([[], []]);
             return;
         }
-        var obj;
+        let obj;
         try {
             obj = JSON.parse(event.data);
         } catch {
             return;
         }
-        if ("type" in obj && obj.type === "update") { // new api
-            leaderboards = obj.leaderboards;
+        if ("type" in obj && obj.type === "update" && "leaderboards" in obj) { // new api
+            const leaderboards: Leaderboard[] = obj.leaderboards;
             leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
             await broadcastData(leaderboards);
         }

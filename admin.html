@@ -137,8 +137,8 @@
                 <thead>
                     <tr>
                         <th>Connected</th>
-                        <th>Role</th>
                         <th>Platform</th>
+                        <th>Role</th>
                         <th>Input Permission</th>
                         <th>Action</th>
                         <th>Full ID</th>
@@ -376,6 +376,11 @@
             tdTimestamp.innerText = fullDateFmt(new Date(entry.timestamp));
             tr.appendChild(tdTimestamp);
 
+            const tdUA = document.createElement("td");
+            const sniffed = uasniff(entry.userAgent);
+            tdUA.innerText = `${sniffed.os}, ${sniffed.browser}`;
+            tr.appendChild(tdUA);
+
             const tdRole = document.createElement("td");
             if (entry.role === undefined) {
                 tdRole.innerText = "Unknown";
@@ -383,11 +388,6 @@
                 tdRole.innerText = entry.role;
             }
             tr.appendChild(tdRole);
-
-            const tdUA = document.createElement("td");
-            const sniffed = uasniff(entry.userAgent);
-            tdUA.innerText = `${sniffed.os}, ${sniffed.browser}`;
-            tr.appendChild(tdUA);
             
             const tdExpireIn = document.createElement("td");
             if (entry.expireIn === undefined) {
