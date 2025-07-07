@@ -266,15 +266,22 @@
 
     function addRaw() {
         const leaderboard = prompt("Leaderboard 1 or 2?");
-        if (leaderboard === null) return;
+        if (leaderboard !== "1" && leaderboard !== "2") return;
         const name = prompt("Enter name:");
         if (name === null) return;
-        const score = prompt("Enter score:");
+        let score = prompt("Enter time: (leave blank to enter raw score)");
         if (score === null) return;
+        if (score === "") {
+            score = prompt("Enter score:");
+            if (score === null) return;
+            score = parseInt(score);
+        } else {
+            score = timeStringToMillis(score);
+        }
         pushRecord(
             leaderboard == "1" ? leaderboard1 : leaderboard2,
             name,
-            parseInt(score),
+            score,
         );
     }
 
@@ -370,12 +377,29 @@
         console.log(`ERROR: ${e.data}`);
     };
 
+    function timeStringToMillis(timeString) {
+        let parts = timeString.split(":");
+        const minutes = parseInt(parts[0]);
+        parts = parts[1].split(".");
+        const seconds = parseInt(parts[0]);
+        const millis = parseInt(parts[1]);
+        return (minutes * 60 + seconds) * 1000 + millis;
+    }
+
     function modifyRank(leaderboard, n) {
-        const name = prompt("Enter new name");
+        const name = prompt("Enter new name:", leaderboard[n-1].name);
         if (name === null) return;
-        const score = prompt(`Enter new score (int) current = ${leaderboard[n-1].score}`);
-        if (score === null) return;
-        leaderboard[n-1] = {name: name, score: parseInt(score)};
+        const newTime = prompt("Enter new time: (leave blank to edit raw score)", parseTime(leaderboard[n-1].score));
+        if (newTime === null) return;
+        let score;
+        if (newTime == "") {
+            score = prompt("Enter new score:", leaderboard[n-1].score);
+            if (score === null) return;
+            score = parseInt(score);
+        } else {
+            score = tiemStringToMillis(newTime);
+        }
+        leaderboard[n-1] = { name, score };
         sendUpdate();
     }
 
