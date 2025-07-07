@@ -257,7 +257,7 @@
         const data = prompt("Enter JSON of data:");
         if (data === null) return null;
         // websocket.send(`ADMIN:inst-import:${data}`);
-        req("/api/instance/import", "POST", { data });
+        req("/api/instance/import", "POST", { data: JSON.parse(data) });
     }
 
     function deleteInstance() {

@@ -291,6 +291,7 @@ function connectSocket(req: Request) {
         if (event.data.startsWith("REPORT-ROLE:")) {
             const role = event.data.slice("REPORT-ROLE:".length);
             clientsRole.set(clientId, role);
+            adminSendClientsData();
             return;
         }
         
@@ -415,6 +416,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         } else if (path == "/api/instance/import" && method == "POST") {
             if ("data" in body) {
                 await kv.set(["leaderboards"], body.data);
+                broadcast("!reload-all");
             }
         }
         await adminSendInstancesData();
