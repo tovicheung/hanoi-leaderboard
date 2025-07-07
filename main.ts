@@ -185,6 +185,7 @@ function connectSocket(req: Request) {
     clients.set(clientId, socket);
     clientsTimestamp.set(clientId, Date.now());
     clientsUA.set(clientId, req.headers.get("user-agent"));
+    clientsRole.set(clientId, "Pre-Auth");
 
     // Send current scores to newly connected client
     socket.addEventListener("open", async () => {
@@ -210,7 +211,7 @@ function connectSocket(req: Request) {
             }
             adminId = clientId;
             clientsRole.set(adminId, "Admin");
-            await adminSendServerConfig();
+            adminSendServerConfig();
             await adminSendInstancesData();
             adminSendClientsData();
         } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
@@ -261,12 +262,12 @@ function connectSocket(req: Request) {
                 const newConfig = JSON.parse(data.slice("config-update:".length));
                 config = { ...config, ...newConfig };
                 await kv.set(["config"], config);
-                await adminSendServerConfig();
+                adminSendServerConfig();
             } else if (data.startsWith("create-token:")) {
                 // TODO: switch to using forms and POST!!
                 const {token, expireIn} = JSON.parse(data.slice("create-token:".length));
                 if (token === undefined || expireIn === undefined) return;
-                if (token.length < 8 || token.length > 256) return;
+                if (token.length < 4) return;
                 adminCreateToken(token, expireIn);
             }
         }
@@ -423,11 +424,13 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 config[fieldName] = body[fieldName];
             }
         }
+        await kv.set(["config"], config);
+        adminSendServerConfig();
     } else if (path == "/api/token/create" && method == "POST") {
         const { token, expireIn } = body;
         if (typeof token !== "string") return bad("Invalid token name.");
         if (typeof expireIn !== "number") return bad("Invalid expiry.");
-        if (token.length < 8 || token.length > 256) return bad("Tokens must be 8-256 characters long.");
+        if (token.length < 4 || token.length > 256) return bad("Tokens must be at least 4 characters long.");
         adminCreateToken(token, expireIn);
     } else if (path == "/api/token/delete" && method == "DELETE") {
         const { token } = body;

@@ -115,7 +115,7 @@
     }
 </style>
 <body>
-    <h2>Admin dashboard</h2>
+    <h2>Admin Dashboard</h2>
     <div>
         <p>Verify your identity:</p>
         <input id="password" type="password">
@@ -133,7 +133,7 @@
         <h4 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h4>
     </div>
     <div id="instance-management">
-        <h2>Instance management</h2>
+        <h2>Instance Management</h2>
         <button onclick="instanceUpdate(createNewInstance)">Create new</button>
         <div id="instances" class="segment"></div>
         <button onclick="instanceUpdate(importAndOverwrite)">Import and overwrite</button>
@@ -145,7 +145,7 @@
         <button onclick="createToken()">Create Token</button>
     </div>
     <div id="client-management">
-        <h2>Connected clients</h2>
+        <h2>Connected Clients</h2>
         <div>
             <table class="table">
                 <thead>
@@ -440,12 +440,10 @@
             tr.appendChild(tdRole);
             
             const tdExpireIn = document.createElement("td");
-            if (entry.expireIn === undefined) {
-                if (entry.role == "Admin") {
-                    tdExpireIn.innerText = "Admin";
-                } else {
-                    tdExpireIn.innerText = "None";
-                }
+            if (entry.role == "Admin") {
+                tdExpireIn.innerText = "Admin";
+            } else if (entry.expireIn === undefined) {
+                tdExpireIn.innerText = "None";
             } else if (typeof entry.expireIn === "string" && entry.expireIn.startsWith("@admin:")) {
                 tdExpireIn.innerText = "Granted " + fullDateFmt(new Date(parseInt(entry.expireIn.slice("@admin:".length))))
             } else {
@@ -485,7 +483,6 @@
     function createToken() {
         const token = prompt("Enter access token (8-256 chars):");
         if (token === null) return;
-        if (token.length < 8 || token.length > 256) return;
         const tonight = new Date;
         tonight.setHours(23, 59, 59);
         const dateString = prompt("Enter expiry date (also accept YYYY-MM-DD hh:mm:ss)", fullDateFmt(tonight));
