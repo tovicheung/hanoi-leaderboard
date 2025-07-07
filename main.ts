@@ -67,7 +67,7 @@ async function setupKv() {
         await kv.set(["instances", "_default"], [[], []]);
     }
     
-    let instanceName = (await kv.get(["instancName"])).value;
+    let instanceName = (await kv.get(["instanceName"])).value;
     if (instanceName === null) {
         await kv.set(["instanceName"], "_default");
     }
@@ -134,8 +134,8 @@ async function adminSendInstancesData() {
     if (adminId === null) return;
     const socket = clients.get(adminId);
     socket.send(`ADMIN:INSTANCES:${JSON.stringify({
-        "instances": await getInstances(),
-        "current": (await kv.get(["instanceName"])).value,
+        instances: await getInstances(),
+        current: (await kv.get(["instanceName"])).value,
     })}`);
 }
 
