@@ -156,7 +156,7 @@
     function useAccessToken() {
         const token = prompt("Enter access token:");
         if (token === null) return;
-        if (token.length < 8 || token.length > 256) return;
+        if (token.length < 4) return;
         websocket.send("AUTH:token:" + token);
         localStorage.setItem("token", token);
     }

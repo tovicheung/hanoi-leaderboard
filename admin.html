@@ -481,11 +481,11 @@
     }
 
     function createToken() {
-        const token = prompt("Enter access token (8-256 chars):");
+        const token = prompt("Enter access token (at least 4 chars):");
         if (token === null) return;
         const tonight = new Date;
         tonight.setHours(23, 59, 59);
-        const dateString = prompt("Enter expiry date (also accept YYYY-MM-DD hh:mm:ss)", fullDateFmt(tonight));
+        const dateString = prompt("Enter expiry date (YYYY-MM-DD hh:mm:ss):", fullDateFmt(tonight));
         if (dateString === null) return;
         const expireIn = Date.parse(dateString);
         req("/api/token/create", "POST", { token, expireIn });
