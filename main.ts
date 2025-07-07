@@ -1,3 +1,5 @@
+// SOCKET
+
 const clients = new Map();
 const clientsTimestamp = new Map();
 const clientsAuth = new Map();
@@ -7,12 +9,16 @@ const clientsExpire = new Map();
 
 // TODO: merge maps
 
-var adminId: string | null = null;
+let adminId: string | null = null;
 
 const kv = await Deno.openKv();
-var config = (await kv.get(["config"])).value;
 
-const DEFAULT_CONFIG = {
+interface Config {
+    inputAccess: string,
+    outputAccess: string,
+}
+
+const DEFAULT_CONFIG: Config = {
     inputAccess: "restricted",
     outputAccess: "everyone",
 }
@@ -20,6 +26,23 @@ const DEFAULT_CONFIG = {
 // none: function is only accessible by admin
 // restricted: function is only accessible by admin and admin-approved sessions
 // everyone: function is accessible by all sessions
+
+function isValidConfig(obj: unknown): obj is Config {
+    return (
+        typeof obj === "object" &&
+        obj !== null &&
+        "inputAccess" in obj &&
+        typeof obj.inputAccess === "string" &&
+        "outputAccess" in obj &&
+        typeof obj.outputAccess === "string"
+    );
+}
+
+let config = await (async () => {
+    const tmp = (await kv.get(["config"])).value;
+    if (isValidConfig(tmp)) return tmp;
+    return DEFAULT_CONFIG;
+})();
 
 interface Record {
     name: string;
@@ -57,7 +80,7 @@ async function setupKv() {
 
 await setupKv();
 
-function broadcast(msg) {
+function broadcast(msg: string) {
     clients.forEach(websocket => {
         if (websocket.isClosed) return;
         websocket.send(msg);
@@ -65,17 +88,17 @@ function broadcast(msg) {
 }
 
 async function getData() {
-    const leaderboards = await kv.get(["leaderboards"]);
-    if (leaderboards.value === null) return [[], []];
-    return leaderboards.value
+    const leaderboards = (await kv.get(["leaderboards"])).value;
+    if (leaderboards === null) return [[], []];
+    return leaderboards
 }
 
-async function broadcastData(leaderboards) {
+async function broadcastData(leaderboards: Leaderboard[]) {
     broadcast(JSON.stringify(leaderboards));
     await kv.set(["leaderboards"], leaderboards);
 }
 
-async function adminSendServerConfig() {
+function adminSendServerConfig() {
     if (adminId === null) return;
     const socket = clients.get(adminId);
     socket.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
@@ -90,11 +113,14 @@ async function getInstances() {
     return names;
 }
 
-async function switchInstance(newInstance) {
+async function switchInstance(newInstance: string) {
     const newData = (await kv.get(["instances", newInstance])).value;
     if (newData === null) return;
 
     const currentInstance = (await kv.get(["instanceName"])).value;
+    if (typeof currentInstance !== "string") {
+        return;
+    }
     await kv.set(["instances", currentInstance], (await kv.get(["leaderboards"])).value);
     await kv.atomic()
         .set(["instanceName"], newInstance)
@@ -117,7 +143,7 @@ async function adminDone() {
     if (adminId === null) return;
     const socket = clients.get(adminId);
     socket.send("ADMIN:DONE");
-    adminSendInstancesData();
+    await adminSendInstancesData();
 }
 
 function adminSendClientsData() {
@@ -136,19 +162,23 @@ function adminSendClientsData() {
     socket.send(`ADMIN:CLIENTS:${JSON.stringify(data)}`);
 }
 
-function adminCreateToken(token, expireIn) {
+function adminCreateToken(token: string, expireIn: number) {
     const timedelta = expireIn - Date.now();
     kv.set(["tokens", token], expireIn, { expireIn: timedelta });
 }
 
-async function authCheckToken(token) {
+async function authCheckToken(token: string) {
     const tok = await kv.get(["tokens", token]);
     if (tok.value === null) return false;
+    if (typeof tok.value !== "number") return false; // invalid token
     if (Date.now() >= tok.value) return false; // expired
     return tok.value;
 }
 
-async function connectSocket(req: Request) {
+function connectSocket(req: Request) {
+    if (req.headers.get("upgrade") !== "websocket") {
+        return new Response(null, { status: 501 });
+    }
     const { socket, response } = Deno.upgradeWebSocket(req);
     
     const clientId = crypto.randomUUID();
@@ -318,13 +348,102 @@ async function connectSocket(req: Request) {
   return response;
 }
 
+// HTTPS
+
+function httpsAuthAdmin(req: Request): Response | null {
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return new Response("Unauthorized: Missing or invalid Authorization header.", { status: 401 });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (token !== Deno.env.get("ADMIN")) {
+        return new Response("Unauthorized: Invalid token.", { status: 401 });
+    }
+
+    return null;
+}
+
+function bad(msg: string | null = null) {
+    if (msg === null) {
+        return new Response("Invalid API call", { status: 400 });
+    }
+    return new Response(`Invalid API call: ${msg}`, { status: 400 });
+}
+
+function ok() {
+    return new Response("Done", { status: 200 });
+}
+
+async function handleApi(path: string, req: Request): Promise<Response> {
+    const resp = httpsAuthAdmin(req);
+    const method = req.method;
+    if (resp !== null) {
+        return resp;
+    }
+    const body = await req.json();
+    if (path.startsWith("/api/instance")) {
+        if (path == "/api/instance/create" && method == "POST") {
+            if ("name" in body && typeof body.name == "string") {
+                const name = body.name;
+                if (name.length == 0) return bad("String is empty.");
+                if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
+                await kv.set(["instances", name], [[], []]);
+            }
+        } else if (path == "/api/instance/switch" && method == "POST") {
+            if ("name" in body && typeof body.name == "string") {
+                const name = body.name;
+                await switchInstance(name);
+            }
+        } else if (path == "/api/instance/delete" && method == "DELETE") {
+            if ("name" in body && typeof body.name == "string") {
+                const name = body.name;
+                if (name == (await kv.get(["instanceName"])).value) return bad("Cannot be current instance.");
+                if ((await kv.get(["instances", name])).value === null) return bad("Instance does not exist.");
+                await kv.delete(["instances", name]);
+            }
+        } else if (path == "/api/instance/clone" && method == "POST") {
+            if ("name" in body && typeof body.name == "string") {
+                const name = body.name;
+                if (name.length == 0) return bad("String is empty.");
+                if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
+                await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
+            }
+        } else if (path == "/api/instance/import" && method == "POST") {
+            if ("data" in body) {
+                await kv.set(["leaderboards"], body.data);
+            }
+        }
+        await adminSendInstancesData();
+    } else if (path == "/api/config/update" && method == "POST") {
+        for (const fieldName in config) {
+            if (fieldName in body) {
+                config[fieldName] = body[fieldName];
+            }
+        }
+    } else if (path == "/api/token/create" && method == "POST") {
+        const { token, expireIn } = body;
+        if (typeof token !== "string") return bad("Invalid token name.");
+        if (typeof expireIn !== "number") return bad("Invalid expiry.");
+        if (token.length < 8 || token.length > 256) return bad("Tokens must be 8-256 characters long.");
+        adminCreateToken(token, expireIn);
+    } else if (path == "/api/token/delete" && method == "DELETE") {
+        const { token } = body;
+        if (typeof token !== "string") return bad("Invalid token name.");
+        await kv.delete(["tokens", token]);
+    }
+    return ok();
+}
+
 Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
     console.log("request to path:", path);
 
     if (path === "/ws") {
         if (req.headers.get("upgrade") == "websocket") {
-            return await connectSocket(req);
+            return connectSocket(req);
         }
         return new Response(null, { status: 501 });
     } else if (path === "/") { // Serve static files
@@ -337,6 +456,10 @@ Deno.serve(async (req) => {
         path = "/output.html";
     } else if (path === "/disconnected") {
         path = "/disconnected.html";
+    }
+
+    if (path.startsWith("/api/")) {
+        return await handleApi(path, req);
     }
 
     try {

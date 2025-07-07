@@ -26,7 +26,7 @@ Admin functions
     }
     ```
 
-* POST `/api/instance/delete`
+* DELETE `/api/instance/delete`
 
     Delete an instance. The instance to be deleted should not be the active instance.
     ```json
@@ -41,6 +41,15 @@ Admin functions
     ```json
     {
         "name": "Backup of Important Instance"
+    }
+    ```
+
+* POST `/api/instance/import`
+
+    Overwrite the data of the active instance with the provided JSON.
+    ```json
+    {
+        "data": [[], []]
     }
     ```
 
@@ -65,7 +74,7 @@ Admin functions
     }
     ```
 
-* POST `/api/token/delete`
+* DELETE `/api/token/delete`
 
     Deletes an access token.
     ```json
@@ -73,8 +82,6 @@ Admin functions
         "token": "my-old-secret-token"
     }
     ```
-
-For `/api/instance/*`, a response is sent indicating success or failure.
 
 ## Socket API
 The following communications are done through websocket:

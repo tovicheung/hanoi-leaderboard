@@ -100,6 +100,19 @@
         font-size: 14px;
         padding: 4px 8px;
     }
+
+    #popup {
+        position: absolute;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px;
+        z-index: 99;
+        width: fit-content;
+        color: white;
+        background-color: green;
+        display: none;
+    }
 </style>
 <body>
     <h2>Admin dashboard</h2>
@@ -151,6 +164,9 @@
     </div>
     <button onclick="window.location.href = './'" style="background-color: rgb(0, 30, 181);">Back to controller</button>
     <div id="logs"></div>
+    <div id="popup">
+        Testing 1 2 3.
+    </div>
 </body>
 
 <script>
@@ -173,7 +189,7 @@
     const websocket = (() => {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const host = window.location.host;
-        const wsUrl = `${protocol}//${host}/ws`; // Example: ws://localhost:8080/ws
+        const wsUrl = `${protocol}//${host}/ws`;
         return new WebSocket(wsUrl);
     })();
 
@@ -194,6 +210,38 @@
         if (info.connectionId == "unknown") return;
     }
 
+    async function req(url, method, data) {
+        if (url.startsWith("/")) url = url.slice(1);
+        const response = await fetch(`${window.location.protocol}//${window.location.host}/${url}`, {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${__(document.getElementById("password").value)}`
+            },
+            body: JSON.stringify(data)
+        });
+        if (response.ok) {
+            report("Success", 1);
+        } else {
+            report(`[${response.status}] ${await response.text()}`, 0, log = true);
+        }
+        waiting = false;
+        document.getElementById("instance-management").style.opacity = 1;
+    }
+
+    function report(msg, type, log = false) {
+        let color = type === null || type === undefined ? "gray" : type ? "green" : "red";
+        document.getElementById("popup").style.backgroundColor = color;
+        document.getElementById("popup").innerText = msg;
+        document.getElementById("popup").style.display = "block";
+        setTimeout(() => {
+            document.getElementById("popup").style.display = "none";
+        }, 3000);
+        if (log) {
+            pushLog(msg);
+        }
+    }
+
     function checkAdmin() {
         websocket.send(`ADMIN:${__(document.getElementById("password").value)}`);
     }
@@ -201,25 +249,29 @@
     function createNewInstance() {
         const name = prompt("Enter name for new instance:");
         if (name === null) return null;
-        websocket.send(`ADMIN:inst-create:${name}`);
+        // websocket.send(`ADMIN:inst-create:${name}`);
+        req("/api/instance/create", "POST", { name });
     }
 
     function importAndOverwrite() {
         const data = prompt("Enter JSON of data:");
         if (data === null) return null;
-        websocket.send(`ADMIN:inst-import:${data}`);
+        // websocket.send(`ADMIN:inst-import:${data}`);
+        req("/api/instance/import", "POST", { data });
     }
 
     function deleteInstance() {
         const name = prompt("Enter name of instance to delete (cannot be current instance):");
         if (name === null) return null;
-        websocket.send(`ADMIN:inst-delete:${name}`);
+        // websocket.send(`ADMIN:inst-delete:${name}`);
+        req("/api/instance/delete", "DELETE", { name });
     }
 
     function cloneInstance() {
         const name = prompt("Enter name of clone of current:");
         if (name === null) return null;
-        websocket.send(`ADMIN:inst-clone-to:${name}`);
+        // websocket.send(`ADMIN:inst-clone-to:${name}`);
+        req("/api/instance/clone", "POST", { name });
     }
 
     var waiting = false;
@@ -241,7 +293,8 @@
     }
 
     function configUpdate(newConfig) {
-        websocket.send(`ADMIN:config-update:${JSON.stringify(newConfig)}`);
+        // websocket.send(`ADMIN:config-update:${JSON.stringify(newConfig)}`);
+        req("/api/config/update", "POST", newConfig);
     }
 
     function fullDateFmt(date, millis = false) {
@@ -290,7 +343,8 @@
                     btn.innerText = name;
                     btn.value = name;
                     btn.onclick = e => instanceUpdate(() => {
-                        websocket.send(`ADMIN:inst-switch:${e.target.value}`);
+                        // websocket.send(`ADMIN:inst-switch:${e.target.value}`);
+                        req("/api/instance/switch", "POST", { name });
                     });
                     segment.appendChild(btn);
                     if (name == instanceData["current"]) {
@@ -437,10 +491,11 @@
         const dateString = prompt("Enter expiry date (also accept YYYY-MM-DD hh:mm:ss)", fullDateFmt(tonight));
         if (dateString === null) return;
         const expireIn = Date.parse(dateString);
-        websocket.send("ADMIN:create-token:" + JSON.stringify({
-            token,
-            expireIn,
-        }));
+        req("/api/token/create", "POST", { token, expireIn });
+        // websocket.send("ADMIN:create-token:" + JSON.stringify({
+        //     token,
+        //     expireIn,
+        // }));
     }
 
     const reset = () => {
