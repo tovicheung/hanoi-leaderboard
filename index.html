@@ -102,7 +102,7 @@
         <button class="small" onclick="websocket.send('!toggle-l4')">Toggle L4</button>
         <button class="small" onclick="websocket.send('!toggle-l5')">Toggle L5</button>
         <button class="small" onclick="const n = prompt('Enter new height (default 7)'); if (n !== null) websocket.send(`!adjust-height-${n}`)">Adjust height</button>
-        <h2 id="setup-status" style="color: blue;">Connecting to server ...</h2>
+        <h2 id="status" style="color: blue;">Connecting to server ...</h2>
         <div class="leaderboards">
             <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
             <div id="leaderboard2" class="leaderboard">Connecting to server ...</div>
@@ -144,8 +144,8 @@
     var leaderboard1 = [];
     var leaderboard2 = [];
 
-    function setSetupStatus(msg, vanish = false) {
-        const elem = document.getElementById("setup-status");
+    function setStatus(msg, vanish = false) {
+        const elem = document.getElementById("status");
         elem.style.display = "block";
         elem.innerText = msg;
         if (vanish) {
@@ -329,7 +329,7 @@
 
     websocket.onclose = e => {
         console.log("DISCONNECTED");
-        setSetupStatus("Disconnected.");
+        setStatus("Disconnected.");
     };
 
     websocket.onmessage = e => {
@@ -352,18 +352,18 @@
                 const token = localStorage.getItem("token");
                 if (token == null) {
                     switchScreen(999);
-                    setSetupStatus("Server blocked input requests.");
+                    setStatus("Server blocked input requests.");
                 } else {
                     websocket.send(`AUTH:token:${token}`);
-                    setSetupStatus("Authenticating ...");
+                    setStatus("Authenticating ...");
                 }
             } else if (e.data == "AUTH:success") {
-                setSetupStatus("Permission granted.", true);
+                setStatus("Permission granted.", true);
                 switchScreen(1);
             } else if (e.data == "AUTH:failure") {
                 localStorage.removeItem("token");
                 switchScreen(999);
-                setSetupStatus("Server blocked input requests.");
+                setStatus("Server blocked input requests.");
             }
             return;
         }
