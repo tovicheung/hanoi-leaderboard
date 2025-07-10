@@ -102,7 +102,7 @@
     }
 
     #popup {
-        position: absolute;
+        position: fixed;
         top: 24px;
         left: 50%;
         transform: translateX(-50%);
@@ -120,6 +120,7 @@
         <p>Verify your identity:</p>
         <input id="password" type="password">
         <button id="button-verify" onclick="checkAdmin()">Send to server</button>
+        <button id="button-test" onclick="testConnection()">Test connection</button>
     </div>
     <div>
         <h2 id="msg"></h2>
@@ -193,6 +194,19 @@
         return new WebSocket(wsUrl);
     })();
 
+    websocket._send = websocket.send;
+    websocket.send = msg => {
+        if (websocket.readyState == websocket.CONNECTING) {
+            report("Connecting", 0);
+        } else if (websocket.readyState == websocket.CLOSING) {
+            report("Connectiong closing", 0);
+        } else if (websocket.readyState == websocket.CLOSED) {
+            report("Disconnected", 0);
+            return;
+        }
+        websocket._send(msg);
+    }
+
     var info = {
         connectionStatus: "not connected",
     }
@@ -244,6 +258,13 @@
 
     function checkAdmin() {
         websocket.send(`ADMIN:${__(document.getElementById("password").value)}`);
+    }
+    
+    var lastPing = null;
+
+    function testConnection() {
+        websocket.send("ping");
+        lastPing = Date.now();
     }
 
     function createNewInstance() {
@@ -365,6 +386,9 @@
                 const sessionName = e.data.slice("ADMIN:request-session:");
                 const ans = prompt(`[Session request] \"${sessionName}\".\n\nm`)
             }
+        } else if (e.data == "pong") {
+            report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
+            lastPing = null;
         }
     }
 

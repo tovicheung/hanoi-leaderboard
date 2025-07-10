@@ -288,6 +288,10 @@ function connectSocket(req: Request) {
             return;
         }
 
+        if (event.data == "ping") {
+            socket.send("pong");
+        }
+
         if (event.data.startsWith("REPORT-ROLE:")) {
             const role = event.data.slice("REPORT-ROLE:".length);
             clientsRole.set(clientId, role);
