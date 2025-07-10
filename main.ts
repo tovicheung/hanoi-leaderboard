@@ -93,7 +93,7 @@ async function getData() {
     return leaderboards
 }
 
-async function broadcastData(leaderboards: Leaderboard[]) {
+async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
     broadcast(JSON.stringify(leaderboards));
     await kv.set(["leaderboards"], leaderboards);
 }
@@ -214,38 +214,13 @@ function connectSocket(req: Request) {
             adminSendServerConfig();
             await adminSendInstancesData();
             adminSendClientsData();
-        } else if (clientId == adminId && event.data.startsWith("ADMIN:")) {
+            return;
+        }
+        
+        if (clientId == adminId && event.data.startsWith("ADMIN:")) {
             // admin scope
             const data = event.data.slice(6);
-            if (data.startsWith("inst-create:")) {
-                const name = data.slice("inst-create:".length);
-                if (name.length != 0 && (await kv.get(["instances", name])).value == null) {
-                    await kv.set(["instances", name], [[], []]);
-                };
-                await adminDone();
-            } else if (data.startsWith("inst-switch:")) {
-                const newName = data.slice("inst-switch:".length);
-                if (newName.length != 0) {
-                    await switchInstance(newName);
-                }
-                await adminDone();
-            } else if (data.startsWith("inst-import:")) {
-                const newJson = data.slice("inst-import:".length);
-                await kv.set(["leaderboards"], JSON.parse(newJson));
-                await adminDone();
-            } else if (data.startsWith("inst-delete:")) {
-                const name = data.slice("inst-delete:".length);
-                if (name != (await kv.get(["instanceName"])).value) {
-                    await kv.delete(["instances", name]);
-                }
-                await adminDone();
-            } else if (data.startsWith("inst-clone-to:")) {
-                const name = data.slice("inst-clone-to:".length);
-                if (name.length != 0 && (await kv.get(["instances", name])).value === null) {
-                    await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
-                }
-                await adminDone();
-            } else if (data.startsWith("clients-disconnect:")) {
+            if (data.startsWith("clients-disconnect:")) {
                 const id = data.slice("clients-disconnect:".length);
                 if (!clients.has(id)) return;
                 const sock = clients.get(id);
@@ -258,18 +233,12 @@ function connectSocket(req: Request) {
                 clientsExpire.set(id, `@admin:${Date.now()}`);
                 sock.send("AUTH:success");
                 adminSendClientsData();
-            } else if (data.startsWith("config-update:")) {
-                const newConfig = JSON.parse(data.slice("config-update:".length));
-                config = { ...config, ...newConfig };
-                await kv.set(["config"], config);
-                adminSendServerConfig();
-            } else if (data.startsWith("create-token:")) {
-                // TODO: switch to using forms and POST!!
-                const {token, expireIn} = JSON.parse(data.slice("create-token:".length));
-                if (token === undefined || expireIn === undefined) return;
-                if (token.length < 4) return;
-                adminCreateToken(token, expireIn);
             }
+        }
+
+        if (event.data == "ping") {
+            socket.send("pong");
+            return;
         }
 
         if (event.data.startsWith("AUTH:") && config.inputAccess != "none") {
@@ -288,10 +257,6 @@ function connectSocket(req: Request) {
             return;
         }
 
-        if (event.data == "ping") {
-            socket.send("pong");
-        }
-
         if (event.data.startsWith("REPORT-ROLE:")) {
             const role = event.data.slice("REPORT-ROLE:".length);
             clientsRole.set(clientId, role);
@@ -308,14 +273,16 @@ function connectSocket(req: Request) {
             console.log(`denied input from ${clientId}`);
             return;
         }
+
         if (event.data.startsWith("!")) {
             broadcast(event.data);
             return;
         }
-        var leaderboards = await getData();
+
+        const leaderboards = await getData();
         if (event.data == "refresh-all") {
             leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
-            await broadcastData(leaderboards);
+            await broadcastAndSaveData(leaderboards);
             return;
         }
         if (event.data == "refresh") {
@@ -323,7 +290,7 @@ function connectSocket(req: Request) {
             return;
         }
         if (event.data == "clear") {
-            await broadcastData([[], []]);
+            await broadcastAndSaveData([[], []]);
             return;
         }
         let obj;
@@ -332,15 +299,15 @@ function connectSocket(req: Request) {
         } catch {
             return;
         }
-        if ("type" in obj && obj.type === "update" && "leaderboards" in obj) { // new api
+        if ("type" in obj && obj.type === "update" && "leaderboards" in obj) {
             const leaderboards: Leaderboard[] = obj.leaderboards;
             leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
-            await broadcastData(leaderboards);
+            await broadcastAndSaveData(leaderboards);
         }
     });
 
     socket.addEventListener("close", () => {
-        console.log(`client ${clientId} disconnected!`);
+        console.log(`client ${clientId} disconnected`);
         clients.delete(clientId);
         clientsTimestamp.delete(clientId);
         broadcast(`@nclients:${clients.size}`);
@@ -450,12 +417,16 @@ Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
     console.log("request to path:", path);
 
+    if (path.startsWith("/api/")) {
+        return await handleApi(path, req);
+    }
+
     if (path === "/ws") {
         if (req.headers.get("upgrade") == "websocket") {
             return connectSocket(req);
         }
         return new Response(null, { status: 501 });
-    } else if (path === "/") { // Serve static files
+    } else if (path === "/") {
         path = "/index.html";
     } else if (path === "/admin") {
         path = "/admin.html";
@@ -465,10 +436,6 @@ Deno.serve(async (req) => {
         path = "/output.html";
     } else if (path === "/disconnected") {
         path = "/disconnected.html";
-    }
-
-    if (path.startsWith("/api/")) {
-        return await handleApi(path, req);
     }
 
     try {
