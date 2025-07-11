@@ -165,11 +165,10 @@
     </div>
     <button onclick="window.location.href = './'" style="background-color: rgb(0, 30, 181);">Back to controller</button>
     <div id="logs"></div>
-    <div id="popup">
-        Testing 1 2 3.
-    </div>
+    <div id="popup">This message should not appear.</div>
 </body>
 
+<script src="common.js"></script>
 <script>
     const _ = (str, seed = 0) => {
         let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;

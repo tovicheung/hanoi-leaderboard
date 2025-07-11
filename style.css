@@ -93,7 +93,7 @@ button.small {
     color: black;
     background-color: transparent;
     padding: 6px;
-    margin: 6px;
+    margin: 4px;
     font-size: 20px;
     border-radius: 12px;
 }
@@ -104,4 +104,15 @@ button[dangerous]:not(.small) {
 
 button[dangerous].small {
     color: red;
+}
+
+.ctrl-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ctrl-row > h2 {
+    font-size: 20px;
 }

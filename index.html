@@ -78,30 +78,33 @@
         <button onclick="window.location.href = './output'">output</button>
     </div>
     <div id="screen1">
-        <button onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
-        <button onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
-        <button class="small" onclick="window.location.reload()">Reload this</button>
-        <button class="small" onclick="window.location.href = './sync'">Sync</button>
-        <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
-        <button class="small" onclick="window.location.href = './admin'">Admin</button>
-        <button onclick="window.location.href = './output'">Switch to output</button>
-        <br>
-        <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset L4</button>
-        <button class="small" onclick="leaderboard2 = []; sendUpdate();" dangerous>Reset L5</button>
-        <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button>
-        <button class="small" onclick="addRaw();sendUpdate();">Add raw</button>
-        <button class="small" onclick="websocket.send('!regcancel')">Send !regcancel</button>
-        <button class="small" onclick="const cmd = prompt('Enter command (!... for cross-node)'); if (cmd !== null) websocket.send(cmd)">Send command</button>
-        <button class="small" onclick="announce()">Announce</button>
-        <button class="small" onclick="websocket.send('!announcement-hide')">&lt;-- Hide</button>
-        <br>
-        <h2 style="display: inline"># clients: <span id="nclients"></span></h2>
-        <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
-        <button class="small" onclick="websocket.send('!reload-all')">Reload all</button>
-        <button class="small" onclick="websocket.send('!disconnect-all')">Disconnect all output</button>
-        <button class="small" onclick="websocket.send('!toggle-l4')">Toggle L4</button>
-        <button class="small" onclick="websocket.send('!toggle-l5')">Toggle L5</button>
-        <button class="small" onclick="const n = prompt('Enter new height (default 7)'); if (n !== null) websocket.send(`!adjust-height-${n}`)">Adjust height</button>
+        <div class="ctrl-row">
+            <button onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
+            <button onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
+            <button class="small" onclick="window.location.reload()">Reload this</button>
+            <button class="small" onclick="window.location.href = './sync'">Sync</button>
+            <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
+            <button class="small" onclick="window.location.href = './admin'">Admin</button>
+            <button onclick="window.location.href = './output'">Switch to output</button>
+        </div>
+        <div class="ctrl-row">
+            <h2 style="display: inline; font-size: 20px; color: blue"># clients: <span id="nclients"></span></h2>
+            <button class="small" onclick="websocket.send('refresh-all')">Refresh all</button>
+            <button class="small" onclick="websocket.send('!reload-all')">Reload all</button>
+            <button class="small" onclick="websocket.send('!disconnect-all-outut')">Disconnect all output</button>
+            <button class="small" onclick="addRaw();sendUpdate();">Manual input</button>
+            <button class="small" onclick="leaderboard1 = []; sendUpdate();" dangerous>Reset L4</button>
+            <button class="small" onclick="leaderboard2 = []; sendUpdate();" dangerous>Reset L5</button>
+            <!-- <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button> -->
+        </div>
+        <div class="ctrl-row">
+            <button class="small" onclick="websocket.send('!toggle-l4')">Toggle L4</button>
+            <button class="small" onclick="websocket.send('!toggle-l5')">Toggle L5</button>
+            <button class="small" onclick="adjustHeight()">Adjust display rows</button>
+            <button class="small" onclick="websocket.send('!regcancel')">Clear animation</button>
+            <button class="small" onclick="announce()">Announce</button>
+            <button class="small" onclick="websocket.send('!announcement-hide')">&lt;-- Hide</button>
+        </div>
         <h2 id="status" style="color: blue;">Connecting to server ...</h2>
         <div class="leaderboards">
             <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
@@ -255,6 +258,12 @@
             name: name,
             score: score,
         });
+    }
+
+    function adjustHeight() {
+        const n = prompt('Enter number of rows to show below the top 3 (default 7):');
+        if (n === null) return;
+        websocket.send(`!adjust-height-${n}`)
     }
 
     function announce() {

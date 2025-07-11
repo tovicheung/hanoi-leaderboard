@@ -18,6 +18,12 @@
         background-size: cover;
     }
 
+    body::backdrop {
+        background-image: url("assets/bg1.jpg");
+        background-position-x: center;
+        background-size: cover;
+    }
+
     .leaderboard {
         max-width: 45%;
         background-color: rgba(255, 255, 255, 0.7);
@@ -228,8 +234,10 @@
     function handleCommand(cmd) {
         if (cmd == "!reload-all") {
             window.location.reload();
-        } else if (cmd == "!disconnect-all") {
+        } else if (cmd == "!disconnect-all-output") {
             websocket.close();
+        } else if (cmd == "!fullscreen-all-output") {
+            document.body.requestFullscreen();
         } else if (cmd.startsWith("!adjust-height-")) {
             const newBaseHeight = parseInt(cmd.slice(15));
             height = newBaseHeight + (height - baseHeight);
