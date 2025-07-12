@@ -1,13 +1,19 @@
 // SOCKET
 
-const clients = new Map();
-const clientsTimestamp = new Map();
-const clientsAuth = new Map();
-const clientsRole = new Map();
-const clientsUA = new Map();
-const clientsExpire = new Map();
+type Auth = { type: "none" }
+    | { type: "admin" }
+    | { type: "token", token: string, expireIn: number }
+    | { type: "elevated", timestamp: number }
 
-// TODO: merge maps
+interface Client {
+    socket: WebSocket,
+    connectTimestamp: number,
+    role: string, //
+    auth: Auth,
+    userAgent: string | null,
+}
+
+const clients_ = new Map<string, Client>();
 
 let adminId: string | null = null;
 
@@ -81,9 +87,9 @@ async function setupKv() {
 await setupKv();
 
 function broadcast(msg: string) {
-    clients.forEach(websocket => {
-        if (websocket.isClosed) return;
-        websocket.send(msg);
+    clients_.forEach(c => {
+        if (c.socket.readyState == c.socket.CLOSED) return;
+        c.socket.send(msg);
     });
 }
 
@@ -98,10 +104,15 @@ async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
     await kv.set(["leaderboards"], leaderboards);
 }
 
+function getAdminSocket(): WebSocket | null {
+    if (adminId === null) return null;
+    if (!clients_.has(adminId)) return null;
+    return clients_.get(adminId)!.socket;
+}
+
 function adminSendServerConfig() {
-    if (adminId === null) return;
-    const socket = clients.get(adminId);
-    socket.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
+    getAdminSocket()
+        ?.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
 }
 
 async function getInstances() {
@@ -131,35 +142,23 @@ async function switchInstance(newInstance: string) {
 }
 
 async function adminSendInstancesData() {
-    if (adminId === null) return;
-    const socket = clients.get(adminId);
-    socket.send(`ADMIN:INSTANCES:${JSON.stringify({
-        instances: await getInstances(),
-        current: (await kv.get(["instanceName"])).value,
-    })}`);
-}
-
-async function adminDone() {
-    if (adminId === null) return;
-    const socket = clients.get(adminId);
-    socket.send("ADMIN:DONE");
-    await adminSendInstancesData();
+    getAdminSocket()
+        ?.send(`ADMIN:INSTANCES:${JSON.stringify({
+            instances: await getInstances(),
+            current: (await kv.get(["instanceName"])).value,
+        })}`);
 }
 
 function adminSendClientsData() {
-    if (adminId === null) return;
     const data = [];
-    for (const id of clients.keys()) {
+    for (const id of clients_.keys()) {
         data.push({
             id: id,
-            timestamp: clientsTimestamp.get(id),
-            expireIn: clientsExpire.get(id),
-            role: clientsRole.get(id),
-            userAgent: clientsUA.get(id),
+            ...clients_.get(id),
         });
     }
-    const socket = clients.get(adminId);
-    socket.send(`ADMIN:CLIENTS:${JSON.stringify(data)}`);
+    getAdminSocket()
+        ?.send(`ADMIN:CLIENTS:${JSON.stringify(data)}`);
 }
 
 function adminCreateToken(token: string, expireIn: number) {
@@ -182,16 +181,25 @@ function connectSocket(req: Request) {
     const { socket, response } = Deno.upgradeWebSocket(req);
     
     const clientId = crypto.randomUUID();
-    clients.set(clientId, socket);
-    clientsTimestamp.set(clientId, Date.now());
-    clientsUA.set(clientId, req.headers.get("user-agent"));
-    clientsRole.set(clientId, "Pre-Auth");
+
+    clients_.set(clientId, {
+        socket: socket,
+        connectTimestamp: Date.now(),
+        role: "Pre-Auth",
+        auth: { type: "none" },
+        userAgent: req.headers.get("user-agent"),
+    });
+
+    // clients.set(clientId, socket);
+    // clientsTimestamp.set(clientId, Date.now());
+    // clientsUA.set(clientId, req.headers.get("user-agent"));
+    // clientsRole.set(clientId, "Pre-Auth");
 
     // Send current scores to newly connected client
     socket.addEventListener("open", async () => {
         console.log(`client ${clientId} connected!`);
         socket.send(JSON.stringify(await getData()));
-        broadcast(`@nclients:${clients.size}`)
+        broadcast(`@nclients:${clients_.size}`)
         if (config.inputAccess == "everyone") {
             socket.send("AUTH:success");
         } else {
@@ -202,15 +210,20 @@ function connectSocket(req: Request) {
     });
 
     socket.addEventListener("message", async (event) => {
+        if (!clients_.has(clientId)) return;
         console.log(`received from ${clientId}`)
         console.log(event.data);
         if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
-            if (adminId !== null && clients.has(adminId) && clientId != adminId) {
-                const oldClient = clients.get(adminId);
-                oldClient.send("ADMIN:OVERRIDDEN");
+            if (adminId !== null && clients_.has(adminId) && clientId != adminId) {
+                // const oldClient = clients.get(adminId);
+                // oldClient.send("ADMIN:OVERRIDDEN");
+                const oldAdmin = clients_.get(adminId);
+                oldAdmin?.socket.send("ADMIN:OVERRIDEN");
             }
             adminId = clientId;
-            clientsRole.set(adminId, "Admin");
+            // clientsRole.set(adminId, "Admin");
+            clients_.get(adminId)!.role = "Admin";
+            clients_.get(adminId)!.auth = { type: "admin" };
             adminSendServerConfig();
             await adminSendInstancesData();
             adminSendClientsData();
@@ -222,16 +235,16 @@ function connectSocket(req: Request) {
             const data = event.data.slice(6);
             if (data.startsWith("clients-disconnect:")) {
                 const id = data.slice("clients-disconnect:".length);
-                if (!clients.has(id)) return;
-                const sock = clients.get(id);
-                sock.close();
+                clients_.get(id)?.socket.close();
             } else if (data.startsWith("clients-allow-input:")) {
                 const id = data.slice("clients-allow-input:".length);
-                if (!clients.has(id)) return;
-                const sock = clients.get(id);
-                clientsAuth.set(id, `@admin:${Date.now()}`);
-                clientsExpire.set(id, `@admin:${Date.now()}`);
-                sock.send("AUTH:success");
+                const c = clients_.get(id);
+                if (!c) return;
+                // const sock = clients.get(id);
+                // clientsAuth.set(id, `@admin:${Date.now()}`);
+                // clientsExpire.set(id, `@admin:${Date.now()}`);
+                c.auth = { type: "elevated", timestamp: Date.now() };
+                c.socket.send("AUTH:success");
                 adminSendClientsData();
             }
         }
@@ -247,8 +260,9 @@ function connectSocket(req: Request) {
                 const tokExpireIn = await authCheckToken(token);
                 if (tokExpireIn) {
                     socket.send("AUTH:success");
-                    clientsAuth.set(clientId, token);
-                    clientsExpire.set(clientId, tokExpireIn);
+                    // clientsAuth.set(clientId, token);
+                    // clientsExpire.set(clientId, tokExpireIn);
+                    clients_.get(clientId)!.auth = { type: "token", token: token, expireIn: tokExpireIn };
                     adminSendClientsData();
                 } else {
                     socket.send("AUTH:failure");
@@ -259,18 +273,19 @@ function connectSocket(req: Request) {
 
         if (event.data.startsWith("REPORT-ROLE:")) {
             const role = event.data.slice("REPORT-ROLE:".length);
-            clientsRole.set(clientId, role);
+            // clientsRole.set(clientId, role);
+            clients_.get(clientId)!.role = role;
             adminSendClientsData();
             return;
         }
         
-        if (adminId != clientId && (
-            (config.inputAccess == "restricted" && !clientsAuth.has(clientId))
-            || config.inputAccess == "none"
-        )) {
+        if (
+            (config.inputAccess == "restricted" && /* !clientsAuth.has(clientId) */ clients_.get(clientId)?.auth.type == "none")
+            || (config.inputAccess == "none" && clients_.get(clientId)!.auth.type != "admin")
+        ) {
             // unauthenticated client intends to send input
             socket.send("AUTH:failure");
-            console.log(`denied input from ${clientId}`);
+            console.log(`denied input access from ${clientId}`);
             return;
         }
 
@@ -308,14 +323,15 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("close", () => {
         console.log(`client ${clientId} disconnected`);
-        clients.delete(clientId);
-        clientsTimestamp.delete(clientId);
-        broadcast(`@nclients:${clients.size}`);
+        clients_.delete(clientId);
+        // clients.delete(clientId);
+        // clientsTimestamp.delete(clientId);
+        broadcast(`@nclients:${clients_.size}`);
         if (clientId === adminId) adminId = null;
-        if (clientsAuth.has(clientId)) clientsAuth.delete(clientId);
-        if (clientsUA.has(clientId)) clientsUA.delete(clientId);
-        if (clientsRole.has(clientId)) clientsRole.delete(clientId);
-        if (clientsExpire.has(clientId)) clientsExpire.delete(clientId);
+        // if (clientsAuth.has(clientId)) clientsAuth.delete(clientId);
+        // if (clientsUA.has(clientId)) clientsUA.delete(clientId);
+        // if (clientsRole.has(clientId)) clientsRole.delete(clientId);
+        // if (clientsExpire.has(clientId)) clientsExpire.delete(clientId);
         adminSendClientsData();
     })
   return response;

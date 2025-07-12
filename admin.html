@@ -446,7 +446,7 @@
             const tr = document.createElement("tr");
 
             const tdTimestamp = document.createElement("td");
-            tdTimestamp.innerText = fullDateFmt(new Date(entry.timestamp));
+            tdTimestamp.innerText = fullDateFmt(new Date(entry.connectTimestamp));
             tr.appendChild(tdTimestamp);
 
             const tdUA = document.createElement("td");
@@ -463,14 +463,17 @@
             tr.appendChild(tdRole);
             
             const tdExpireIn = document.createElement("td");
-            if (entry.role == "Admin") {
+            const _auth = entry.auth;
+            if (_auth.type == "admin") {
                 tdExpireIn.innerText = "Admin";
-            } else if (entry.expireIn === undefined) {
+            } else if (_auth.type == "token") {
+                tdExpireIn.innerText = `Token; Until ${fullDateFmt(new Date(parseInt(_auth.expireIn)))}`;
+            } else if (_auth.type == "elevated") {
+                tdExpireIn.innertext = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
+            } else if (_auth.type == "none") {
                 tdExpireIn.innerText = "None";
-            } else if (typeof entry.expireIn === "string" && entry.expireIn.startsWith("@admin:")) {
-                tdExpireIn.innerText = "Granted " + fullDateFmt(new Date(parseInt(entry.expireIn.slice("@admin:".length))))
             } else {
-                tdExpireIn.innerText = "Until " + fullDateFmt(new Date(entry.expireIn));
+                tdExpireIn.innerText = "Malformed";
             }
             tr.appendChild(tdExpireIn);
 
