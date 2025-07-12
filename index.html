@@ -406,7 +406,7 @@
             if (score === null) return;
             score = parseInt(score);
         } else {
-            score = tiemStringToMillis(newTime);
+            score = timeStringToMillis(newTime);
         }
         leaderboard[n-1] = { name, score };
         sendUpdate();

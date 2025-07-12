@@ -269,28 +269,24 @@
     function createNewInstance() {
         const name = prompt("Enter name for new instance:");
         if (name === null) return null;
-        // websocket.send(`ADMIN:inst-create:${name}`);
         req("/api/instance/create", "POST", { name });
     }
 
     function importAndOverwrite() {
         const data = prompt("Enter JSON of data:");
         if (data === null) return null;
-        // websocket.send(`ADMIN:inst-import:${data}`);
         req("/api/instance/import", "POST", { data: JSON.parse(data) });
     }
 
     function deleteInstance() {
         const name = prompt("Enter name of instance to delete (cannot be current instance):");
         if (name === null) return null;
-        // websocket.send(`ADMIN:inst-delete:${name}`);
         req("/api/instance/delete", "DELETE", { name });
     }
 
     function cloneInstance() {
         const name = prompt("Enter name of clone of current:");
         if (name === null) return null;
-        // websocket.send(`ADMIN:inst-clone-to:${name}`);
         req("/api/instance/clone", "POST", { name });
     }
 
@@ -371,9 +367,6 @@
                         btn.classList.add("selected");
                     }
                 }
-            } else if (e.data == "ADMIN:DONE") {
-                waiting = false;
-                document.getElementById("instance-management").style.opacity = 1;
             } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
                 const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
                 updateClientData(data);
@@ -382,6 +375,7 @@
                 serverConfig = JSON.parse(e.data.slice("ADMIN:SERVERCONFIG:".length));
                 updateInfo();
             } else if (e.data.startsWith("ADMIN:request-session:")) {
+                // unused
                 const sessionName = e.data.slice("ADMIN:request-session:");
                 const ans = prompt(`[Session request] \"${sessionName}\".\n\nm`)
             }
@@ -462,20 +456,20 @@
             }
             tr.appendChild(tdRole);
             
-            const tdExpireIn = document.createElement("td");
+            const tdAuth = document.createElement("td");
             const _auth = entry.auth;
             if (_auth.type == "admin") {
-                tdExpireIn.innerText = "Admin";
+                tdAuth.innerText = "Admin";
             } else if (_auth.type == "token") {
-                tdExpireIn.innerText = `Token; Until ${fullDateFmt(new Date(parseInt(_auth.expireIn)))}`;
+                tdAuth.innerText = `Token; Until ${fullDateFmt(new Date(parseInt(_auth.expireIn)))}`;
             } else if (_auth.type == "elevated") {
-                tdExpireIn.innertext = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
+                tdAuth.innertext = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
             } else if (_auth.type == "none") {
-                tdExpireIn.innerText = "None";
+                tdAuth.innerText = "None";
             } else {
-                tdExpireIn.innerText = "Malformed";
+                tdAuth.innerText = "Malformed";
             }
-            tr.appendChild(tdExpireIn);
+            tr.appendChild(tdAuth);
 
             const tdAction = document.createElement("td");
 

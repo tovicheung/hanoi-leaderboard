@@ -13,15 +13,15 @@ interface Client {
     userAgent: string | null,
 }
 
-const clients_ = new Map<string, Client>();
+const clients = new Map<string, Client>();
 
 let adminId: string | null = null;
 
-const kv = await Deno.openKv();
+type AccessType = "everyone" | "restricted" | "none";
 
 interface Config {
-    inputAccess: string,
-    outputAccess: string,
+    inputAccess: AccessType,
+    outputAccess: AccessType,
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -44,7 +44,8 @@ function isValidConfig(obj: unknown): obj is Config {
     );
 }
 
-let config = await (async () => {
+const kv = await Deno.openKv();
+const config = await (async () => {
     const tmp = (await kv.get(["config"])).value;
     if (isValidConfig(tmp)) return tmp;
     return DEFAULT_CONFIG;
@@ -73,13 +74,11 @@ async function setupKv() {
         await kv.set(["instances", "_default"], [[], []]);
     }
     
-    let instanceName = (await kv.get(["instanceName"])).value;
-    if (instanceName === null) {
+    if ((await kv.get(["instanceName"])).value === null) {
         await kv.set(["instanceName"], "_default");
     }
 
-    let leaderboards = (await kv.get(["leaderboards"])).value;
-    if (leaderboards === null) {
+    if ((await kv.get(["leaderboards"])).value === null) {
         await kv.set(["leaderboards"], [[], []]);
     }
 }
@@ -87,16 +86,15 @@ async function setupKv() {
 await setupKv();
 
 function broadcast(msg: string) {
-    clients_.forEach(c => {
+    clients.forEach(c => {
         if (c.socket.readyState == c.socket.CLOSED) return;
         c.socket.send(msg);
     });
 }
 
-async function getData() {
+async function getData(): Promise<Leaderboard[]> {
     const leaderboards = (await kv.get(["leaderboards"])).value;
-    if (leaderboards === null) return [[], []];
-    return leaderboards
+    return <Leaderboard[]>leaderboards ?? [[], []];
 }
 
 async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
@@ -106,8 +104,8 @@ async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
 
 function getAdminSocket(): WebSocket | null {
     if (adminId === null) return null;
-    if (!clients_.has(adminId)) return null;
-    return clients_.get(adminId)!.socket;
+    if (!clients.has(adminId)) return null;
+    return clients.get(adminId)!.socket;
 }
 
 function adminSendServerConfig() {
@@ -151,10 +149,10 @@ async function adminSendInstancesData() {
 
 function adminSendClientsData() {
     const data = [];
-    for (const id of clients_.keys()) {
+    for (const id of clients.keys()) {
         data.push({
             id: id,
-            ...clients_.get(id),
+            ...clients.get(id),
         });
     }
     getAdminSocket()
@@ -178,11 +176,11 @@ function connectSocket(req: Request) {
     if (req.headers.get("upgrade") !== "websocket") {
         return new Response(null, { status: 501 });
     }
+
     const { socket, response } = Deno.upgradeWebSocket(req);
-    
     const clientId = crypto.randomUUID();
 
-    clients_.set(clientId, {
+    clients.set(clientId, {
         socket: socket,
         connectTimestamp: Date.now(),
         role: "Pre-Auth",
@@ -190,16 +188,10 @@ function connectSocket(req: Request) {
         userAgent: req.headers.get("user-agent"),
     });
 
-    // clients.set(clientId, socket);
-    // clientsTimestamp.set(clientId, Date.now());
-    // clientsUA.set(clientId, req.headers.get("user-agent"));
-    // clientsRole.set(clientId, "Pre-Auth");
-
-    // Send current scores to newly connected client
     socket.addEventListener("open", async () => {
         console.log(`client ${clientId} connected!`);
         socket.send(JSON.stringify(await getData()));
-        broadcast(`@nclients:${clients_.size}`)
+        broadcast(`@nclients:${clients.size}`)
         if (config.inputAccess == "everyone") {
             socket.send("AUTH:success");
         } else {
@@ -210,20 +202,17 @@ function connectSocket(req: Request) {
     });
 
     socket.addEventListener("message", async (event) => {
-        if (!clients_.has(clientId)) return;
+        if (!clients.has(clientId)) return;
         console.log(`received from ${clientId}`)
         console.log(event.data);
         if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
-            if (adminId !== null && clients_.has(adminId) && clientId != adminId) {
-                // const oldClient = clients.get(adminId);
-                // oldClient.send("ADMIN:OVERRIDDEN");
-                const oldAdmin = clients_.get(adminId);
+            if (adminId !== null && clients.has(adminId) && clientId != adminId) {
+                const oldAdmin = clients.get(adminId);
                 oldAdmin?.socket.send("ADMIN:OVERRIDEN");
             }
             adminId = clientId;
-            // clientsRole.set(adminId, "Admin");
-            clients_.get(adminId)!.role = "Admin";
-            clients_.get(adminId)!.auth = { type: "admin" };
+            clients.get(adminId)!.role = "Admin";
+            clients.get(adminId)!.auth = { type: "admin" };
             adminSendServerConfig();
             await adminSendInstancesData();
             adminSendClientsData();
@@ -235,14 +224,11 @@ function connectSocket(req: Request) {
             const data = event.data.slice(6);
             if (data.startsWith("clients-disconnect:")) {
                 const id = data.slice("clients-disconnect:".length);
-                clients_.get(id)?.socket.close();
+                clients.get(id)?.socket.close();
             } else if (data.startsWith("clients-allow-input:")) {
                 const id = data.slice("clients-allow-input:".length);
-                const c = clients_.get(id);
+                const c = clients.get(id);
                 if (!c) return;
-                // const sock = clients.get(id);
-                // clientsAuth.set(id, `@admin:${Date.now()}`);
-                // clientsExpire.set(id, `@admin:${Date.now()}`);
                 c.auth = { type: "elevated", timestamp: Date.now() };
                 c.socket.send("AUTH:success");
                 adminSendClientsData();
@@ -260,9 +246,7 @@ function connectSocket(req: Request) {
                 const tokExpireIn = await authCheckToken(token);
                 if (tokExpireIn) {
                     socket.send("AUTH:success");
-                    // clientsAuth.set(clientId, token);
-                    // clientsExpire.set(clientId, tokExpireIn);
-                    clients_.get(clientId)!.auth = { type: "token", token: token, expireIn: tokExpireIn };
+                    clients.get(clientId)!.auth = { type: "token", token: token, expireIn: tokExpireIn };
                     adminSendClientsData();
                 } else {
                     socket.send("AUTH:failure");
@@ -273,15 +257,14 @@ function connectSocket(req: Request) {
 
         if (event.data.startsWith("REPORT-ROLE:")) {
             const role = event.data.slice("REPORT-ROLE:".length);
-            // clientsRole.set(clientId, role);
-            clients_.get(clientId)!.role = role;
+            clients.get(clientId)!.role = role;
             adminSendClientsData();
             return;
         }
         
         if (
-            (config.inputAccess == "restricted" && /* !clientsAuth.has(clientId) */ clients_.get(clientId)?.auth.type == "none")
-            || (config.inputAccess == "none" && clients_.get(clientId)!.auth.type != "admin")
+            (config.inputAccess == "restricted" && /* !clientsAuth.has(clientId) */ clients.get(clientId)?.auth.type == "none")
+            || (config.inputAccess == "none" && clients.get(clientId)!.auth.type != "admin")
         ) {
             // unauthenticated client intends to send input
             socket.send("AUTH:failure");
@@ -323,15 +306,9 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("close", () => {
         console.log(`client ${clientId} disconnected`);
-        clients_.delete(clientId);
-        // clients.delete(clientId);
-        // clientsTimestamp.delete(clientId);
-        broadcast(`@nclients:${clients_.size}`);
+        clients.delete(clientId);
+        broadcast(`@nclients:${clients.size}`);
         if (clientId === adminId) adminId = null;
-        // if (clientsAuth.has(clientId)) clientsAuth.delete(clientId);
-        // if (clientsUA.has(clientId)) clientsUA.delete(clientId);
-        // if (clientsRole.has(clientId)) clientsRole.delete(clientId);
-        // if (clientsExpire.has(clientId)) clientsExpire.delete(clientId);
         adminSendClientsData();
     })
   return response;
@@ -386,7 +363,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 const name = body.name;
                 await switchInstance(name);
             }
-        } else if (path == "/api/instance/delete" && method == "DELETE") {
+        } else if (path == "/api/instance/delete" && (method == "POST" || method == "DELETE")) {
             if ("name" in body && typeof body.name == "string") {
                 const name = body.name;
                 if (name == (await kv.get(["instanceName"])).value) return bad("Cannot be current instance.");
@@ -419,12 +396,15 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         const { token, expireIn } = body;
         if (typeof token !== "string") return bad("Invalid token name.");
         if (typeof expireIn !== "number") return bad("Invalid expiry.");
-        if (token.length < 4 || token.length > 256) return bad("Tokens must be at least 4 characters long.");
+        if (token.length < 4) return bad("Tokens must be at least 4 characters long.");
         adminCreateToken(token, expireIn);
-    } else if (path == "/api/token/delete" && method == "DELETE") {
+    } else if (path == "/api/token/delete" && (method == "POST" || method == "DELETE")) {
         const { token } = body;
         if (typeof token !== "string") return bad("Invalid token name.");
+        if ((await kv.get(["tokens", token])).value === null) return bad("Token does not exist.")
         await kv.delete(["tokens", token]);
+    } else {
+        return bad("Unknown method");
     }
     return ok();
 }
@@ -433,7 +413,7 @@ Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
     console.log("request to path:", path);
 
-    if (path.startsWith("/api/")) {
+    if (path.startsWith("/api")) {
         return await handleApi(path, req);
     }
 
