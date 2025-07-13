@@ -196,7 +196,6 @@ function connectSocket(req: Request) {
             socket.send("AUTH:success");
         } else {
             socket.send("AUTH:required");
-            console.log(`requiring auth from ${clientId}`);
         }
         adminSendClientsData();
     });
@@ -205,6 +204,7 @@ function connectSocket(req: Request) {
         if (!clients.has(clientId)) return;
         console.log(`received from ${clientId}`)
         console.log(event.data);
+
         if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
             if (adminId !== null && clients.has(adminId) && clientId != adminId) {
                 const oldAdmin = clients.get(adminId);
@@ -262,13 +262,18 @@ function connectSocket(req: Request) {
             return;
         }
         
+        const clientAuth = clients.get(clientId)!.auth;
+
+        if (clientAuth.type == "token" && clientAuth.expireIn < Date.now()) {
+            clients.get(clientId)!.auth = { type: "none" };
+        }
+
         if (
-            (config.inputAccess == "restricted" && /* !clientsAuth.has(clientId) */ clients.get(clientId)?.auth.type == "none")
+            (config.inputAccess == "restricted" && clients.get(clientId)?.auth.type == "none")
             || (config.inputAccess == "none" && clients.get(clientId)!.auth.type != "admin")
         ) {
             // unauthenticated client intends to send input
             socket.send("AUTH:failure");
-            console.log(`denied input access from ${clientId}`);
             return;
         }
 
