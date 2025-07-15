@@ -416,7 +416,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
 
 Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
-    console.log("request to path:", path);
+    // console.log("request to path:", path);
 
     if (path.startsWith("/api")) {
         return await handleApi(path, req);
@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const file = await Deno.open(Deno.cwd() + path);
+        const file = await Deno.open(Deno.cwd() + "/public" + path);
         return new Response(file.readable);
     } catch (e) {
         console.error(`Error serving file ${path}:`, e);
