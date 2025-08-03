@@ -1,12 +1,6 @@
-## Todo
-
-* support for hosting event on local network
-    * IP-based access control
-    
-
 ## HTTP API
 
-Admin functions
+The following admin functions are implemented using HTTP with a bearer token.
 
 * POST `/api/instance/create`
     
@@ -85,11 +79,8 @@ Admin functions
 
 ## Socket API
 The following communications are done through websocket:
-* authentication
-* role reporting
-* refresh clients
 * leaderboard data updates
-* the following admin functions:
-    * disconnect clients
-    * temporarily allow input from clients
-    * overriding admin sessions
+* authentication (`AUTH:`)
+* role reporting
+* cross-node communication (`!` and `@`)
+* admin: live operations such as session-wise permission management (`ADMIN:`)

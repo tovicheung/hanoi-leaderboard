@@ -1,0 +1,402 @@
+function parseTime(millis) {
+    const dur = new Date(millis);
+    return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
+}
+
+function updateLeaderboards() {
+    updateLeaderboard("leaderboard1", leaderboard1);
+    updateLeaderboard("leaderboard2", leaderboard2);
+}
+
+var leaderboard1 = [];
+var leaderboard2 = [];
+
+function setStatus(msg, vanish = false) {
+    const elem = document.getElementById("status");
+    elem.style.display = "block";
+    elem.innerText = msg;
+    if (vanish) {
+        setTimeout(() => elem.style.display = "none", 1500);
+    }
+}
+
+function useAccessToken() {
+    const token = prompt("Enter access token:");
+    if (token === null) return;
+    if (token.length < 4) return;
+    websocket.send("AUTH:token:" + token);
+    localStorage.setItem("token", token);
+}
+
+function customName() {
+    const custom = prompt("Enter name:");
+    if (custom === null) return;
+    trialOptions.cls = custom;
+    trialOptions.clsno = "";
+    document.getElementById("confirm-class").innerText = trialOptions.cls;
+    document.getElementById("confirm-classno").innerText = trialOptions.clsno;
+    switchScreen(4);
+    websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
+}
+
+function switchScreen(n) {
+    for (const child of document.getElementById("container").children) {
+        child.style.display = "none";
+    }
+    document.getElementById(`screen${n}`).style.display = "block";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    switchScreen(1);
+    for (var i = 1; i <= 6; i++) {
+        const row = document.createElement("div");
+        row.classList.add("row");
+        for (const letter of "ABCDE") {
+            const btn = document.createElement("button");
+            btn.innerText = `${i}${letter}`;
+            if (i <= 3 && letter == "E") btn.style.opacity = 0;
+            else btn.onclick = e => {
+                trialOptions.cls = e.target.innerText;
+                document.getElementById("confirm-class").innerText = trialOptions.cls;
+                switchScreen(3);
+            }
+            row.appendChild(btn);
+        }
+        document.getElementById("screen2").children[0].appendChild(row);
+    }
+    const width = 5;
+    const height = 7;
+    for (var i = 0; i < height; i++) {
+        const row = document.createElement("div");
+        row.classList.add("row");
+        for (var j = 0; j < width; j++) {
+            const btn = document.createElement("button");
+            btn.innerText = (i * width + j + 1).toString().padStart(2, "0");
+            btn.onclick = e => {
+                trialOptions.clsno = e.target.innerText;
+                document.getElementById("confirm-classno").innerText = trialOptions.clsno;
+                switchScreen(4);
+
+                websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.cls} ${trialOptions.clsno}`);
+            }
+            row.appendChild(btn);
+        }
+        document.getElementById("screen3").children[0].appendChild(row);
+    }
+
+    document.querySelectorAll("button[dangerous]").forEach(e => {
+        e._onclick = e.onclick;
+        e.onclick = () => {
+            const ans = prompt("Are you sure? Type 'yes' to confirm.");
+            if (ans == "yes!") { // intentional
+                e._onclick();
+            }
+        }
+    })
+});
+
+const trialOptions = {
+    ndisks: 4,
+    startTime: 0,
+    timerInterval: 0,
+    score: 0,
+    cls: "",
+    clsno: "",
+}
+
+function sendUpdate() {
+    websocket.send(JSON.stringify({
+        type: "update",
+        leaderboards: [leaderboard1, leaderboard2],
+    }));
+}
+
+function pushRecord(leaderboard, name, score) {
+    leaderboard.forEach((data, i) => {
+        if (data.name == name) {
+            if (data.score < score) score = data.score;
+            leaderboard.splice(i, 1);
+        }
+    });
+    leaderboard.push({
+        name: name,
+        score: score,
+    });
+}
+
+function adjustHeight() {
+    const n = prompt("Enter number of rows to show below the top 3 (default 7):");
+    if (n === null) return;
+    websocket.send(`!adjust-height-${n}`)
+}
+
+function announce() {
+    const msg = prompt("Enter announcement:", "Announcement: ");
+    if (msg === null) return;
+    if (msg.length == 0) return;
+    websocket.send(`!announcement-show:${msg}`);
+}
+
+function addRaw() {
+    const leaderboard = prompt("Leaderboard 1 or 2?");
+    if (leaderboard !== "1" && leaderboard !== "2") return;
+    const name = prompt("Enter name:");
+    if (name === null) return;
+    let score = prompt("Enter time: (leave blank to enter raw score)");
+    if (score === null) return;
+    if (score === "") {
+        score = prompt("Enter score:");
+        if (score === null) return;
+        score = parseInt(score);
+    } else {
+        score = timeStringToMillis(score);
+    }
+    pushRecord(
+        leaderboard == "1" ? leaderboard1 : leaderboard2,
+        name,
+        score,
+    );
+}
+
+function sendNewRecord() {
+    websocket.send("!regconfirm");
+    pushRecord(trialOptions.ndisks == 4 ? leaderboard1 : leaderboard2, `${trialOptions.cls} ${trialOptions.clsno}`, score);
+    sendUpdate();
+    switchScreen(1);
+}
+
+function timerClickListener() {
+    score = Date.now() - trialOptions.startTime;
+    clearInterval(trialOptions.timerInterval);
+    removeEventListener("mousedown", timerClickListener);
+    removeEventListener("touchstart", timerClickListener);
+    document.getElementById("timer-start-button").style.display = "block";
+    websocket.send(`!regend-${score}`);
+    switchScreen(5);
+    document.querySelectorAll(".result").forEach(e => e.innerText = parseTime(score));
+    document.getElementById("timer").innerText = "00:00.000";
+}
+
+function startTimer() {
+    trialOptions.startTime = Date.now();
+    trialOptions.timerInterval = setInterval(() => {
+        document.getElementById("timer").innerText = parseTime(Date.now() - trialOptions.startTime);
+    }, 57);
+    addEventListener("mousedown", timerClickListener);
+    addEventListener("touchstart", timerClickListener);
+    document.getElementById("timer-start-button").style.display = "none";
+    websocket.send("!regstart");
+}
+
+const websocket = (() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws`; // Example: ws://localhost:8080/ws
+    return new WebSocket(wsUrl);
+})();
+
+websocket.onopen = e => {
+    console.log("CONNECTED");
+    websocket.send("REPORT-ROLE:Input");
+};
+
+websocket.onclose = e => {
+    console.log("DISCONNECTED");
+    setStatus("Disconnected.");
+};
+
+websocket.onmessage = e => {
+    console.log(`RECEIVED: ${e.data}`);
+    if (e.data.startsWith("@")) {
+        if (e.data.startsWith("@nclients:")) {
+            document.getElementById("nclients").innerText = e.data.slice(10);
+        }
+        return;
+    }
+    if (e.data.startsWith("!")) {
+        if (e.data == "!reload-all") {
+            window.location.reload();
+        }
+        return;
+    };
+    if (e.data.startsWith("AUTH:")) {
+        if (e.data == "AUTH:required") {
+            // server requires auth
+            const token = localStorage.getItem("token");
+            if (token == null) {
+                switchScreen(999);
+                setStatus("Server blocked input requests.");
+            } else {
+                websocket.send(`AUTH:token:${token}`);
+                setStatus("Authenticating ...");
+            }
+        } else if (e.data == "AUTH:success") {
+            setStatus("Permission granted.", true);
+            switchScreen(1);
+        } else if (e.data == "AUTH:failure") {
+            localStorage.removeItem("token");
+            switchScreen(999);
+            setStatus("Server blocked input requests.");
+        }
+        return;
+    }
+    const data = JSON.parse(e.data);
+    leaderboard1 = data[0];
+    leaderboard2 = data[1];
+    updateLeaderboards();
+};
+
+websocket.onerror = e => {
+    console.log(`ERROR: ${e.data}`);
+};
+
+function timeStringToMillis(timeString) {
+    let parts = timeString.split(":");
+    const minutes = parseInt(parts[0]);
+    parts = parts[1].split(".");
+    const seconds = parseInt(parts[0]);
+    const millis = parseInt(parts[1]);
+    return (minutes * 60 + seconds) * 1000 + millis;
+}
+
+function modifyRank(leaderboard, n) {
+    const name = prompt("Enter new name:", leaderboard[n-1].name);
+    if (name === null) return;
+    const newTime = prompt("Enter new time: (leave blank to edit raw score)", parseTime(leaderboard[n-1].score));
+    if (newTime === null) return;
+    let score;
+    if (newTime == "") {
+        score = prompt("Enter new score:", leaderboard[n-1].score);
+        if (score === null) return;
+        score = parseInt(score);
+    } else {
+        score = timeStringToMillis(newTime);
+    }
+    leaderboard[n-1] = { name, score };
+    sendUpdate();
+}
+
+function removeRank(leaderboard, n) {
+    leaderboard.splice(n - 1, 1);
+    sendUpdate();
+}
+
+function updateLeaderboard(id, leaderboard) {
+    const container = document.getElementById(id);
+    container.innerHTML = "";
+    var rank = 1;
+    for (const {name, score} of leaderboard) {
+        const record = document.createElement("div");
+        record.classList.add("record");
+        const recordRank = document.createElement("span");
+        recordRank.classList.add("record-rank");
+        recordRank.innerText = rank.toString();
+        const recordName = document.createElement("span");
+        recordName.classList.add("record-name");
+        recordName.innerText = name;
+        const recordTime = document.createElement("span");
+        recordTime.classList.add("record-time");
+        recordTime.innerText = parseTime(score);
+        record.appendChild(recordRank);
+        record.appendChild(recordName);
+        record.appendChild(recordTime);
+
+        const removeButton = document.createElement("button");
+        removeButton.innerText = "Del";
+        removeButton._rank = rank;
+        removeButton.onclick = e => removeRank(leaderboard, e.target._rank);
+
+        const modifyButton = document.createElement("button");
+        modifyButton.innerText = "Mod";
+        modifyButton._rank = rank
+        modifyButton.onclick = e => modifyRank(leaderboard, e.target._rank);
+        
+        record.appendChild(modifyButton);
+        record.appendChild(removeButton);
+
+        container.appendChild(record);
+
+        rank++;
+    }
+    if (leaderboard.length == 0) {
+        container.innerHTML = "<h2>empty</h2>";
+    }
+    container.style.backgroundColor = "lightgreen";
+    setTimeout(() => container.style.backgroundColor = "", 300);
+}
+
+function newTrial(n) {
+    trialOptions.ndisks = n;
+    switchScreen(2);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("new-trial-4").onclick = () => newTrial(4);
+    document.getElementById("new-trial-5").onclick = () => newTrial(5);
+
+    document.getElementById("refresh-all-button").onclick = () => {
+        websocket.send("refresh-all");
+    };
+
+    document.getElementById("reload-all-button").onclick = () => {
+        websocket.send("!reload-all");
+    };
+
+    document.getElementById("disconnect-all-button").onclick = () => {
+        websocket.send("!disconnect-all-output");
+    };
+
+    document.getElementById("manual-input-button").onclick = () => {
+        addRaw();
+        sendUpdate();
+    };
+
+    document.getElementById("reset-l4-button").onclick = () => {
+        leaderboard1 = [];
+        sendUpdate();
+    };
+
+    document.getElementById("reset-l5-button").onclick = () => {
+        leaderboard2 = [];
+        sendUpdate();
+    };
+
+    document.getElementById("toggle-l4-button").onclick = () => {
+        websocket.send("!toggle-l4");
+    };
+
+    document.getElementById("toggle-l5-button").onclick = () => {
+        websocket.send("!toggle-l5");
+    };
+
+    document.getElementById("adjust-height-button").onclick = () => {
+        adjustHeight();
+    };
+
+    document.getElementById("clear-animation-button").onclick = () => {
+        websocket.send("!regcancel");
+    };
+
+    document.getElementById("announce-button").onclick = () => {
+        announce();
+    };
+
+    document.getElementById("hide-announcement-button").onclick = () => {
+        websocket.send("!announcement-hide");
+    };
+
+    document.getElementById("custom-name-button").onclick = customName;
+    document.getElementById("timer-start-button").onclick = startTimer;
+    document.getElementById("result-confirm-button").onclick = sendNewRecord;
+    
+    document.getElementById("result-cancel-button").onclick = () => {
+        websocket.send('!regcancel');
+        switchScreen(1);
+    };
+
+    document.getElementById("action-use-access-token").onclick = useAccessToken;
+
+    document.querySelectorAll(".screen-1-button").forEach(btn => btn.onclick = () => {
+        switchScreen(1);
+    })
+})

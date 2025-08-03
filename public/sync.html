@@ -5,6 +5,10 @@
 
 <script src="common.js"></script>
 <script>
+    function parseTime(millis) {
+        const dur = new Date(millis);
+        return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
+    }
     setInterval(() => {
         const millis = Date.now();
         document.getElementById("time").innerText = parseTime(millis);
