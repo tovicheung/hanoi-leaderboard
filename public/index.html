@@ -21,18 +21,27 @@
         display: inline
     }
 
-    .leaderboard button {
-        margin: 4px;
-        padding: 8px;
-        font-size: 14px;
+    .leaderboard > h2 {
+        padding: 10px;
+        background-color: lightgray;
     }
 
     .leaderboards {
         gap: 10px;
     }
 
+    .record {
+        padding: 10px;
+    }
+
     .record > * {
         font-size: 20px;
+    }
+
+    /* ugly CSS, to be fixed */
+    .record > .action {
+        color: rgb(97, 97, 97);
+        padding: 2px;
     }
 
     #timer {
@@ -57,7 +66,7 @@
         <div class="centered">
             <h1>Input: Permission Denied</h1>
             <h3>All input requests from this device are ignored by the server.</h3>
-            <button onclick="window.location.href = './output'">Switch to output</button>
+            <a href="./output"><button>Switch to output</button></a>
             <br>
             <p>
                 <span class="action screen-1-button">[ view controller anyways ]</span>
@@ -72,20 +81,15 @@
             <button class="screen-1-button">Proceed</button>
         </div>
     </div>
-    <div id="screen0">
-        <h1>Choose mode</h1>
-        <button class="screen-1-button">input</button>
-        <button onclick="window.location.href = './output'">output</button>
-    </div>
     <div id="screen1">
         <div class="ctrl-row">
             <button id="new-trial-4" onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
             <button id="new-trial-5" onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
             <button class="small" onclick="window.location.reload()">Reload this</button>
-            <button class="small" onclick="window.location.href = './sync'">Sync</button>
+            <a href="./sync"><button class="small">Sync</button></a>
             <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
-            <button class="small" onclick="window.location.href = './admin'">Admin</button>
-            <button onclick="window.location.href = './output'">Switch to output</button>
+            <a href="./admin"><button class="small">Admin</button></a>
+            <a href="./output"><button>Switch to output</button></a>
         </div>
         <div class="ctrl-row">
             <h2 style="display: inline; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
@@ -114,15 +118,17 @@
     </div>
     <div id="screen2">
         <div class="centered">
-            <h2>Select class</h2>
-            <button id="custom-name-button" class="small">Custom name</button>
+            <h1>Select class</h1>
+            <button id="custom-name-button" class="small">&gt; Use custom name &lt;</button>
             <!-- Generated -->
+            <button id="custom-name-button" class="small" onclick="switchScreen(1)">Back</button>
         </div>
     </div>
     <div id="screen3">
         <div class="centered">
-            <h2>Select class number</h2>
+            <h1>Select class number</h1>
             <!-- Generated -->
+            <button id="custom-name-button" class="small" onclick="switchScreen(2)">Back</button>
         </div>
     </div>
     <div id="screen4">

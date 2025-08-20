@@ -12,6 +12,11 @@ let timeLimit = -1;
 let leaderboard1 = [];
 let leaderboard2 = [];
 
+const id2titles = {
+    "leaderboard1": "4 disks",
+    "leaderboard2": "5 disks",
+};
+
 function setStatus(msg, vanish = false) {
     const elem = document.getElementById("status");
     elem.style.display = "block";
@@ -47,55 +52,6 @@ function switchScreen(n) {
     document.getElementById(`screen${n}`).style.display = "block";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    switchScreen(1);
-    for (var i = 1; i <= 6; i++) {
-        const row = document.createElement("div");
-        row.classList.add("row");
-        for (const letter of "ABCDE") {
-            const btn = document.createElement("button");
-            btn.innerText = `${i}${letter}`;
-            if (i <= 3 && letter == "E") btn.style.opacity = 0;
-            else btn.onclick = e => {
-                trialOptions.cls = e.target.innerText;
-                document.getElementById("confirm-class").innerText = trialOptions.cls;
-                switchScreen(3);
-            }
-            row.appendChild(btn);
-        }
-        document.getElementById("screen2").children[0].appendChild(row);
-    }
-    const width = 5;
-    const height = 7;
-    for (var i = 0; i < height; i++) {
-        const row = document.createElement("div");
-        row.classList.add("row");
-        for (var j = 0; j < width; j++) {
-            const btn = document.createElement("button");
-            btn.innerText = (i * width + j + 1).toString().padStart(2, "0");
-            btn.onclick = e => {
-                trialOptions.clsno = e.target.innerText;
-                document.getElementById("confirm-classno").innerText = trialOptions.clsno;
-                switchScreen(4);
-
-                websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.cls} ${trialOptions.clsno}`);
-            }
-            row.appendChild(btn);
-        }
-        document.getElementById("screen3").children[0].appendChild(row);
-    }
-
-    document.querySelectorAll("button[dangerous]").forEach(e => {
-        e._onclick = e.onclick;
-        e.onclick = () => {
-            const ans = prompt("Are you sure? Type 'yes' to confirm.");
-            if (ans == "yes!") { // intentional
-                e._onclick();
-            }
-        }
-    })
-});
-
 const trialOptions = {
     ndisks: 4,
     startTime: 0,
@@ -104,7 +60,7 @@ const trialOptions = {
     score: 0,
     cls: "",
     clsno: "",
-}
+};
 
 function sendUpdate() {
     websocket.send(JSON.stringify({
@@ -167,11 +123,11 @@ function sendNewRecord() {
     switchScreen(1);
 }
 
-function timerClickListener(forceTime = null) {
+function timerClickListener(obj) {
     clearInterval(trialOptions.timerInterval);
     clearInterval(trialOptions.timeoutInterval);
     score = Date.now() - trialOptions.startTime;
-    if (forceTime !== null) {
+    if ("forceTime" in obj && obj.forceTime !== null) {
         score = forceTime;
     }
     removeEventListener("mousedown", timerClickListener);
@@ -190,7 +146,7 @@ function startTimer() {
     }, 57);
     if (timeLimit != -1) {
         trialOptions.timeoutInterval = setInterval(() => {
-            timerClickListener(timeLimit); // forcibly end the run
+            timerClickListener({forceTime: timeLimit}); // forcibly end the run
         }, timeLimit);
     }
     addEventListener("mousedown", timerClickListener);
@@ -300,7 +256,7 @@ function removeRank(leaderboard, n) {
 
 function updateLeaderboard(id, leaderboard) {
     const container = document.getElementById(id);
-    container.innerHTML = "";
+    container.innerHTML = `<h2>${id2titles[id]}</h2>`;
     var rank = 1;
     for (const {name, score} of leaderboard) {
         const record = document.createElement("div");
@@ -318,15 +274,18 @@ function updateLeaderboard(id, leaderboard) {
         record.appendChild(recordName);
         record.appendChild(recordTime);
 
-        const removeButton = document.createElement("button");
-        removeButton.innerText = "Del";
+        const modifyButton = document.createElement("span");
+        modifyButton.classList.add("action");
+        modifyButton.innerText = "[Mod]";
+        modifyButton._rank = rank
+        modifyButton.style.marginLeft = "12px";
+        modifyButton.onclick = e => modifyRank(leaderboard, e.target._rank);
+
+        const removeButton = document.createElement("span");
+        removeButton.classList.add("action");
+        removeButton.innerText = "[Del]";
         removeButton._rank = rank;
         removeButton.onclick = e => removeRank(leaderboard, e.target._rank);
-
-        const modifyButton = document.createElement("button");
-        modifyButton.innerText = "Mod";
-        modifyButton._rank = rank
-        modifyButton.onclick = e => modifyRank(leaderboard, e.target._rank);
         
         record.appendChild(modifyButton);
         record.appendChild(removeButton);
@@ -463,5 +422,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll(".screen-1-button").forEach(btn => btn.onclick = () => {
         switchScreen(1);
+    });
+    
+    switchScreen(1);
+    for (let i = 1; i <= 6; i++) {
+        const row = document.createElement("div");
+        row.classList.add("row");
+        for (const letter of "ABCDE") {
+            const btn = document.createElement("button");
+            btn.classList.add("outline");
+            btn.innerText = `${i}${letter}`;
+            if (i <= 3 && letter == "E") btn.style.opacity = 0;
+            else btn.onclick = e => {
+                trialOptions.cls = e.target.innerText;
+                document.getElementById("confirm-class").innerText = trialOptions.cls;
+                switchScreen(3);
+            }
+            row.appendChild(btn);
+        }
+        const parent = document.querySelector("#screen2 > .centered");
+        parent.insertBefore(row, parent.childNodes[parent.childNodes.length - 2]);
+    }
+    const width = 5;
+    const height = 7;
+    for (let i = 0; i < height; i++) {
+        const row = document.createElement("div");
+        row.classList.add("row");
+        for (let j = 0; j < width; j++) {
+            const btn = document.createElement("button");
+            btn.classList.add("outline");
+            btn.innerText = (i * width + j + 1).toString().padStart(2, "0");
+            btn.onclick = e => {
+                trialOptions.clsno = e.target.innerText;
+                document.getElementById("confirm-classno").innerText = trialOptions.clsno;
+                switchScreen(4);
+
+                websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.cls} ${trialOptions.clsno}`);
+            }
+            row.appendChild(btn);
+        }
+        const parent = document.querySelector("#screen3 > .centered");
+        parent.insertBefore(row, parent.childNodes[parent.childNodes.length - 2]);
+    }
+
+    document.querySelectorAll("button[dangerous]").forEach(e => {
+        e._onclick = e.onclick;
+        e.onclick = () => {
+            const ans = prompt("Are you sure? Type 'yes' to confirm.");
+            if (ans == "yes!") { // intentional
+                e._onclick();
+            }
+        }
     });
 })

@@ -24,7 +24,7 @@ const websocket = (() => {
 const id2titles = {
     "leaderboard1": "4 disks",
     "leaderboard2": "5 disks",
-}
+};
 
 var dotsInterval = 0;
 var timeoutToClean = null; // used in !regcancel
