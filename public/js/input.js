@@ -8,8 +8,9 @@ function updateLeaderboards() {
     updateLeaderboard("leaderboard2", leaderboard2);
 }
 
-var leaderboard1 = [];
-var leaderboard2 = [];
+let timeLimit = -1;
+let leaderboard1 = [];
+let leaderboard2 = [];
 
 function setStatus(msg, vanish = false) {
     const elem = document.getElementById("status");
@@ -99,6 +100,7 @@ const trialOptions = {
     ndisks: 4,
     startTime: 0,
     timerInterval: 0,
+    timeoutInterval: 0,
     score: 0,
     cls: "",
     clsno: "",
@@ -165,9 +167,13 @@ function sendNewRecord() {
     switchScreen(1);
 }
 
-function timerClickListener() {
-    score = Date.now() - trialOptions.startTime;
+function timerClickListener(forceTime = null) {
     clearInterval(trialOptions.timerInterval);
+    clearInterval(trialOptions.timeoutInterval);
+    score = Date.now() - trialOptions.startTime;
+    if (forceTime !== null) {
+        score = forceTime;
+    }
     removeEventListener("mousedown", timerClickListener);
     removeEventListener("touchstart", timerClickListener);
     document.getElementById("timer-start-button").style.display = "block";
@@ -182,6 +188,11 @@ function startTimer() {
     trialOptions.timerInterval = setInterval(() => {
         document.getElementById("timer").innerText = parseTime(Date.now() - trialOptions.startTime);
     }, 57);
+    if (timeLimit != -1) {
+        trialOptions.timeoutInterval = setInterval(() => {
+            timerClickListener(timeLimit); // forcibly end the run
+        }, timeLimit);
+    }
     addEventListener("mousedown", timerClickListener);
     addEventListener("touchstart", timerClickListener);
     document.getElementById("timer-start-button").style.display = "none";
@@ -210,6 +221,12 @@ websocket.onmessage = e => {
     if (e.data.startsWith("@")) {
         if (e.data.startsWith("@nclients:")) {
             document.getElementById("nclients").innerText = e.data.slice(10);
+        } else if (e.data.startsWith("@timeLimit:")) {
+            const newTimeLimit = parseInt(e.data.slice("@timeLimit:".length));
+            if (!isNaN(newTimeLimit)) {
+                timeLimit = newTimeLimit;
+                document.getElementById("time-limit").innerText = timeLimit === -1 ? "none" : `${timeLimit / 1000 / 60}min`;
+            }
         }
         return;
     }
@@ -325,6 +342,45 @@ function updateLeaderboard(id, leaderboard) {
     setTimeout(() => container.style.backgroundColor = "", 300);
 }
 
+function parseTimeDuration(durationString) {
+  // Regular expression to check if the string is purely digits (for milliseconds)
+  const pureDigitsRegex = /^\d+$/;
+
+  // Regular expression to parse minutes and seconds
+  // (?:(\d+)m)?  -> Optional non-capturing group for minutes. Captures digits before 'm' in group 1.
+  // (?:(\d+)s)?  -> Optional non-capturing group for seconds. Captures digits before 's' in group 2.
+  // ^ and $     -> Ensure the entire string matches the pattern.
+  const durationRegex = /^(?:(\d+)m)?(?:(\d+)s)?$/;
+
+  // If the string is purely digits, treat it as milliseconds
+  if (pureDigitsRegex.test(durationString)) {
+    return parseInt(durationString, 10);
+  }
+
+  const match = durationString.match(durationRegex);
+
+  // If there's no match or the match is empty (e.g., "" or "m" or "s"), return 0
+  if (!match || (match[1] === undefined && match[2] === undefined)) {
+    return 0;
+  }
+
+  let totalMilliseconds = 0;
+
+  // Extract minutes from the first capturing group (if present)
+  const minutes = match[1];
+  if (minutes !== undefined) {
+    totalMilliseconds += parseInt(minutes, 10) * 60 * 1000; // Convert minutes to milliseconds
+  }
+
+  // Extract seconds from the second capturing group (if present)
+  const seconds = match[2];
+  if (seconds !== undefined) {
+    totalMilliseconds += parseInt(seconds, 10) * 1000; // Convert seconds to milliseconds
+  }
+
+  return totalMilliseconds;
+}
+
 function newTrial(n) {
     trialOptions.ndisks = n;
     switchScreen(2);
@@ -359,6 +415,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("reset-l5-button").onclick = () => {
         leaderboard2 = [];
         sendUpdate();
+    };
+
+    document.getElementById("edit-time-limit-button").onclick = () => {
+        const newTimeLimit = prompt("Enter new time limit.\nExamples: '4m' / '2m30s' / '1000' (1000 millis)", timeLimit);
+        if (newTimeLimit === null) return;
+        if (newTimeLimit.length == 0) return;
+        let parsed = parseTimeDuration(newTimeLimit);
+        parsed = isNaN(parsed) ? -1 : parsed;
+        websocket.send(`@timeLimit:${parsed}`);
     };
 
     document.getElementById("toggle-l4-button").onclick = () => {
@@ -398,5 +463,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll(".screen-1-button").forEach(btn => btn.onclick = () => {
         switchScreen(1);
-    })
+    });
 })

@@ -8,7 +8,7 @@ type Auth = { type: "none" }
 interface Client {
     socket: WebSocket,
     connectTimestamp: number,
-    role: string, //
+    role: string, // not strict, purely informative
     auth: Auth,
     userAgent: string | null,
 }
@@ -80,6 +80,10 @@ async function setupKv() {
 
     if ((await kv.get(["leaderboards"])).value === null) {
         await kv.set(["leaderboards"], [[], []]);
+    }
+
+    if ((await kv.get(["timeLimit"])).value === null) {
+        await kv.set(["timeLimit"], 4 * 60 * 1000);
     }
 }
 
@@ -172,6 +176,10 @@ async function authCheckToken(token: string) {
     return tok.value;
 }
 
+async function getTimeLimit() {
+    return (await kv.get(["timeLimit"])).value;
+}
+
 function connectSocket(req: Request) {
     if (req.headers.get("upgrade") !== "websocket") {
         return new Response(null, { status: 501 });
@@ -190,13 +198,14 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("open", async () => {
         console.log(`client ${clientId} connected!`);
-        socket.send(JSON.stringify(await getData()));
-        broadcast(`@nclients:${clients.size}`)
+        socket.send(JSON.stringify(await getData())); // actual display data - most prioritized
+        broadcast(`@nclients:${clients.size}`);
         if (config.inputAccess == "everyone") {
             socket.send("AUTH:success");
         } else {
             socket.send("AUTH:required");
         }
+        broadcast(`@timeLimit:${await getTimeLimit()}`);
         adminSendClientsData();
     });
 
@@ -274,6 +283,16 @@ function connectSocket(req: Request) {
         ) {
             // unauthenticated client intends to send input
             socket.send("AUTH:failure");
+            return;
+        }
+
+        // at this point, client is checked to have input permissions
+        
+        if (event.data.startsWith("@timeLimit:")) {
+            const newTimeLimit = parseInt(event.data.slice("@timeLimit:".length));
+            if (isNaN(newTimeLimit)) return;
+            await kv.set(["timeLimit"], newTimeLimit);
+            broadcast(`@timeLimit:${newTimeLimit}`);
             return;
         }
 

@@ -80,7 +80,7 @@
     <div id="screen1">
         <div class="ctrl-row">
             <button id="new-trial-4" onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
-            <button id="new-trial-5" onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
+            <button id="new-trial-5" onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
             <button class="small" onclick="window.location.reload()">Reload this</button>
             <button class="small" onclick="window.location.href = './sync'">Sync</button>
             <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
@@ -88,16 +88,17 @@
             <button onclick="window.location.href = './output'">Switch to output</button>
         </div>
         <div class="ctrl-row">
-            <h2 style="display: inline; font-size: 20px; color: blue"># clients: <span id="nclients"></span></h2>
+            <h2 style="display: inline; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
+            <button id="edit-time-limit-button" class="small">Edit time limit (<span id="time-limit"></span>)</button>
             <button id="refresh-all-button" class="small">Refresh all</button>
             <button id="reload-all-button" class="small">Reload all</button>
             <button id="disconnect-all-button" class="small">Disconnect all output</button>
-            <button id="manual-input-button" class="small">Manual input</button>
             <button id="reset-l4-button" class="small" dangerous>Reset L4</button>
             <button id="reset-l5-button" class="small" dangerous>Reset L5</button>
             <!-- <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button> -->
         </div>
         <div class="ctrl-row">
+            <button id="manual-input-button" class="small">Manual input</button>
             <button id="toggle-l4-button" class="small">Toggle L4</button>
             <button id="toggle-l5-button" class="small">Toggle L5</button>
             <button id="adjust-height-button" class="small">Adjust display rows</button>
