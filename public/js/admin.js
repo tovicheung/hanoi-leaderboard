@@ -1,5 +1,3 @@
-let currentDataString;
-
 function parseTime(millis) {
     const dur = new Date(millis);
     return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
@@ -118,10 +116,18 @@ function importAndOverwrite() {
 
 async function exportData() {
     try {
-        await navigator.clipboard.writeText(currentDataString);
-        report("Copied!", 1);
-    } catch {
+        const resp = await fetch("/api/data");
+        if (!resp.ok) {
+            report("Error fetching /api/data, check console", 0);
+            console.log(resp);
+            return;
+        }
+        const text = await resp.text();
+        await navigator.clipboard.writeText(text);
+        report("Copied JSON to clipboard!", 1);
+    } catch (e) {
         report("Error copying data, check console", 0);
+        console.error(e);
     }
 }
 
@@ -229,8 +235,6 @@ websocket.onmessage = e => {
     } else if (e.data == "pong") {
         report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
         lastPing = null;
-    } else if (e.data.startsWith("[[")) { // bad code, but good enough
-        currentDataString = e.data;
     }
 }
 

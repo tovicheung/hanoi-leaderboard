@@ -150,7 +150,8 @@ websocket.onopen = e => {
 
 websocket.onclose = e => {
     console.log("DISCONNECTED");
-    setStatus("Disconnected.");
+    setStatus("Disconnected. Reload to reconnect.");
+    document.getElementById("reload-this-button").style.color = "blue";
 };
 
 websocket.onmessage = e => {
