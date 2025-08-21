@@ -26,25 +26,6 @@ function setStatus(msg, vanish = false) {
     }
 }
 
-function useAccessToken() {
-    const token = prompt("Enter access token:");
-    if (token === null) return;
-    if (token.length < 4) return;
-    websocket.send("AUTH:token:" + token);
-    localStorage.setItem("token", token);
-}
-
-function customName() {
-    const custom = prompt("Enter name:");
-    if (custom === null) return;
-    trialOptions.cls = custom;
-    trialOptions.clsno = "";
-    document.getElementById("confirm-class").innerText = trialOptions.cls;
-    document.getElementById("confirm-classno").innerText = trialOptions.clsno;
-    switchScreen(4);
-    websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
-}
-
 function switchScreen(n) {
     for (const child of document.getElementById("container").children) {
         child.style.display = "none";
@@ -301,6 +282,7 @@ function updateLeaderboard(id, leaderboard) {
     setTimeout(() => container.style.backgroundColor = "", 300);
 }
 
+// AI generated function
 function parseTimeDuration(durationString) {
   // Regular expression to check if the string is purely digits (for milliseconds)
   const pureDigitsRegex = /^\d+$/;
@@ -340,9 +322,30 @@ function parseTimeDuration(durationString) {
   return totalMilliseconds;
 }
 
+// functionality
+
 function newTrial(n) {
     trialOptions.ndisks = n;
     switchScreen(2);
+}
+
+function useAccessToken() {
+    const token = prompt("Enter access token:");
+    if (token === null) return;
+    if (token.length < 4) return;
+    websocket.send("AUTH:token:" + token);
+    localStorage.setItem("token", token);
+}
+
+function customName() {
+    const custom = prompt("Enter name:");
+    if (custom === null) return;
+    trialOptions.cls = custom;
+    trialOptions.clsno = "";
+    document.getElementById("confirm-class").innerText = trialOptions.cls;
+    document.getElementById("confirm-classno").innerText = trialOptions.clsno;
+    switchScreen(4);
+    websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -380,9 +383,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const newTimeLimit = prompt("Enter new time limit.\nExamples: '4m' / '2m30s' / '1000' (1000 millis)", timeLimit);
         if (newTimeLimit === null) return;
         if (newTimeLimit.length == 0) return;
-        let parsed = parseTimeDuration(newTimeLimit);
-        parsed = isNaN(parsed) ? -1 : parsed;
-        websocket.send(`@timeLimit:${parsed}`);
+        if (newTimeLimit == "-1") {
+            websocket.send("@timeLimit:-1");
+        } else {
+            let parsed = parseTimeDuration(newTimeLimit);
+            parsed = isNaN(parsed) ? -1 : parsed;
+            websocket.send(`@timeLimit:${parsed}`);
+        }
     };
 
     document.getElementById("toggle-l4-button").onclick = () => {

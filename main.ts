@@ -368,8 +368,16 @@ function ok() {
 }
 
 async function handleApi(path: string, req: Request): Promise<Response> {
-    const resp = httpsAuthAdmin(req);
     const method = req.method;
+
+    
+    if (path == "/api/data" && method == "GET") {
+        return new Response(JSON.stringify(await getData()), { status: 200 });
+    }
+
+    // admin territory below
+
+    const resp = httpsAuthAdmin(req);
     if (resp !== null) {
         return resp;
     }
@@ -459,7 +467,12 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const file = await Deno.open(Deno.cwd() + "/public" + path);
+        const filePath = Deno.cwd() + "/public" + path;
+        const fileInfo = await Deno.stat(filePath);
+        if (fileInfo.isDirectory) {
+            return new Response("Not Found", { status: 404 });
+        }
+        const file = await Deno.open(filePath);
         return new Response(file.readable);
     } catch (e) {
         console.error(`Error serving file ${path}:`, e);

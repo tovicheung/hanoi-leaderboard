@@ -1,6 +1,14 @@
+This is a live leaderboard service used to host mathematics club events at my school.
+
 ## HTTP API
 
-The following admin functions are implemented using HTTP with a bearer token.
+Public functions
+
+* GET `/api/data`
+
+    Returns the live JSON data.
+
+The following admin functions require a bearer token.
 
 * POST `/api/instance/create`
     
@@ -78,9 +86,12 @@ The following admin functions are implemented using HTTP with a bearer token.
     ```
 
 ## Socket API
+
 The following communications are done through websocket:
+* status of ongoing run
 * leaderboard data updates
+* display controls
 * authentication (`AUTH:`)
 * role reporting
-* cross-node communication (`!` and `@`)
+* cross-client communication (`!` and `@`)
 * admin: live operations such as session-wise permission management (`ADMIN:`)
