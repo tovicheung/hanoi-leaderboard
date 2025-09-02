@@ -163,7 +163,9 @@ websocket.onmessage = e => {
             const newTimeLimit = parseInt(e.data.slice("@timeLimit:".length));
             if (!isNaN(newTimeLimit)) {
                 timeLimit = newTimeLimit;
-                document.getElementById("time-limit").innerText = timeLimit === -1 ? "none" : `${timeLimit / 1000 / 60}min`;
+                document.getElementById("edit-time-limit-button").innerText = timeLimit === -1
+                ? "Add time limit"
+                : `Edit time limit (${millisToCoarseTime(newTimeLimit)})`;
             }
         }
         return;
@@ -284,7 +286,7 @@ function updateLeaderboard(id, leaderboard) {
 }
 
 // AI generated function
-function parseTimeDuration(durationString) {
+function coarseTimeToMillis(durationString) {
   // Regular expression to check if the string is purely digits (for milliseconds)
   const pureDigitsRegex = /^\d+$/;
 
@@ -321,6 +323,25 @@ function parseTimeDuration(durationString) {
   }
 
   return totalMilliseconds;
+}
+
+function millisToCoarseTime(millis) {
+  millis = Math.floor(millis / 1000) * 1000;
+  const secs = millis / 1000;
+  const minutes = Math.floor(secs / 60);
+  const seconds = secs % 60;
+
+  let result = "";
+  if (minutes > 0) {
+    result += `${minutes}m`;
+  }
+  if (seconds > 0) {
+    result += `${seconds}s`;
+  } else if (minutes === 0 && seconds === 0) {
+    result = "0s";
+  }
+
+  return result;
 }
 
 // functionality
@@ -387,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (newTimeLimit == "-1") {
             websocket.send("@timeLimit:-1");
         } else {
-            let parsed = parseTimeDuration(newTimeLimit);
+            let parsed = coarseTimeToMillis(newTimeLimit);
             parsed = isNaN(parsed) ? -1 : parsed;
             websocket.send(`@timeLimit:${parsed}`);
         }

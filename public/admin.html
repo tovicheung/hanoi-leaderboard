@@ -135,12 +135,15 @@
     </div>
     <div id="instance-management">
         <h2>Instance Management</h2>
-        <button onclick="instanceUpdate(createNewInstance)">Create new</button>
-        <div id="instances" class="segment"></div>
-        <button onclick="instanceUpdate(importAndOverwrite)">Import and overwrite</button>
-        <button onclick="exportData()">Export</button>
+        <button onclick="instanceUpdate(createNewInstance)">Create an instance</button>
         <button onclick="instanceUpdate(deleteInstance)">Delete an instance</button>
-        <button onclick="instanceUpdate(cloneInstance)">Clone to</button>
+        <br>
+        Switch instance:
+        <div id="instances" class="segment"></div>
+        <br>
+        <button onclick="instanceUpdate(importAndOverwrite)">Import from JSON and overwrite</button>
+        <button onclick="exportData()">Export as JSON</button>
+        <button onclick="instanceUpdate(cloneInstance)">Clone to new instance</button>
     </div>
     <div id="access-control">
         <h2 style="display: inline">Access Control</h2>
