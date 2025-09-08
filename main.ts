@@ -82,8 +82,16 @@ async function setupKv() {
         await kv.set(["leaderboards"], [[], []]);
     }
 
-    if ((await kv.get(["timeLimit"])).value === null) {
-        await kv.set(["timeLimit"], 4 * 60 * 1000);
+    if ((await kv.get(["timeLimit"])).value !== null) {
+        await kv.delete(["timeLimit"]);
+        // await kv.set(["timeLimit"], 4 * 60 * 1000);
+    }
+
+    if ((await kv.get(["timeLimits"])).value === null) {
+        await kv.set(["timeLimits"], {
+            "leaderboard1": 3 * 60 * 1000,
+            "leaderboard2": 4 * 60 * 1000,
+        });
     }
 }
 
@@ -176,8 +184,8 @@ async function authCheckToken(token: string) {
     return tok.value;
 }
 
-async function getTimeLimit() {
-    return (await kv.get(["timeLimit"])).value;
+async function getTimeLimits() {
+    return (await kv.get(["timeLimits"])).value;
 }
 
 function connectSocket(req: Request) {
@@ -205,7 +213,7 @@ function connectSocket(req: Request) {
         } else {
             socket.send("AUTH:required");
         }
-        broadcast(`@timeLimit:${await getTimeLimit()}`);
+        broadcast(`@timeLimits:${JSON.stringify(await getTimeLimits())}`);
         adminSendClientsData();
     });
 
@@ -289,10 +297,19 @@ function connectSocket(req: Request) {
         // at this point, client is checked to have input permissions
         
         if (event.data.startsWith("@timeLimit:")) {
-            const newTimeLimit = parseInt(event.data.slice("@timeLimit:".length));
+            const parts = event.data.split(":");
+            if (parts.length != 3) return;
+
+            const id = parts[1];
+
+            const newTimeLimit = parseInt(parts[2]);
             if (isNaN(newTimeLimit)) return;
-            await kv.set(["timeLimit"], newTimeLimit);
-            broadcast(`@timeLimit:${newTimeLimit}`);
+
+            const timeLimits = await getTimeLimits();
+            timeLimits[id] = newTimeLimit;
+
+            await kv.set(["timeLimits"], timeLimits);
+            broadcast(`@timeLimits:${JSON.stringify(timeLimits)}`);
             return;
         }
 

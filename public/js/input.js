@@ -9,6 +9,10 @@ function updateLeaderboards() {
 }
 
 let timeLimit = -1;
+let timeLimits = {
+    "leaderboard1": -1,
+    "leaderboard2": -1,
+};
 let leaderboard1 = [];
 let leaderboard2 = [];
 
@@ -41,6 +45,7 @@ const trialOptions = {
     score: 0,
     cls: "",
     clsno: "",
+    timeLimit: -1,
 };
 
 function sendUpdate() {
@@ -109,7 +114,7 @@ function timerClickListener(obj) {
     clearInterval(trialOptions.timeoutInterval);
     score = Date.now() - trialOptions.startTime;
     if ("forceTime" in obj && obj.forceTime !== null) {
-        score = forceTime;
+        score = obj.forceTime;
     }
     removeEventListener("mousedown", timerClickListener);
     removeEventListener("touchstart", timerClickListener);
@@ -121,14 +126,15 @@ function timerClickListener(obj) {
 }
 
 function startTimer() {
+    trialOptions.timeLimit = timeLimits[trialOptions.ndisks == 4 ? "leaderboard1" : "leaderboard2"];
     trialOptions.startTime = Date.now();
     trialOptions.timerInterval = setInterval(() => {
         document.getElementById("timer").innerText = parseTime(Date.now() - trialOptions.startTime);
     }, 57);
-    if (timeLimit != -1) {
+    if (trialOptions.timeLimit != -1) {
         trialOptions.timeoutInterval = setInterval(() => {
-            timerClickListener({forceTime: timeLimit}); // forcibly end the run
-        }, timeLimit);
+            timerClickListener({forceTime: trialOptions.timeLimit}); // forcibly end the run
+        }, trialOptions.timeLimit);
     }
     addEventListener("mousedown", timerClickListener);
     addEventListener("touchstart", timerClickListener);
@@ -159,13 +165,17 @@ websocket.onmessage = e => {
     if (e.data.startsWith("@")) {
         if (e.data.startsWith("@nclients:")) {
             document.getElementById("nclients").innerText = e.data.slice(10);
-        } else if (e.data.startsWith("@timeLimit:")) {
-            const newTimeLimit = parseInt(e.data.slice("@timeLimit:".length));
-            if (!isNaN(newTimeLimit)) {
-                timeLimit = newTimeLimit;
-                document.getElementById("edit-time-limit-button").innerText = timeLimit === -1
-                ? "Add time limit"
-                : `Edit time limit (${millisToCoarseTime(newTimeLimit)})`;
+        } else if (e.data.startsWith("@timeLimits:")) {
+            const newData = JSON.parse(e.data.slice("@timeLimits:".length));
+            timeLimits = newData;
+            for (const id in timeLimits) {
+                const timeLimit = timeLimits[id];
+                const elem = document.getElementById(`time-limit-${id}`);
+                if (timeLimit === -1) {
+                    elem.innerText = "none";
+                } else {
+                    elem.innerText = millisToCoarseTime(timeLimit);
+                }
             }
         }
         return;
@@ -240,7 +250,8 @@ function removeRank(leaderboard, n) {
 
 function updateLeaderboard(id, leaderboard) {
     const container = document.getElementById(id);
-    container.innerHTML = `<h2>${id2titles[id]}</h2>`;
+    container.innerHTML = `<h2 class="header">${id2titles[id]}</h2>`;
+    container.innerHTML += `<div class="header2">Time limit = <span id="time-limit-${id}"></span><span class="action" onclick="editTimeLimit('${id}')">[Edit]</span></div>`
     var rank = 1;
     for (const {name, score} of leaderboard) {
         const record = document.createElement("div");
@@ -370,6 +381,19 @@ function customName() {
     websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
 }
 
+function editTimeLimit(id) {
+    const newTimeLimit = prompt("Enter new time limit.\nExamples: '4m' / '2m30s' / '1000' (1000 millis)\nEnter -1 to remove time limit", timeLimits[id]);
+    if (newTimeLimit === null) return;
+    if (newTimeLimit.length == 0) return;
+    if (newTimeLimit == "-1") {
+        websocket.send(`@timeLimit:${id}:-1`);
+    } else {
+        let parsed = coarseTimeToMillis(newTimeLimit);
+        parsed = isNaN(parsed) ? -1 : parsed;
+        websocket.send(`@timeLimit:${id}:${parsed}`);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("new-trial-4").onclick = () => newTrial(4);
     document.getElementById("new-trial-5").onclick = () => newTrial(5);
@@ -399,19 +423,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("reset-l5-button").onclick = () => {
         leaderboard2 = [];
         sendUpdate();
-    };
-
-    document.getElementById("edit-time-limit-button").onclick = () => {
-        const newTimeLimit = prompt("Enter new time limit.\nExamples: '4m' / '2m30s' / '1000' (1000 millis)", timeLimit);
-        if (newTimeLimit === null) return;
-        if (newTimeLimit.length == 0) return;
-        if (newTimeLimit == "-1") {
-            websocket.send("@timeLimit:-1");
-        } else {
-            let parsed = coarseTimeToMillis(newTimeLimit);
-            parsed = isNaN(parsed) ? -1 : parsed;
-            websocket.send(`@timeLimit:${parsed}`);
-        }
     };
 
     document.getElementById("toggle-l4-button").onclick = () => {

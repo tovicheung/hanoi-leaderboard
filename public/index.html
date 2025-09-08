@@ -21,9 +21,20 @@
         display: inline
     }
 
-    .leaderboard > h2 {
+    .leaderboard > .header {
         padding: 10px;
         background-color: lightgray;
+    }
+
+    .leaderboard > .header2 {
+        position: relative;
+        background-color: rgb(237, 237, 237);
+        padding: 6px;
+    }
+
+    .leaderboard > .header2 > .action {
+        position: absolute;
+        right: 10;
     }
 
     .leaderboards {
@@ -38,8 +49,7 @@
         font-size: 20px;
     }
 
-    /* ugly CSS, to be fixed */
-    .record > .action {
+    .leaderboard .action {
         color: rgb(97, 97, 97);
         padding: 2px;
     }
@@ -93,22 +103,21 @@
         </div>
         <div class="ctrl-row">
             <h2 style="display: inline; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
-            <button id="edit-time-limit-button" class="small">Add time limit</button>
             <button id="refresh-all-button" class="small">Refresh all</button>
             <button id="reload-all-button" class="small">Reload all</button>
             <button id="disconnect-all-button" class="small">Disconnect all output</button>
+            <button id="manual-input-button" class="small">Manual input</button>
             <button id="reset-l4-button" class="small" dangerous>Reset L4</button>
             <button id="reset-l5-button" class="small" dangerous>Reset L5</button>
             <!-- <button class="small" onclick="leaderboard1 = []; leaderboard2 = []; sendUpdate();" dangerous>Reset all</button> -->
         </div>
         <div class="ctrl-row">
-            <button id="manual-input-button" class="small">Manual input</button>
             <button id="toggle-l4-button" class="small">Toggle L4</button>
             <button id="toggle-l5-button" class="small">Toggle L5</button>
             <button id="adjust-height-button" class="small">Adjust display rows</button>
             <button id="clear-animation-button" class="small">Clear animation</button>
             <button id="announce-button" class="small">Announce</button>
-            <button id="hide-announcement-button" class="small">&lt;-- Hide</button>
+            <button id="hide-announcement-button" class="small">Hide announce</button>
         </div>
         <h2 id="status" style="color: blue;">Connecting to server ...</h2>
         <div class="leaderboards">

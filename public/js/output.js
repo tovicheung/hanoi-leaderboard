@@ -219,7 +219,7 @@ function renderRecord(container, rank, name, score) {
 
 function updateLeaderboard(id, leaderboard) {
     const container = document.getElementById(id);
-    container.innerHTML = `<h2>${id2titles[id]}</h2>`;
+    container.innerHTML = `<h2 class="header">${id2titles[id]}</h2>`;
     if (leaderboard.length == 0) {
         container.innerHTML += "<h2>Waiting for challengers ...</h2>";
     } else for (var rank = 1; rank <= Math.min(3, leaderboard.length); rank++) {
@@ -287,3 +287,13 @@ function titleAnim(n) {
 }
 
 setInterval(() => titleAnim(1), 30000);
+setInterval(() => {
+    document.getElementById("setup").style.display = "none";
+}, 8000);
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("setup-fullscreen").onclick = () => {
+        document.body.requestFullscreen();
+        document.getElementById("setup").style.display = "none";
+    }
+});

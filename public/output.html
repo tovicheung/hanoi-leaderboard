@@ -8,7 +8,6 @@
         font-family: "Orbitron";
         font-weight: 600;
         font-style: normal;
-        cursor: none;
     }
 
     body {
@@ -126,6 +125,16 @@
         color: yellow;
         word-wrap: break-word;
     }
+
+    #setup {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    #setup button {
+        border: 3px solid gray;
+    }
 </style>
 
 <div id="container">
@@ -136,6 +145,10 @@
         <div id="leaderboard2" class="leaderboard"><h2>Connecting to server ...</h2></div>
     </div>
     <div style="flex-grow: 2;"></div>
+</div>
+
+<div id="setup">
+    <button id="setup-fullscreen">Fullscreen</button>
 </div>
 
 <div id="overlay"></div>

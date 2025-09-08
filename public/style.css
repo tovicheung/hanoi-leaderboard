@@ -50,8 +50,13 @@ h2 {
     font-size: 24px;
 }
 
-.leaderboard > h2 {
+.leaderboard .header, .leaderboard .header2 {
+    width: 100%;
     text-align: center;
+}
+
+.leaderboard .header2 {
+    font-size: 20px;
 }
 
 .record {
