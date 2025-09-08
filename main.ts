@@ -45,7 +45,7 @@ function isValidConfig(obj: unknown): obj is Config {
 }
 
 const kv = await Deno.openKv();
-const config = await (async () => {
+const config: any = await (async () => {
     const tmp = (await kv.get(["config"])).value;
     if (isValidConfig(tmp)) return tmp;
     return DEFAULT_CONFIG;
@@ -171,6 +171,31 @@ function adminSendClientsData() {
         ?.send(`ADMIN:CLIENTS:${JSON.stringify(data)}`);
 }
 
+async function getAccessData() {
+    const entries = await kv.list({ prefix: ["tokens"] });
+    const result: any = {};
+    for await (const entry of entries) {
+        const token = entry.key[1];
+        if (typeof token !== "string") continue;
+        const expireIn = entry.value;
+        result[token] = expireIn;
+    }
+    return result;
+}
+
+async function adminSendAccessData() {
+    const entries = await kv.list({ prefix: ["tokens"] });
+    const result: any = {};
+    for await (const entry of entries) {
+        const token = entry.key[1];
+        if (typeof token !== "string") continue;
+        const expireIn = entry.value;
+        result[token] = expireIn;
+    }
+    getAdminSocket()
+        ?.send(`ADMIN:ACCESS:${JSON.stringify(result)}`);
+}
+
 function adminCreateToken(token: string, expireIn: number) {
     const timedelta = expireIn - Date.now();
     kv.set(["tokens", token], expireIn, { expireIn: timedelta });
@@ -184,7 +209,7 @@ async function authCheckToken(token: string) {
     return tok.value;
 }
 
-async function getTimeLimits() {
+async function getTimeLimits(): Promise<any> {
     return (await kv.get(["timeLimits"])).value;
 }
 
@@ -231,8 +256,9 @@ function connectSocket(req: Request) {
             clients.get(adminId)!.role = "Admin";
             clients.get(adminId)!.auth = { type: "admin" };
             adminSendServerConfig();
-            await adminSendInstancesData();
             adminSendClientsData();
+            await adminSendInstancesData();
+            // await adminSendAccessData();
             return;
         }
         
@@ -398,7 +424,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
     if (resp !== null) {
         return resp;
     }
-    const body = await req.json();
+    const body = method == "GET" ? {} : await req.json();
     if (path.startsWith("/api/instance")) {
         if (path == "/api/instance/create" && method == "POST") {
             if ("name" in body && typeof body.name == "string") {
@@ -441,22 +467,35 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         }
         await kv.set(["config"], config);
         adminSendServerConfig();
-    } else if (path == "/api/token/create" && method == "POST") {
+    }  else if (path == "/api/token/create" && method == "POST") {
         const { token, expireIn } = body;
         if (typeof token !== "string") return bad("Invalid token name.");
         if (typeof expireIn !== "number") return bad("Invalid expiry.");
         if (token.length < 4) return bad("Tokens must be at least 4 characters long.");
+        adminCreateToken(token, expireIn);
+    } else if (path == "/api/token/modify" && method == "POST") {
+        const { token, expireIn } = body;
+        if (typeof token !== "string") return bad("Invalid token name.");
+        if (typeof expireIn !== "number") return bad("Invalid expiry.");
+        if ((await kv.get(["tokens", token])).value === null) return bad("Token does not exist.");
+        await kv.delete(["tokens", token]);
         adminCreateToken(token, expireIn);
     } else if (path == "/api/token/delete" && (method == "POST" || method == "DELETE")) {
         const { token } = body;
         if (typeof token !== "string") return bad("Invalid token name.");
         if ((await kv.get(["tokens", token])).value === null) return bad("Token does not exist.")
         await kv.delete(["tokens", token]);
-    } else {
+    } else if (path == "/api/token" && method == "GET") {
+        return new Response(JSON.stringify(await getAccessData()), { status: 200 });
+    } else{
         return bad("Unknown method");
     }
     return ok();
 }
+
+const sleep = async (ms: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
 Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;

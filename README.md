@@ -75,6 +75,16 @@ The following admin functions require a bearer token.
         "expireIn": 1751198559611
     }
     ```
+    
+* POST `/api/token/modify`
+
+    Modify the expiry of a token
+    ```json
+    {
+        "token": "my-secret-token",
+        "expireIn": 1751198559612
+    }
+    ```
 
 * DELETE `/api/token/delete`
 

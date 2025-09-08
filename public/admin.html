@@ -146,8 +146,20 @@
         <button onclick="instanceUpdate(cloneInstance)">Clone to new instance</button>
     </div>
     <div id="access-control">
-        <h2 style="display: inline">Access Control</h2>
+        <h2>Access Control</h2>
         <button onclick="createToken()">Create Token</button>
+        <button id="load-access-data-btn" onclick="loadAccessData()">Load data</button>
+        <button onclick="document.getElementById('access-data-body').innerHTML = ''; document.getElementById('access-data').style.display = 'none'; document.getElementById('load-access-data-btn').innerText = 'Load data'">Hide</button>
+        <table id="access-data" style="display: none" class="table">
+            <thead>
+                <tr>
+                    <th>Token</th>
+                    <th>Expiry</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="access-data-body"></tbody>
+        </table>
     </div>
     <div id="client-management">
         <h2>Connected Clients</h2>

@@ -59,7 +59,7 @@ function updateInfo() {
     document.getElementById("output-access").innerText = serverConfig.outputAccess;
 }
 
-async function req(url, method, data) {
+async function req(url, method, data, show = true) {
     if (url.startsWith("/")) url = url.slice(1);
     const response = await fetch(`${window.location.protocol}//${window.location.host}/${url}`, {
         method,
@@ -67,15 +67,16 @@ async function req(url, method, data) {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${__(document.getElementById("password").value)}`
         },
-        body: JSON.stringify(data)
+        body: method == "GET" ? undefined : JSON.stringify(data),
     });
-    if (response.ok) {
-        report("Success", 1);
-    } else {
+    if (!response.ok) {
         report(`[${response.status}] ${await response.text()}`, 0, log = true);
+    } else if (method != "GET") {
+        report("Success", 1);
+        waiting = false; // TODO: fix
+        document.getElementById("instance-management").style.opacity = 1;
     }
-    waiting = false;
-    document.getElementById("instance-management").style.opacity = 1;
+    return response;
 }
 
 function report(msg, type, log = false) {
@@ -284,11 +285,66 @@ function uasniff(userAgentString) {
     return result;
 }
 
+function updateAccessData(data) {
+    const tbody = document.getElementById("access-data-body");
+    tbody.innerHTML = "";
+    for (const token in data) {
+        const tr = document.createElement("tr");
+
+        const tdToken = document.createElement("td");
+        tdToken.innerText = token;
+        tr.appendChild(tdToken);
+
+        const tdExpiry = document.createElement("td");
+        tdExpiry.innerText = fullDateFmt(new Date(data[token]));
+        tr.appendChild(tdExpiry);
+
+        const tdAction = document.createElement("td");
+
+        // [Modify]
+        const btnModify = document.createElement("button");
+        btnModify.innerText = "Modify";
+        btnModify.onclick = () => {
+            const dateString = prompt("Enter new expiry date (YYYY-MM-DD hh:mm:ss):", fullDateFmt(new Date(data[token])));
+            if (dateString === null) return;
+            const expireIn = Date.parse(dateString);
+            req("/api/token/modify", "POST", {
+                token,
+                expireIn,
+            });
+        }
+        tdAction.appendChild(btnModify);
+        
+        // [Delete]
+        const btnDelete = document.createElement("button");
+        btnDelete.innerText = "Delete";
+        btnDelete.onclick = () => {
+            const yes = confirm(`Confirm delete token "${token}" ?`);
+            if (!yes) return;
+            req("/api/token/delete", "POST", {
+                token,
+            });
+        }
+        tdAction.appendChild(btnDelete);
+
+        tr.appendChild(tdAction);
+
+        tbody.appendChild(tr);
+    }
+    document.getElementById("access-data").style.display = "block";
+}
+
+async function loadAccessData() {
+    const resp = await req("/api/token", "GET");
+    if (!resp.ok) return;
+    const json = await resp.json();
+    updateAccessData(json);
+    document.getElementById("load-access-data-btn").innerText = "Refresh";
+}
+
 function updateClientData(data) {
     const tbody = document.getElementById("clients-data");
-    while (tbody.children.length) {
-        tbody.removeChild(tbody.children[0]);
-    }
+    tbody.innerHTML = "";
     for (const entry of data) {
         const tr = document.createElement("tr");
 
