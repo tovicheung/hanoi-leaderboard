@@ -41,9 +41,13 @@ function switchScreen(n) {
     if (n == 4) {
         document.querySelectorAll(".trial-name").forEach(e => e.innerText = trialOptions.name);
         document.querySelectorAll(".trial-ndisks").forEach(e => e.innerText = trialOptions.ndisks);
-        if (!checkName(`${trialOptions.cls} ${trialOptions.clsno}`)) {
-            switchScreen(1);
+        if (!checkName(trialOptions.name)) {
+            switchScreen(6);
+            document.getElementById("custom-name-input").value = trialOptions.name;
         }
+    } else if (n == 6) {
+        document.getElementById("custom-name-input").value = "";
+        document.getElementById("custom-name-input").focus();
     }
 }
 
@@ -520,7 +524,6 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Name cannot be empty!");
             return;
         }
-        document.getElementById("custom-name-input").value = "";
         switchScreen(4);
     }
     
