@@ -69,6 +69,12 @@
     a.action {
         text-decoration: none;
     }
+
+    #custom-name-input {
+        font-size: 50px;
+        padding: 16px;
+        margin: 60px;
+    }
 </style>
 
 <div id="container">
@@ -142,17 +148,29 @@
     </div>
     <div id="screen4">
         <div class="centered">
+            <h2><span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
             <h2 id="timer">00:00.000</h2>
             <button id="timer-start-button">Start</button>
             <h2>When finished, press anywhere to stop the timer</h2>
         </div>
     </div>
-    <div id=screen5>
+    <div id="screen5">
         <div class="centered">
-            <h1><span id="confirm-class"></span> <span id="confirm-classno"></span> <span class="result"></span></h1>
+            <h2><!--<span id="confirm-class"></span> <span id="confirm-classno"></span>--> <span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
+            <h1 class="trial-result"></h1>
             <div class="row">
                 <button id="result-confirm-button">Confirm</button>
                 <button id="result-cancel-button">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="screen6">
+        <div class="centered">
+            <h1>Enter your name:</h1>
+            <input type="text" id="custom-name-input" placeholder="Your name here">
+            <div class="row">
+                <button id="name-confirm-button">Confirm</button>
+                <button id="name-cancel-button">Cancel</button>
             </div>
         </div>
     </div>

@@ -36,16 +36,24 @@ function switchScreen(n) {
         child.style.display = "none";
     }
     document.getElementById(`screen${n}`).style.display = "block";
+
+    // temp
+    if (n == 4) {
+        document.querySelectorAll(".trial-name").forEach(e => e.innerText = trialOptions.name);
+        document.querySelectorAll(".trial-ndisks").forEach(e => e.innerText = trialOptions.ndisks);
+        if (!checkName(`${trialOptions.cls} ${trialOptions.clsno}`)) {
+            switchScreen(1);
+        }
+    }
 }
 
 const trialOptions = {
+    name: "",
     ndisks: 4,
     startTime: 0,
     timerInterval: 0,
     timeoutInterval: 0,
     score: 0,
-    cls: "",
-    clsno: "",
     timeLimit: -1,
 };
 
@@ -82,30 +90,59 @@ function announce() {
     websocket.send(`!announcement-show:${msg}`);
 }
 
+function checkName(name) {
+    let result = [];
+    for (const record of leaderboard1) {
+        if (record.name === name) {
+            result.push({disks: 4, record});
+            break;
+        }
+    }
+    if (result.length == 0) for (const record of leaderboard2) {
+        if (record.name === name) {
+            result.push({disks: 5, record});
+            break;
+        }
+    }
+    if (result.length == 0) {
+        return true;
+    }
+
+    msg = `The name '${name}' already exists:\n\n`
+    for (const found of result) {
+        msg += `${found.disks} disks  -  ${found.record.name}  -  ${parseTime(found.record.score)}\n`
+    }
+    msg += "\nClick OK if this is intentional; else, click cancel to cancel the operation."
+    
+    return window.confirm(msg)
+}
+
 function addRaw() {
-    const leaderboard = prompt("Leaderboard 1 or 2?");
-    if (leaderboard !== "1" && leaderboard !== "2") return;
-    const name = prompt("Enter name:");
+    const ndisks = prompt("Insert record (Step 1/3)\n4 or 5 disks?");
+    if (ndisks !== "4" && ndisks !== "5") return;
+    const name = prompt("Insert record (Step 2/3)\nEnter the name:");
     if (name === null) return;
-    let score = prompt("Enter time: (leave blank to enter raw score)");
+    if (!checkName(name)) return;
+    let score = prompt("Insert record (Step 3/3)\nEnter the time:\nLeave blank to enter the number of milliseconds directly");
     if (score === null) return;
     if (score === "") {
-        score = prompt("Enter score:");
+        score = prompt("Insert record (Step 3/3)\nEnter the number of milliseconds:");
         if (score === null) return;
         score = parseInt(score);
     } else {
         score = timeStringToMillis(score);
     }
     pushRecord(
-        leaderboard == "1" ? leaderboard1 : leaderboard2,
+        ndisks == "4" ? leaderboard1 : leaderboard2,
         name,
         score,
     );
+    sendUpdate();
 }
 
 function sendNewRecord() {
     websocket.send("!regconfirm");
-    pushRecord(trialOptions.ndisks == 4 ? leaderboard1 : leaderboard2, `${trialOptions.cls} ${trialOptions.clsno}`, score);
+    pushRecord(trialOptions.ndisks == 4 ? leaderboard1 : leaderboard2, trialOptions.name, score);
     sendUpdate();
     switchScreen(1);
 }
@@ -122,7 +159,7 @@ function timerClickListener(obj) {
     document.getElementById("timer-start-button").style.display = "block";
     websocket.send(`!regend-${score}`);
     switchScreen(5);
-    document.querySelectorAll(".result").forEach(e => e.innerText = parseTime(score));
+    document.querySelectorAll(".trial-result").forEach(e => e.innerText = parseTime(score));
     document.getElementById("timer").innerText = "00:00.000";
 }
 
@@ -236,13 +273,14 @@ function updateTimeLimits() {
 }
 
 function modifyRank(leaderboard, n) {
-    const name = prompt("Enter new name:", leaderboard[n-1].name);
+    const name = prompt("Modify Record (Step 1/2)\nEdit the name:", leaderboard[n-1].name);
     if (name === null) return;
-    const newTime = prompt("Enter new time: (leave blank to edit raw score)", parseTime(leaderboard[n-1].score));
+    if (name != leaderboard[n-1].name && !checkName(name)) return;
+    const newTime = prompt("Modify Record (Step 2/2)\nEdit the time:\nLeave blank to edit the number of milliseconds directly", parseTime(leaderboard[n-1].score));
     if (newTime === null) return;
     let score;
     if (newTime == "") {
-        score = prompt("Enter new score:", leaderboard[n-1].score);
+        score = prompt("Modify Record (Step 2/2)\nEdit the number of milliseconds:", leaderboard[n-1].score);
         if (score === null) return;
         score = parseInt(score);
     } else {
@@ -289,7 +327,10 @@ function updateLeaderboard(id, leaderboard) {
         removeButton.classList.add("action");
         removeButton.innerText = "[Del]";
         removeButton._rank = rank;
-        removeButton.onclick = e => removeRank(leaderboard, e.target._rank);
+        removeButton.onclick = e => {
+            if (!window.confirm(`Remove this record?\n${name}  -  ${score}`)) return;
+            removeRank(leaderboard, e.target._rank)
+        };
         
         record.appendChild(modifyButton);
         record.appendChild(removeButton);
@@ -368,7 +409,7 @@ function millisToCoarseTime(millis) {
 
 function newTrial(n) {
     trialOptions.ndisks = n;
-    switchScreen(2);
+    switchScreen(6);
 }
 
 function useAccessToken() {
@@ -382,16 +423,15 @@ function useAccessToken() {
 function customName() {
     const custom = prompt("Enter name:");
     if (custom === null) return;
-    trialOptions.cls = custom;
-    trialOptions.clsno = "";
-    document.getElementById("confirm-class").innerText = trialOptions.cls;
-    document.getElementById("confirm-classno").innerText = trialOptions.clsno;
+    trialOptions.name = custom;
+    // document.getElementById("confirm-class").innerText = trialOptions.cls;
+    // document.getElementById("confirm-classno").innerText = trialOptions.clsno;
     switchScreen(4);
     websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
 }
 
 function editTimeLimit(id) {
-    const newTimeLimit = prompt("Enter new time limit.\nExamples: '4m' / '2m30s' / '1000' (1000 millis)\nEnter -1 to remove time limit", timeLimits[id]);
+    const newTimeLimit = prompt("Enter new time limit\nExamples: '4m' / '2m30s' / '1000' (1000 millis)\nEnter '-1' to remove time limit", timeLimits[id]);
     if (newTimeLimit === null) return;
     if (newTimeLimit.length == 0) return;
     if (newTimeLimit == "-1") {
@@ -421,7 +461,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("manual-input-button").onclick = () => {
         addRaw();
-        sendUpdate();
     };
 
     document.getElementById("reset-l4-button").onclick = () => {
@@ -483,8 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.innerText = `${i}${letter}`;
             if (i <= 3 && letter == "E") btn.style.opacity = 0;
             else btn.onclick = e => {
-                trialOptions.cls = e.target.innerText;
-                document.getElementById("confirm-class").innerText = trialOptions.cls;
+                trialOptions.name = e.target.innerText;
                 switchScreen(3);
             }
             row.appendChild(btn);
@@ -502,11 +540,10 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.classList.add("outline");
             btn.innerText = (i * width + j + 1).toString().padStart(2, "0");
             btn.onclick = e => {
-                trialOptions.clsno = e.target.innerText;
-                document.getElementById("confirm-classno").innerText = trialOptions.clsno;
+                trialOptions.name += " " + e.target.innerText;
                 switchScreen(4);
 
-                websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.cls} ${trialOptions.clsno}`);
+                websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.name}`);
             }
             row.appendChild(btn);
         }
@@ -517,8 +554,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("button[dangerous]").forEach(e => {
         e._onclick = e.onclick;
         e.onclick = () => {
-            const ans = prompt("Are you sure? Type 'yes' to confirm.");
-            if (ans == "yes!") { // intentional
+            const ans = prompt("Are you sure? Type 'yes!' to confirm.");
+            if (ans == "yes!") {
                 e._onclick();
             }
         }
