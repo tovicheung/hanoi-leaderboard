@@ -157,6 +157,7 @@ function timerClickListener(obj) {
     removeEventListener("mousedown", timerClickListener);
     removeEventListener("touchstart", timerClickListener);
     document.getElementById("timer-start-button").style.display = "block";
+    document.getElementById("timer-cancel-button").style.display = "block";
     websocket.send(`!regend-${score}`);
     switchScreen(5);
     document.querySelectorAll(".trial-result").forEach(e => e.innerText = parseTime(score));
@@ -177,6 +178,7 @@ function startTimer() {
     addEventListener("mousedown", timerClickListener);
     addEventListener("touchstart", timerClickListener);
     document.getElementById("timer-start-button").style.display = "none";
+    document.getElementById("timer-cancel-button").style.display = "none";
     websocket.send("!regstart");
 }
 
@@ -511,6 +513,16 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".screen-1-button").forEach(btn => btn.onclick = () => {
         switchScreen(1);
     });
+
+    document.getElementById("name-confirm-button").onclick = () => {
+        trialOptions.name = document.getElementById("custom-name-input").value;
+        if (trialOptions.name == "") {
+            alert("Name cannot be empty!");
+            return;
+        }
+        document.getElementById("custom-name-input").value = "";
+        switchScreen(4);
+    }
     
     switchScreen(1);
     for (let i = 1; i <= 6; i++) {

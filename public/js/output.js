@@ -289,11 +289,13 @@ function titleAnim(n) {
 setInterval(() => titleAnim(1), 30000);
 setInterval(() => {
     document.getElementById("setup").style.display = "none";
+    document.body.style.cursor = "none";
 }, 8000);
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("setup-fullscreen").onclick = () => {
         document.body.requestFullscreen();
         document.getElementById("setup").style.display = "none";
+        document.body.style.cursor = "none";
     }
 });

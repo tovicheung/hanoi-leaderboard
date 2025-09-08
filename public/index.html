@@ -150,7 +150,10 @@
         <div class="centered">
             <h2><span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
             <h2 id="timer">00:00.000</h2>
-            <button id="timer-start-button">Start</button>
+            <div class="row">
+                <button id="timer-start-button">Start</button>
+                <button id="timer-cancel-button" class="screen-1-button">Cancel</button>
+            </div>
             <h2>When finished, press anywhere to stop the timer</h2>
         </div>
     </div>
@@ -167,10 +170,10 @@
     <div id="screen6">
         <div class="centered">
             <h1>Enter your name:</h1>
-            <input type="text" id="custom-name-input" placeholder="Your name here">
+            <input type="text" id="custom-name-input" placeholder="Your name here ...">
             <div class="row">
                 <button id="name-confirm-button">Confirm</button>
-                <button id="name-cancel-button">Cancel</button>
+                <button class="screen-1-button">Cancel</button>
             </div>
         </div>
     </div>
