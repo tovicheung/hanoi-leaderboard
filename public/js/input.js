@@ -6,6 +6,7 @@ function parseTime(millis) {
 function updateLeaderboards() {
     updateLeaderboard("leaderboard1", leaderboard1);
     updateLeaderboard("leaderboard2", leaderboard2);
+    updateTimeLimits();
 }
 
 let timeLimit = -1;
@@ -168,15 +169,7 @@ websocket.onmessage = e => {
         } else if (e.data.startsWith("@timeLimits:")) {
             const newData = JSON.parse(e.data.slice("@timeLimits:".length));
             timeLimits = newData;
-            for (const id in timeLimits) {
-                const timeLimit = timeLimits[id];
-                const elem = document.getElementById(`time-limit-${id}`);
-                if (timeLimit === -1) {
-                    elem.innerText = "none";
-                } else {
-                    elem.innerText = millisToCoarseTime(timeLimit);
-                }
-            }
+            updateTimeLimits();
         }
         return;
     }
@@ -224,6 +217,22 @@ function timeStringToMillis(timeString) {
     const seconds = parseInt(parts[0]);
     const millis = parseInt(parts[1]);
     return (minutes * 60 + seconds) * 1000 + millis;
+}
+
+function timeLimitDisplay(timeLimit) {
+    return timeLimit == -1 ? "none" : millisToCoarseTime(timeLimit);
+}
+
+function updateTimeLimits() {
+    for (const id in timeLimits) {
+        const timeLimit = timeLimits[id];
+        const elem = document.getElementById(`time-limit-${id}`);
+        if (timeLimit === -1) {
+            elem.innerText = "none";
+        } else {
+            elem.innerText = millisToCoarseTime(timeLimit);
+        }
+    }
 }
 
 function modifyRank(leaderboard, n) {
