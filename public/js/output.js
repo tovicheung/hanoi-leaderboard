@@ -44,6 +44,8 @@ function stopDots() {
 
 websocket.onopen = e => {
     console.log("CONNECTED");
+    document.getElementById("loading").style.display = "none";
+    
     websocket.send("REPORT-ROLE:Output");
 };
 
