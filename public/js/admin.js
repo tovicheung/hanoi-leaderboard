@@ -367,17 +367,20 @@ function updateClientData(data) {
         
         const tdAuth = document.createElement("td");
         const _auth = entry.auth;
+        console.log(_auth);
         if (_auth.type == "admin") {
             tdAuth.innerText = "Admin";
         } else if (_auth.type == "token") {
             tdAuth.innerText = `Token; Until ${fullDateFmt(new Date(parseInt(_auth.expireIn)))}`;
         } else if (_auth.type == "elevated") {
-            tdAuth.innertext = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
+            tdAuth.innerText = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
+            console.log(tdAuth);
         } else if (_auth.type == "none") {
             tdAuth.innerText = "None";
         } else {
             tdAuth.innerText = "Malformed";
         }
+        console.log(tdAuth);
         tr.appendChild(tdAuth);
 
         const tdAction = document.createElement("td");

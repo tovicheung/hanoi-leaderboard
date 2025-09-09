@@ -238,7 +238,7 @@ function connectSocket(req: Request) {
         } else {
             socket.send("AUTH:required");
         }
-        broadcast(`@timeLimits:${JSON.stringify(await getTimeLimits())}`);
+        socket.send(`@timeLimits:${JSON.stringify(await getTimeLimits())}`);
         adminSendClientsData();
     });
 
