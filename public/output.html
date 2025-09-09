@@ -149,15 +149,12 @@
         background-color: #322641ad;
     }
 
-    .centered {
+    #loading-inner {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        text-align: center;
     }
 </style>
 
@@ -175,8 +172,8 @@
     <button id="setup-fullscreen">Fullscreen</button>
 </div>
 
-<div id="lroading">
-    <div class="centered">
+<div id="loading">
+    <div id="loading-inner">
         Connecting ...
     </div>
 </div>

@@ -14,12 +14,37 @@ var leaderboard2 = [];
 var regStart = 0;
 var regInterval = 0;
 
-const websocket = (() => {
+var websocket = openSocket();
+
+function openSocket() {
+    document.getElementById("loading-inner").innerHTML = "Connecting ...";
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws`;
-    return new WebSocket(wsUrl);
-})();
+    websocket = new WebSocket(wsUrl);
+
+    websocket.onopen = e => {
+        console.log("CONNECTED");
+        document.getElementById("loading").style.display = "none";
+        websocket.send("REPORT-ROLE:Output");
+    };
+
+    websocket.onmessage = socketOnMessage;
+
+    websocket.onclose = e => {
+        console.log("DISCONNECTED");
+        // window.location.href = "./disconnected"
+        document.getElementById("loading-inner").innerHTML = "Disconnected.<br><br>Reconnecting ...";
+        document.getElementById("loading").style.display = "block";
+        setTimeout(openSocket, 3000);
+    };
+
+    websocket.onerror = e => {
+        console.log(`ERROR: ${e.data}`);
+    };
+
+    return websocket;
+}
 
 const id2titles = {
     "leaderboard1": "4 disks",
@@ -42,34 +67,19 @@ function stopDots() {
     document.getElementById("dots").innerText = "";
 }
 
-websocket.onopen = e => {
-    console.log("CONNECTED");
-    document.getElementById("loading").style.display = "none";
-    
-    websocket.send("REPORT-ROLE:Output");
-};
-
-websocket.onclose = e => {
-    console.log("DISCONNECTED");
-    window.location.href = "./disconnected"
-};
-
-websocket.onmessage = e => {
+function socketOnMessage(e) {
     console.log(`RECEIVED: ${e.data}`);
     if (e.data.startsWith("@")) return;
     if (e.data.startsWith("!")) {
         handleCommand(e.data);
         return;
     }
+    if (e.data.startsWith("AUTH:")) return;
     const data = JSON.parse(e.data);
     leaderboard1 = data[0];
     leaderboard2 = data[1];
     updateLeaderboards();
-};
-
-websocket.onerror = e => {
-    console.log(`ERROR: ${e.data}`);
-};
+}
 
 function appendRegName(name, i) {
     if (i == name.length + 1) return;

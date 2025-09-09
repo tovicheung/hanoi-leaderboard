@@ -526,8 +526,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         switchScreen(4);
     }
+
+    document.querySelectorAll("button[dangerous]").forEach(e => {
+        e._onclick = e.onclick;
+        e.onclick = () => {
+            const ans = prompt("Are you sure? Type 'yes!' to confirm.");
+            if (ans == "yes!") {
+                e._onclick();
+            }
+        }
+    });
     
     switchScreen(1);
+
+    return;
+
+    // unused
+
     for (let i = 1; i <= 6; i++) {
         const row = document.createElement("div");
         row.classList.add("row");
@@ -565,14 +580,4 @@ document.addEventListener("DOMContentLoaded", () => {
         const parent = document.querySelector("#screen3 > .centered");
         parent.insertBefore(row, parent.childNodes[parent.childNodes.length - 2]);
     }
-
-    document.querySelectorAll("button[dangerous]").forEach(e => {
-        e._onclick = e.onclick;
-        e.onclick = () => {
-            const ans = prompt("Are you sure? Type 'yes!' to confirm.");
-            if (ans == "yes!") {
-                e._onclick();
-            }
-        }
-    });
 })

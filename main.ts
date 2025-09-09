@@ -258,7 +258,6 @@ function connectSocket(req: Request) {
             adminSendServerConfig();
             adminSendClientsData();
             await adminSendInstancesData();
-            // await adminSendAccessData();
             return;
         }
         
@@ -493,10 +492,6 @@ async function handleApi(path: string, req: Request): Promise<Response> {
     return ok();
 }
 
-const sleep = async (ms: number): Promise<void> => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-};
-
 Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
     // console.log("request to path:", path);
@@ -509,7 +504,6 @@ Deno.serve(async (req) => {
         if (req.headers.get("upgrade") == "websocket") {
             return connectSocket(req);
         }
-        return new Response(null, { status: 501 });
     } else if (path === "/") {
         path = "/index.html";
     } else if (path === "/admin") {
@@ -530,8 +524,8 @@ Deno.serve(async (req) => {
         }
         const file = await Deno.open(filePath);
         return new Response(file.readable);
-    } catch (e) {
-        console.error(`Error serving file ${path}:`, e);
+    } catch {
+        // console.error(`Error serving file ${path}:`, e);
         return new Response("Not Found", { status: 404 });
     }
 });
