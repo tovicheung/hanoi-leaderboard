@@ -39,6 +39,7 @@ function switchScreen(n) {
 
     // temp
     if (n == 4) {
+        websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.name}`);
         document.querySelectorAll(".trial-name").forEach(e => e.innerText = trialOptions.name);
         document.querySelectorAll(".trial-ndisks").forEach(e => e.innerText = trialOptions.ndisks);
         if (!checkName(trialOptions.name)) {
@@ -433,7 +434,8 @@ function customName() {
     // document.getElementById("confirm-class").innerText = trialOptions.cls;
     // document.getElementById("confirm-classno").innerText = trialOptions.clsno;
     switchScreen(4);
-    websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
+    // handled at screen 4
+    // websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
 }
 
 function editTimeLimit(id) {
