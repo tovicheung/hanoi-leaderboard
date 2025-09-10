@@ -75,6 +75,12 @@
         padding: 16px;
         margin: 60px;
     }
+    
+    #connection-test-actions {
+        font-family: Arial;
+        font-size: 20px;
+        font-weight: normal;
+    }
 </style>
 
 <div id="container">
@@ -123,7 +129,8 @@
             <button id="adjust-height-button" class="small">Adjust display rows</button>
             <button id="clear-animation-button" class="small">Clear animation</button>
             <button id="announce-button" class="small">Announce</button>
-            <button id="hide-announcement-button" class="small">Hide announce</button>
+            <!-- <button id="hide-announcement-button" class="small">Hide announce</button> -->
+            <button class="small" onclick="switchScreen(997)">Test connection</button>
         </div>
         <h2 id="status" style="color: blue;">Connecting to server ...</h2>
         <div class="leaderboards">
@@ -174,6 +181,23 @@
             <div class="row">
                 <button id="name-confirm-button">Confirm</button>
                 <button class="screen-1-button">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="screen997">
+        <div class="centered">
+            <h1>Connection Test</h1>
+            <br>
+            <br>
+            <h2 id="connection-test-display">Loading ...</h2>
+            <br>
+            <h2 style="background-color: white; padding: 12px; text-align: left; width: 50vw;">Actions:<br><span id="connection-test-actions"></span></h2>
+            <br>
+            <br>
+            <div class="row">
+                <button onclick="window.location.reload()">Reload page</button>
+                <button id="test-again" onclick="switchScreen(997)">Test again</button>
+                <button class="screen-1-button">Back</button>
             </div>
         </div>
     </div>

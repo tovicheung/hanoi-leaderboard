@@ -15,9 +15,12 @@ var regStart = 0;
 var regInterval = 0;
 
 var websocket = openSocket();
+var fails = 0;
+const MAX_TRIES = 5;
+var offline = false;
 
 function openSocket() {
-    document.getElementById("loading-inner").innerHTML = "Connecting ...";
+    if (offline) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws`;
@@ -33,8 +36,15 @@ function openSocket() {
 
     websocket.onclose = e => {
         console.log("DISCONNECTED");
+        if (fails >= MAX_TRIES) {
+            offline = true;
+            document.getElementById("loading-inner").innerHTML = "Offline mode";
+            setTimeout(() => document.getElementById("loading").style.display = "none", 3000);
+            return;
+        }
+        fails++;
         // window.location.href = "./disconnected"
-        document.getElementById("loading-inner").innerHTML = "Disconnected.<br><br>Reconnecting ...";
+        document.getElementById("loading-inner").innerHTML = `Disconnected.<br><br>Reconnecting ... ${fails}/${MAX_TRIES}`;
         document.getElementById("loading").style.display = "block";
         setTimeout(openSocket, 3000);
     };

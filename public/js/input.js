@@ -49,7 +49,65 @@ function switchScreen(n) {
     } else if (n == 6) {
         document.getElementById("custom-name-input").value = "";
         document.getElementById("custom-name-input").focus();
+    } else if (n == 997) {
+        connectionTest();
     }
+}
+
+function connectionTest2() {
+    const disp = document.getElementById("connection-test-display");
+    const actions = document.getElementById("connection-test-actions");
+    disp.innerText = "Socket failed\nTesting HTTP connection ...";
+    fetch("/ping")
+        .then(response => {
+            if (response.ok) {
+                disp.innerHTML = "<span style='color: brown'>HTTP ok; socket closed</span>";
+                actions.innerHTML = "Reload this page to reconnect.";
+                document.getElementById("test-again").style.display = "";
+            } else {
+                disp.innerHTML = `<span style='color: red'>Server returned an error<br>${response.status} ${response.statusText}</span>`;
+                actions.innerHTML = "* Do NOT reload anything.<br>"
+                + "* Test the connection again and again using the button below. (the server *should* restart soon)<br>"
+                + "* When the connection is finally resumed, reload everything.";
+                document.getElementById("test-again").style.display = "";
+            }
+        })
+        .catch(error => {
+            disp.innerHTML = "<span style='color: red'>The server is unreachable";
+            actions.innerHTML = "Check the internet connection on this device.<br>"
+                + "If it is not a problem with internet connection:<br>"
+                + "* Do NOT reload anything.<br>"
+                + "* Test the connection again and again using the button below. (the server *should* restart soon)<br>"
+                + "* When the connection is finally resumed, reload everything.";
+                document.getElementById("test-again").style.display = "";
+        });
+}
+
+function connectionTest() {
+    document.getElementById("test-again").style.display = "none";
+    const disp = document.getElementById("connection-test-display");
+    const actions = document.getElementById("connection-test-actions");
+    disp.innerHTML = "Testing socket connection ...";
+    actions.innerText = "Please wait";
+
+    const oldOnMessage = websocket.onmessage;
+    const timeout = setTimeout(() => {
+        websocket.onmessage = oldOnMessage;
+        connectionTest2();
+    }, 2000);
+
+    websocket.onmessage = e => {
+        if (e.data === "pong") {
+            websocket.onmessage = oldOnMessage;
+            clearTimeout(timeout);
+            disp.innerHTML = "<span style='color: darkgreen'>No problems detected.</span>";
+            actions.innerText = "If the output computer is disconnected and fails to auto-reconnect, press Ctrl+Shift+R on the computer to fully reload.";
+            return;
+        }
+        return oldOnMessage(e);
+    }
+    
+    websocket.send("ping");
 }
 
 const trialOptions = {
@@ -89,9 +147,12 @@ function adjustHeight() {
 }
 
 function announce() {
-    const msg = prompt("Enter announcement:", "Announcement: ");
+    const msg = prompt("Enter announcement:\n(Leave blank to remove announcement)").trim();
     if (msg === null) return;
-    if (msg.length == 0) return;
+    if (msg.length == 0) {
+        websocket.send("!announcement-hide");
+        return;
+    }
     websocket.send(`!announcement-show:${msg}`);
 }
 
@@ -501,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
         announce();
     };
 
-    document.getElementById("hide-announcement-button").onclick = () => {
+    if (0) document.getElementById("hide-announcement-button").onclick = () => {
         websocket.send("!announcement-hide");
     };
 

@@ -514,6 +514,8 @@ Deno.serve(async (req) => {
         path = "/output.html";
     } else if (path === "/disconnected") {
         path = "/disconnected.html";
+    } else if (path === "/ping") {
+        return ok();
     }
 
     try {
