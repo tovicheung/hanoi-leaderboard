@@ -42,7 +42,9 @@ function isValidConfig(obj: unknown): obj is Config {
         "inputAccess" in obj &&
         typeof obj.inputAccess === "string" &&
         "outputAccess" in obj &&
-        typeof obj.outputAccess === "string"
+        typeof obj.outputAccess === "string" &&
+        "backupUrl" in obj &&
+        (typeof obj.backupUrl === "string" || obj.backupUrl === null)
     );
 }
 
