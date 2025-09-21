@@ -58,12 +58,15 @@ function updateInfo() {
     document.getElementById("connection-status").innerText = info.connectionStatus;
     document.getElementById("input-access").innerText = serverConfig.inputAccess;
     document.getElementById("output-access").innerText = serverConfig.outputAccess;
-    document.getElementById("backup-url").innerText = serverConfig.backupUrl;
+    document.getElementById("backup-url").innerText = serverConfig.backupUrl === null ? "[unset]" : serverConfig.backupUrl;
 }
 
 function modifyBackupUrl() {
-    const newUrl = prompt("Enter new backup url:", serverConfig.backupUrl);
+    let newUrl = prompt("Enter new backup url:", serverConfig.backupUrl);
     if (newUrl == null) return;
+    if (newUrl == "") {
+        newUrl = null
+    }
     configUpdate({ backupUrl: newUrl });
 }
 
