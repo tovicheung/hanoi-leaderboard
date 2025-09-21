@@ -22,11 +22,13 @@ type AccessType = "everyone" | "restricted" | "none";
 interface Config {
     inputAccess: AccessType,
     outputAccess: AccessType,
+    backupUrl: string | null,
 }
 
 const DEFAULT_CONFIG: Config = {
     inputAccess: "restricted",
     outputAccess: "everyone",
+    backupUrl: null,
 }
 
 // none: function is only accessible by admin
@@ -45,7 +47,7 @@ function isValidConfig(obj: unknown): obj is Config {
 }
 
 const kv = await Deno.openKv();
-const config: any = await (async () => {
+const config: Config = await (async () => {
     const tmp = (await kv.get(["config"])).value;
     if (isValidConfig(tmp)) return tmp;
     return DEFAULT_CONFIG;
@@ -112,6 +114,21 @@ async function getData(): Promise<Leaderboard[]> {
 async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
     broadcast(JSON.stringify(leaderboards));
     await kv.set(["leaderboards"], leaderboards);
+
+    if (config.backupUrl == null) {
+        return;
+    }
+
+    const admin = Deno.env.get("ADMIN");
+
+    await fetch(config.backupUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${admin}`
+        },
+        body: JSON.stringify(leaderboards),
+    });
 }
 
 function getAdminSocket(): WebSocket | null {
@@ -183,18 +200,18 @@ async function getAccessData() {
     return result;
 }
 
-async function adminSendAccessData() {
-    const entries = await kv.list({ prefix: ["tokens"] });
-    const result: any = {};
-    for await (const entry of entries) {
-        const token = entry.key[1];
-        if (typeof token !== "string") continue;
-        const expireIn = entry.value;
-        result[token] = expireIn;
-    }
-    getAdminSocket()
-        ?.send(`ADMIN:ACCESS:${JSON.stringify(result)}`);
-}
+// async function adminSendAccessData() {
+//     const entries = await kv.list({ prefix: ["tokens"] });
+//     const result: any = {};
+//     for await (const entry of entries) {
+//         const token = entry.key[1];
+//         if (typeof token !== "string") continue;
+//         const expireIn = entry.value;
+//         result[token] = expireIn;
+//     }
+//     getAdminSocket()
+//         ?.send(`ADMIN:ACCESS:${JSON.stringify(result)}`);
+// }
 
 function adminCreateToken(token: string, expireIn: number) {
     const timedelta = expireIn - Date.now();
@@ -424,7 +441,10 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         return resp;
     }
     const body = method == "GET" ? {} : await req.json();
-    if (path.startsWith("/api/instance")) {
+    if (path == "/api/data" && method == "POST") {
+        // TODO: check structure
+        broadcastAndSaveData(body);
+    } else if (path.startsWith("/api/instance")) {
         if (path == "/api/instance/create" && method == "POST") {
             if ("name" in body && typeof body.name == "string") {
                 const name = body.name;
@@ -461,6 +481,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
     } else if (path == "/api/config/update" && method == "POST") {
         for (const fieldName in config) {
             if (fieldName in body) {
+                // @ts-ignore :)
                 config[fieldName] = body[fieldName];
             }
         }
