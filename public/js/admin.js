@@ -52,6 +52,7 @@ var serverConfig = {
     inputAccess: "unknown",
     outputAccess: "unknown",
     backupUrl: "unknown",
+    parentUrl: "unknown",
 }
 
 function updateInfo() {
@@ -59,6 +60,7 @@ function updateInfo() {
     document.getElementById("input-access").innerText = serverConfig.inputAccess;
     document.getElementById("output-access").innerText = serverConfig.outputAccess;
     document.getElementById("backup-url").innerText = serverConfig.backupUrl === null ? "[unset]" : serverConfig.backupUrl;
+    document.getElementById("parent-url").innerText = serverConfig.parentUrl === null ? "[unset]" : serverConfig.parentUrl;
 }
 
 function modifyBackupUrl() {
@@ -68,6 +70,15 @@ function modifyBackupUrl() {
         newUrl = null
     }
     configUpdate({ backupUrl: newUrl });
+}
+
+function modifyParentUrl() {
+    let newUrl = prompt("Enter new parent url:", serverConfig.parentUrl);
+    if (newUrl == null) return;
+    if (newUrl == "") {
+        newUrl = null
+    }
+    configUpdate({ parentUrl: newUrl });
 }
 
 async function req(url, method, data, show = true) {

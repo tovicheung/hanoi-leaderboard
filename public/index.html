@@ -60,10 +60,9 @@
     }
 
     .action {
-        color: blue;
+        color: rgb(97, 97, 97);
+        padding: 2px;
         cursor: pointer;
-        padding-left: 6px;
-        padding-right: 6px;
     }
     
     a.action {
@@ -133,6 +132,7 @@
             <button class="small" onclick="switchScreen(997)">Test connection</button>
         </div>
         <h2 id="status" style="color: blue;">Connecting to server ...</h2>
+        <!-- <h3 id="backup" style="color: purple;">This is the backup system. <span class="action" onclick="switchScreen(996)">[backup system actions]</span></h3> -->
         <div class="leaderboards">
             <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
             <div id="leaderboard2" class="leaderboard">Connecting to server ...</div>
@@ -182,6 +182,15 @@
                 <button id="name-confirm-button">Confirm</button>
                 <button class="screen-1-button">Cancel</button>
             </div>
+        </div>
+    </div>
+    <div id="screen996">
+        <!-- unused -->
+        <div class="centered">
+            <h1>Backup System Actions</h1>
+            <br>
+            <button onclick="transferBack()">Transfer data back to main server</button>
+            <button class="screen-1-button">Back</button>
         </div>
     </div>
     <div id="screen997">

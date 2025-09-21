@@ -23,12 +23,14 @@ interface Config {
     inputAccess: AccessType,
     outputAccess: AccessType,
     backupUrl: string | null,
+    parentUrl: string | null, // unused for now
 }
 
 const DEFAULT_CONFIG: Config = {
     inputAccess: "restricted",
     outputAccess: "everyone",
     backupUrl: null,
+    parentUrl: null,
 }
 
 // none: function is only accessible by admin
@@ -44,7 +46,9 @@ function isValidConfig(obj: unknown): obj is Config {
         "outputAccess" in obj &&
         typeof obj.outputAccess === "string" &&
         "backupUrl" in obj &&
-        (typeof obj.backupUrl === "string" || obj.backupUrl === null)
+        (typeof obj.backupUrl === "string" || obj.backupUrl === null) &&
+        "parentUrl" in obj &&
+        (typeof obj.parentUrl === "string" || obj.parentUrl === null)
     );
 }
 

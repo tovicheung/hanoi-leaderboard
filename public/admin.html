@@ -113,6 +113,13 @@
         background-color: green;
         display: none;
     }
+    
+    .action {
+        cursor: pointer;
+        color: rgb(97, 97, 97);
+        padding: 2px;
+        text-decoration: none;
+    }
 </style>
 <body>
     <h2>Admin Dashboard</h2>
@@ -132,7 +139,8 @@
         <button style="background-color: #2e9a2e;" onclick="configUpdate({ inputAccess: 'everyone' })">Unlock</button>
         
         <h4 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h4>
-        <h4>Backup server: <span id="backup-url"></span></h4> <button onclick="modifyBackupUrl()">Modify</button>
+        <h4>Backup server: <span id="backup-url"></span> <span class="action" onclick="modifyBackupUrl()">[Modify]</span></h4>
+        <h4>Parent server: <span id="parent-url"></span> <span class="action" onclick="modifyParentUrl()">[Modify]</span></h4>
     </div>
     <div id="instance-management">
         <h2>Instance Management</h2>
