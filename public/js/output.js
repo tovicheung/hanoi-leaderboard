@@ -30,6 +30,7 @@ function openSocket() {
         console.log("CONNECTED");
         document.getElementById("loading").style.display = "none";
         websocket.send("REPORT-ROLE:Output");
+        fails = 0;
     };
 
     websocket.onmessage = socketOnMessage;

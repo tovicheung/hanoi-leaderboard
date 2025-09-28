@@ -545,6 +545,10 @@ Deno.serve(async (req) => {
         return ok();
     }
 
+    if (path.startsWith("/js/")) {
+        path = path.replace("/js/", "/js-min/").replace(".js", ".min.js");
+    }
+
     try {
         const filePath = Deno.cwd() + "/public" + path;
         const fileInfo = await Deno.stat(filePath);
