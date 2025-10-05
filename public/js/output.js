@@ -8,6 +8,10 @@ function updateLeaderboards() {
     updateLeaderboard("leaderboard2", leaderboard2);
 }
 
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+const old = urlParams.get("old") !== null;
+
 var leaderboard1 = [];
 var leaderboard2 = [];
 
