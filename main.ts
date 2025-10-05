@@ -26,6 +26,11 @@ interface Config {
     parentUrl: string | null, // unused for now
 }
 
+interface InstanceMeta {
+    timeLimits: object,
+    theme: string,
+}
+
 const DEFAULT_CONFIG: Config = {
     inputAccess: "restricted",
     outputAccess: "everyone",
@@ -79,27 +84,52 @@ async function setupKv() {
         names.push(entry.key[1]);
     }
     if (names.length == 0) {
-        await kv.set(["instances", "_default"], [[], []]);
+        await kv.set(["instances", "_default"], {
+            meta: {
+                timeLimits: {
+                    "leaderboard1": 3 * 60 * 1000,
+                    "leaderboard2": 4 * 60 * 1000,
+                },
+                theme: "gojo",
+            },
+            data: [[], []]
+        });
     }
     
     if ((await kv.get(["instanceName"])).value === null) {
         await kv.set(["instanceName"], "_default");
     }
 
-    if ((await kv.get(["leaderboards"])).value === null) {
+    if ((await kv.get(["leaderboards"])).value === null) { // active .data
         await kv.set(["leaderboards"], [[], []]);
+    }
+
+    if ((await kv.get(["meta"])).value === null) {
+        await kv.set(["meta"], {
+                timeLimits: {
+                    "leaderboard1": 3 * 60 * 1000,
+                    "leaderboard2": 4 * 60 * 1000,
+                },
+                theme: "gojo",
+            }
+        );
+    }
+
+    if ((await kv.get(["timeLimits"])).value !== null) {
+        await kv.delete(["timeLimits"]);
+        // await kv.set(["timeLimits"], {
+        //     "leaderboard1": 3 * 60 * 1000,
+        //     "leaderboard2": 4 * 60 * 1000,
+        // });
+    }
+
+    if ((await kv.get(["meta"])).value === null) { // active .meta
+        await kv.set(["meta"], {});
     }
 
     if ((await kv.get(["timeLimit"])).value !== null) {
         await kv.delete(["timeLimit"]);
         // await kv.set(["timeLimit"], 4 * 60 * 1000);
-    }
-
-    if ((await kv.get(["timeLimits"])).value === null) {
-        await kv.set(["timeLimits"], {
-            "leaderboard1": 3 * 60 * 1000,
-            "leaderboard2": 4 * 60 * 1000,
-        });
     }
 }
 
@@ -232,8 +262,12 @@ async function authCheckToken(token: string) {
     return tok.value;
 }
 
-async function getTimeLimits(): Promise<any> {
-    return (await kv.get(["timeLimits"])).value;
+async function getMeta(): Promise<InstanceMeta> {
+    return (await kv.get(["meta"])).value as InstanceMeta;
+}
+
+async function getTimeLimits(): Promise<object> {
+    return (await getMeta()).timeLimits;
 }
 
 function connectSocket(req: Request) {
@@ -254,6 +288,7 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("open", async () => {
         console.log(`client ${clientId} connected!`);
+        socket.send(`@meta:${JSON.stringify(await getMeta())}`);
         socket.send(JSON.stringify(await getData())); // actual display data - most prioritized
         broadcast(`@nclients:${clients.size}`);
         if (config.inputAccess == "everyone") {
@@ -261,7 +296,7 @@ function connectSocket(req: Request) {
         } else {
             socket.send("AUTH:required");
         }
-        socket.send(`@timeLimits:${JSON.stringify(await getTimeLimits())}`);
+        // socket.send(`@timeLimits:${JSON.stringify(await getTimeLimits())}`);
         adminSendClientsData();
     });
 
@@ -356,8 +391,19 @@ function connectSocket(req: Request) {
             const timeLimits = await getTimeLimits();
             timeLimits[id] = newTimeLimit;
 
-            await kv.set(["timeLimits"], timeLimits);
-            broadcast(`@timeLimits:${JSON.stringify(timeLimits)}`);
+            const meta = await getMeta();
+            meta.timeLimits = timeLimits;
+            await kv.set(["meta"], meta);
+            broadcast(`@meta:${JSON.stringify(meta)}`);
+            return;
+        }
+        
+        if (event.data.startsWith("@theme:")) {
+            const newTheme = event.data.slice("@theme:".length);
+            const meta = await getMeta();
+            meta.theme = newTheme;
+            await kv.set(["meta"], meta);
+            broadcast(`@meta:${JSON.stringify(meta)}`);
             return;
         }
 
@@ -519,6 +565,8 @@ async function handleApi(path: string, req: Request): Promise<Response> {
     return ok();
 }
 
+const minjs = Deno.env.get("NO_MIN") === undefined;
+
 Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
     // console.log("request to path:", path);
@@ -543,9 +591,19 @@ Deno.serve(async (req) => {
         path = "/disconnected.html";
     } else if (path === "/ping") {
         return ok();
+    } else if (path === "/assets/bg") {
+        const theme = (await getMeta()).theme;
+        if (theme === "gojo") {
+            path = "/assets/bg1.jpg";
+        } else if (theme === "demonslayer") {
+            path = "/assets/ds1.jpg"
+        }
+    } else if (path === "/css-output") {
+        const theme = (await getMeta()).theme;
+        path = `/css-output/${theme}.css`;
     }
 
-    if (path.startsWith("/js/")) {
+    if (minjs && path.startsWith("/js/")) {
         path = path.replace("/js/", "/js-min/").replace(".js", ".min.js");
     }
 

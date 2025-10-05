@@ -153,6 +153,12 @@
         <button onclick="instanceUpdate(importAndOverwrite)">Import and overwrite</button>
         <button onclick="exportData()">Export</button>
         <button onclick="instanceUpdate(cloneInstance)">Create copy</button>
+        <br>
+        <label>Theme: </label>
+        <select id="theme" onchange="updateTheme(this.value)">
+            <option value="gojo">Gojo</option>
+            <option value="demonslayer">Demon Slayer</option>
+        </select>
     </div>
     <div id="access-control">
         <h2>Access Control</h2>

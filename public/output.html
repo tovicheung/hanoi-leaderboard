@@ -3,24 +3,30 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
-<link rel="preload" href="/assets/bg1.jpg" as="image">
-<link rel="stylesheet" href="style.css">
+<link rel="preload" href="/assets/bg" as="image">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css-output">
 <style>
-    * {
-        font-family: "Orbitron", Consolas;
-        font-weight: 600;
+    @font-face {
+        font-family: "Blood Crow";
+        /* src: url("/assets/bloodcrowc.woff2") format("woff2"),
+            url("/assets/bloodcrowc.woff") format("woff"),
+            url("/assets/bloodcrowc.ttf") format("truetype"); */
+        src: url("/assets/bloodcrow.ttf") format("truetype");
+        font-weight: normal;
         font-style: normal;
+        font-display: swap; 
     }
 
     body {
         overflow: hidden;
-        background-image: url("assets/bg1.jpg");
+        background-image: url("assets/bg");
         background-position-x: center;
         background-size: cover;
     }
 
     body::backdrop {
-        background-image: url("assets/bg1.jpg");
+        background-image: url("assets/bg");
         background-position-x: center;
         background-size: cover;
     }
@@ -30,8 +36,8 @@
         background-color: rgba(255, 255, 255, 0.7);
     }
 
-    .leaderboard > h2 {
-        margin: 16px;
+    .header {
+        padding: 8px;
     }
 
     .record-time {
@@ -160,11 +166,11 @@
 </style>
 
 <div id="container">
-    <h1 id="title">Gojo's Challenge: Tower of Hanoi</h1>
+    <h1 id="title"></h1>
     <h1 id="announcement" class="hidden">Announcement</h1>
     <div class="leaderboards">
-        <div id="leaderboard1" class="leaderboard"><h2>Connecting to server ...</h2></div>
-        <div id="leaderboard2" class="leaderboard"><h2>Connecting to server ...</h2></div>
+        <div id="leaderboard1" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
+        <div id="leaderboard2" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
     </div>
     <div style="flex-grow: 2;"></div>
 </div>

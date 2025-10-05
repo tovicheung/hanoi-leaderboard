@@ -19,6 +19,8 @@ var fails = 0;
 const MAX_TRIES = 5;
 var offline = false;
 
+var theme = "gojo";
+
 function openSocket() {
     if (offline) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -80,7 +82,13 @@ function stopDots() {
 
 function socketOnMessage(e) {
     console.log(`RECEIVED: ${e.data}`);
-    if (e.data.startsWith("@")) return;
+    if (e.data.startsWith("@")) {
+        if (e.data.startsWith("@meta:")) {
+            const newData = JSON.parse(e.data.slice("@meta:".length));
+            theme = newData.theme;
+        }
+        return;
+    }
     if (e.data.startsWith("!")) {
         handleCommand(e.data);
         return;
@@ -235,6 +243,16 @@ function renderRecord(container, rank, name, score) {
     recordTime.classList.add("record-time");
     recordTime.innerText = parseTime(score);
     record.appendChild(recordRank);
+    
+    if (theme == "demonslayer") {
+        const avatar = document.createElement("div");
+        avatar.classList.add("record-avatar");
+        const img = document.createElement("img");
+        img.src = "/assets/tan.png";
+        avatar.appendChild(img);
+        record.appendChild(avatar);
+    }
+
     record.appendChild(recordName);
     record.appendChild(recordTime);
     container.appendChild(record);
@@ -292,7 +310,7 @@ function rand(length) {
     return result;
 }
 
-const title = "Gojo's Challenge: Tower of Hanoi";
+const title = "Tower of Hanoi Challenge";
 
 function titleAnim2(n) {
     if (n == -1) return;
@@ -316,9 +334,11 @@ setInterval(() => {
 }, 8000);
 
 document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("title").innerText = title;
+    
     document.getElementById("setup-fullscreen").onclick = () => {
         document.body.requestFullscreen();
         document.getElementById("setup").style.display = "none";
         document.body.style.cursor = "none";
-    }
+    };
 });

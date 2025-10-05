@@ -14,6 +14,7 @@ let timeLimits = {
     "leaderboard1": -1,
     "leaderboard2": -1,
 };
+let theme = "gojo";
 let leaderboard1 = [];
 let leaderboard2 = [];
 
@@ -271,9 +272,10 @@ websocket.onmessage = e => {
     if (e.data.startsWith("@")) {
         if (e.data.startsWith("@nclients:")) {
             document.getElementById("nclients").innerText = e.data.slice(10);
-        } else if (e.data.startsWith("@timeLimits:")) {
-            const newData = JSON.parse(e.data.slice("@timeLimits:".length));
-            timeLimits = newData;
+        } else if (e.data.startsWith("@meta:")) {
+            const newData = JSON.parse(e.data.slice("@meta:".length));
+            timeLimits = newData.timeLimits;
+            theme = newData.theme;
             updateTimeLimits();
         }
         return;

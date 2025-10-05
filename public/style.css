@@ -50,12 +50,12 @@ h2 {
     font-size: 24px;
 }
 
-.leaderboard .header, .leaderboard .header2 {
+.header, .header2 {
     width: 100%;
     text-align: center;
 }
 
-.leaderboard .header2 {
+.header2 {
     font-size: 20px;
 }
 

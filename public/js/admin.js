@@ -258,6 +258,9 @@ websocket.onmessage = e => {
     } else if (e.data == "pong") {
         report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
         lastPing = null;
+    } else if (e.data.startsWith("@meta:")) {
+        const theme = JSON.parse(e.data.slice("@meta:".length)).theme;
+        document.getElementById("theme").value = theme;
     }
 }
 
@@ -454,6 +457,10 @@ const reset = () => {
     updateInfo();
     document.getElementById("button-verify").disabled = true;
 };
+
+function updateTheme(value) {
+    websocket.send(`@theme:${value}`)
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     reset();
