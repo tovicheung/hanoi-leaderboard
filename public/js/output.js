@@ -6,6 +6,9 @@ function parseTime(millis) {
 function updateLeaderboards() {
     updateLeaderboard("leaderboard1", leaderboard1);
     updateLeaderboard("leaderboard2", leaderboard2);
+
+    updateLeaderboardNew("lb-4", leaderboard1);
+    updateLeaderboardNew("lb-5", leaderboard2);
 }
 
 const queryString = window.location.search;
@@ -248,19 +251,141 @@ function renderRecord(container, rank, name, score) {
     recordTime.innerText = parseTime(score);
     record.appendChild(recordRank);
     
-    if (theme == "demonslayer") {
-        const avatar = document.createElement("div");
-        avatar.classList.add("record-avatar");
-        const img = document.createElement("img");
-        img.src = "/assets/tan.png";
-        avatar.appendChild(img);
-        record.appendChild(avatar);
-    }
+    // if (theme == "demonslayer") {
+    //     const avatar = document.createElement("div");
+    //     avatar.classList.add("record-avatar");
+    //     const img = document.createElement("img");
+    //     img.src = "/assets/tan.png";
+    //     avatar.appendChild(img);
+    //     record.appendChild(avatar);
+    // }
 
     record.appendChild(recordName);
     record.appendChild(recordTime);
     container.appendChild(record);
 }
+
+
+const ROWS_PER_PAGE = 7;
+const PAGE_DURATION_MS = 5000;
+const ANIMATION_DURATION_MS = 1000
+let currentPageIndex = 0;
+let totalRows = 0;
+let totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+
+const leaderboardStates = {};
+const ROW_HEIGHT = 50 + 6;
+
+function renderRecordNew(container, rank, name, score) {
+    const record = document.createElement("div");
+    record.classList.add("lb-row");
+    const recordRank = document.createElement("div");
+    recordRank.classList.add("lb-row-rank");
+    recordRank.innerText = rank.toString();
+    // recordRank.innerHTML = rank <= 3 ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1] : rank.toString();
+    const recordName = document.createElement("div");
+    recordName.classList.add("lb-row-name");
+    recordName.innerText = name;
+    const recordTime = document.createElement("div");
+    recordTime.classList.add("lb-row-score");
+    recordTime.innerText = parseTime(score);
+    record.appendChild(recordRank);
+    record.appendChild(recordName);
+    record.appendChild(recordTime);
+    container.appendChild(record);
+}
+
+function updateLeaderboardNew(id, data) {
+    const lbElement = document.getElementById(id);
+    if (!lbElement) {
+        console.error(`Leaderboard element with ID ${id} not found.`);
+        return;
+    }
+    if (leaderboardStates[id] && leaderboardStates[id].interval) {
+        clearInterval(leaderboardStates[id].interval);
+    }
+    const topData = data.slice(0, 3);
+    const scrollData = data.slice(3);
+    
+    const totalRows = scrollData.length;
+    const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+
+    leaderboardStates[id] = {
+        currentPageIndex: 0,
+        totalRows: totalRows,
+        totalPages: totalPages,
+        interval: null,
+        bottomEl: lbElement.querySelector('.lb-bottom'),
+        scrollEl: lbElement.querySelector('.lb-scroll'),
+        topEl: lbElement.querySelector('.lb-top')
+    };
+    const state = leaderboardStates[id];
+    state.topEl.innerHTML = topData.map((item, index) => renderRow(item, index + 1, true)).join('');
+    state.bottomEl.innerHTML = scrollData.map((item, index) => renderRow(item, index + 4, false)).join('');
+    state.bottomEl.style.transition = `transform ${ANIMATION_DURATION_MS / 1000}s ease-in-out`;
+    
+    startCycle(id);
+}
+
+function renderRow(item, rank, isTop) {
+    const topClass = isTop ? 'top-rank' : '';
+    return `
+        <div class="lb-row ${topClass}">
+            <span class="lb-row-rank">${isTop ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1]  : rank}</span>
+            <span class="lb-row-name">${item.name}</span>
+            <span class="lb-row-score">${parseTime(item.score)}</span>
+        </div>
+    `;
+}
+
+function updateScrollPosition(id) {
+    const state = leaderboardStates[id];
+    if (!state || !state.bottomEl) return;
+
+    const offsetRows = state.currentPageIndex * ROWS_PER_PAGE;
+    const offsetPixels = offsetRows * ROW_HEIGHT;
+
+    state.bottomEl.style.transform = `translateY(-${offsetPixels}px)`;
+}
+
+function cyclePages(id) {
+    const state = leaderboardStates[id];
+    if (!state || state.totalPages <= 1) return;
+
+    if (state.currentPageIndex >= state.totalPages - 1) {
+        state.currentPageIndex = 0;
+
+        state.bottomEl.style.transform = `translateY(0px)`;
+        
+    } else {
+        state.currentPageIndex++;
+        updateScrollPosition(id);
+    }
+}
+
+function startCycle(id) {
+    const state = leaderboardStates[id];
+    
+    updateScrollPosition(id); 
+
+    if (!state || state.totalPages <= 1) {
+        return;
+    }
+
+    state.interval = setInterval(() => {
+        cyclePages(id);
+    }, PAGE_DURATION_MS);
+}
+
+
+
+
+
+
+
+
+
+
 
 function updateLeaderboard(id, leaderboard) {
     const container = document.getElementById(id);

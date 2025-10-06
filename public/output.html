@@ -3,6 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 <link rel="preload" href="/assets/bg" as="image">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css-output">
@@ -163,14 +164,143 @@
         transform: translate(-50%, -50%);
         text-align: center;
     }
+
+    .lbs {
+        justify-content: space-around;
+    }
+
+    .lb-row-name {
+        font-family: "Inter";
+        font-weight: 700;
+    }
+
+    .lb-row-score {
+        font-family: monospace;
+    }
+
+    .lb {
+        width: 40%;
+        padding: 20px;
+        color: white;
+    }
+
+    .lb-top {
+        font-size: 32px;
+        margin-bottom: 20px;
+        padding: 0px 20px;
+    }
+
+    .lb-scroll {
+        font-size: 28px;
+        height: 400px;
+        overflow: hidden;
+    }
+
+    .lb-bottom-outer {
+        padding: 10px 0px;
+        /* background-color: rgba(0, 0, 0, 0.5); */
+    }
+
+    .lb-bottom {
+        will-change: transform;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .lb-top .lb-row {
+    }
+
+    .lb-bottom .lb-row {
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 0px 20px;
+        border-radius: 6px;
+    }
+
+    .lb-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .lb-row-rank {
+        flex-basis: 12%;
+    }
+
+    .lb-row-name {
+        flex-grow: 1;
+        flex-basis: 60%;
+        text-align: left;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .lb-row-score {
+    }
+    
+    .lb-top .lb-row {
+        height: 70px;
+    }
+
+    .lb-bottom .lb-row {
+        height: 50px;
+    }
+
+    .lb-top .lb-row-rank {
+        position: relative;
+        display: flex; /* solely for z-index */
+    }
+/* 
+    .lb-top .lb-row-rank > span {
+        z-index: 99;
+    }
+
+
+    .lb-top .lb-row-rank span::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80px;
+        height: 80px;
+        
+        background-image: url('assets/brush.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        
+        filter: invert(1) sepia(1) saturate(100%) hue-rotate(300deg) brightness(0.6) contrast(2.5);;
+    } */
 </style>
 
 <div id="container">
     <h1 id="title"></h1>
     <h1 id="announcement" class="hidden">Announcement</h1>
-    <div class="leaderboards">
+    <div class="leaderboards" style="display: none">
         <div id="leaderboard1" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
         <div id="leaderboard2" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
+    </div>
+    <div class="leaderboards lbs">
+        <div id="lb-4" class="lb">
+            <div class="lb-top">
+            </div>
+            <div class="lb-bottom-outer">
+            <div class="lb-scroll">
+                <div class="lb-bottom"></div>
+            </div>
+            </div>
+        </div>
+        <div id="lb-5" class="lb">
+            <div class="lb-top">
+            </div>
+            <div class="lb-bottom-outer">
+            <div class="lb-scroll">
+                <div class="lb-bottom"></div>
+            </div>
+            </div>
+        </div>
     </div>
     <div style="flex-grow: 2;"></div>
 </div>
