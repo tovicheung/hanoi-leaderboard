@@ -359,7 +359,11 @@ function cyclePages(id) {
         
     } else {
         state.currentPageIndex++;
+        // state.scrollEl.classList.add('is-scrolling');
         updateScrollPosition(id);
+        // setTimeout(() => {
+        //     state.scrollEl.classList.remove('is-scrolling');
+        // }, ANIMATION_DURATION_MS);
     }
 }
 
