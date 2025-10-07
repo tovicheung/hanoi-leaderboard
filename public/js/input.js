@@ -333,7 +333,7 @@ function timeLimitDisplay(timeLimit) {
 function updateTimeLimits() {
     for (const id in timeLimits) {
         const timeLimit = timeLimits[id];
-        const elem = document.getElementById(`time-limit-${id}`);
+        const elem = document.getElementById(`time-limit-${id}`); // may cause error when board not initialized
         if (timeLimit === -1) {
             elem.innerText = "none";
         } else {

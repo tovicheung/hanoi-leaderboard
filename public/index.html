@@ -159,7 +159,7 @@
             <h2 id="timer">00:00.000</h2>
             <div class="row">
                 <button id="timer-start-button">Start</button>
-                <button id="timer-cancel-button" class="screen-1-button">Cancel</button>
+                <button id="timer-cancel-button" onclick="websocket.send('!regcancel'); switchScreen(1);">Cancel</button>
             </div>
             <h2>When finished, press anywhere to stop the timer</h2>
         </div>
