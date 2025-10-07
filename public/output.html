@@ -57,11 +57,11 @@
     }
 
     .record:nth-child(2) {
-        background-color: gold;
+        background-color: #ffd700;
     }
 
     .record:nth-child(3) {
-        background-color: silver;
+        background-color: #c0c0c0;
     }
 
     .record:nth-child(4) {
@@ -267,6 +267,27 @@
         flex-basis: 12%;
     }
 
+    .lb-row-rank-top {
+        flex-basis: 12%;
+        position: relative;
+        height: 100%;
+    }
+
+    .lb-row-rank-top img {
+        position: absolute;
+        top: 55%;
+        left: 22%;
+        transform: translate(-50%, -50%);
+        height: 120%;
+    }
+
+    .lb-row-rank-top span {
+        position: absolute;
+        top: 50%;
+        left: 20%;
+        transform: translate(-50%, -50%);
+    }
+
     .lb-row-name {
         flex-grow: 1;
         flex-basis: 60%;
@@ -286,38 +307,14 @@
     .lb-bottom .lb-row {
         height: 50px;
     }
-
-    .lb-top .lb-row-rank {
-        position: relative;
-        display: flex; /* solely for z-index */
-    }
-/* 
-    .lb-top .lb-row-rank > span {
-        z-index: 99;
-    }
-
-
-    .lb-top .lb-row-rank span::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 80px;
-        height: 80px;
-        
-        background-image: url('assets/brush.png');
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-        
-        filter: invert(1) sepia(1) saturate(100%) hue-rotate(300deg) brightness(0.6) contrast(2.5);;
-    } */
-
      .lb-header {
         font-size: 36px;
         font-family: "Blood Crow";
         text-align: center;
+     }
+
+     .lb-row-avatar {
+        height: 120%;
      }
 </style>
 

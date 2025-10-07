@@ -329,9 +329,22 @@ function updateLeaderboardNew(id, data) {
 
 function renderRow(item, rank, isTop) {
     const topClass = isTop ? 'top-rank' : '';
+    if (isTop) {
+        return `
+            <div class="lb-row">
+                <div class="lb-row-rank-top">
+                    <img class="lb-row-avatar" src="assets/${["gold", "silver", "bronze"][rank - 1]}.png">
+                    <span>${rank}</span>
+                </div>
+                <!-- <span class="lb-row-rank">${["&#129351;", "&#129352;", "&#129353;"][rank - 1]}</span> -->
+                <span class="lb-row-name">${item.name}</span>
+                <span class="lb-row-score">${parseTime(item.score)}</span>
+            </div>
+        `;
+    }
     return `
-        <div class="lb-row ${topClass}">
-            <span class="lb-row-rank">${isTop ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1]  : rank}</span>
+        <div class="lb-row">
+            <span class="lb-row-rank">${rank}</span>
             <span class="lb-row-name">${item.name}</span>
             <span class="lb-row-score">${parseTime(item.score)}</span>
         </div>
@@ -355,16 +368,17 @@ function cyclePages(id) {
     if (state.currentPageIndex >= state.totalPages - 1) {
         state.currentPageIndex = 0;
 
-        state.bottomEl.style.transform = `translateY(0px)`;
         
     } else {
         state.currentPageIndex++;
-        // state.scrollEl.classList.add('is-scrolling');
-        updateScrollPosition(id);
-        // setTimeout(() => {
-        //     state.scrollEl.classList.remove('is-scrolling');
-        // }, ANIMATION_DURATION_MS);
     }
+    state.scrollEl.classList.add('is-scrolling');
+    setTimeout(() => {
+        updateScrollPosition(id);
+        setTimeout(() => {
+            state.scrollEl.classList.remove('is-scrolling');
+        }, ANIMATION_DURATION_MS);
+    }, 500);
 }
 
 function startCycle(id) {
