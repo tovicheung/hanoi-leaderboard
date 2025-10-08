@@ -4,6 +4,8 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
 <link rel="preload" href="/assets/bg" as="image">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css-output">
@@ -166,12 +168,12 @@
     }
 
     .lbs {
-        justify-content: space-around;
+        justify-content: center;
     }
 
     .lb-row-name {
-        font-family: "Inter";
-        font-weight: 700;
+        font-family: "Audiowide";
+        font-weight: 400;
     }
 
     .lb-row-score {
@@ -179,7 +181,7 @@
     }
 
     .lb {
-        width: 40%;
+        width: 45%;
         padding: 20px;
         color: white;
     }
@@ -192,7 +194,7 @@
 
     .lb-scroll {
         font-size: 28px;
-        height: 400px;
+        height: 386px;
         overflow: hidden;
         transition: transform 0.5s ease-in-out;
         position: relative;
@@ -252,7 +254,8 @@
     }
 
     .lb-bottom .lb-row {
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(209, 223, 255, 0.6);
+        color: black;
         padding: 0px 20px;
         border-radius: 6px;
     }
@@ -265,6 +268,7 @@
 
     .lb-row-rank {
         flex-basis: 12%;
+        font-family: "Audiowide";
     }
 
     .lb-row-rank-top {
@@ -282,6 +286,7 @@
     }
 
     .lb-row-rank-top span {
+        font-family: "Audiowide";
         position: absolute;
         top: 50%;
         left: 20%;
@@ -316,6 +321,42 @@
      .lb-row-avatar {
         height: 120%;
      }
+
+    @keyframes slideGlow {
+        0% {
+            background-position-x: 150%;
+        }
+        100% {
+            background-position-x: -50%;
+        }
+    }
+
+    .glow-active {
+        animation: slideGlow 2s ease-in-out forwards;
+        background-image: linear-gradient(
+            90deg, 
+            #ffffff 0%, 
+            #ffffff 30%, 
+            yellow 50%,
+            #ffffff 70%, 
+            #ffffff 100%
+        );
+        
+        background-size: 200% 100%; 
+        
+        background-position-x: 150%; 
+        
+        -webkit-background-clip: text;
+        background-clip: text;
+        
+        -webkit-text-fill-color: transparent;
+        text-fill-color: transparent;
+        
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+        
+        transition: background-position-x 0s; 
+        }
+
 </style>
 
 <div id="container">

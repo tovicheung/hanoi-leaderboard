@@ -488,4 +488,24 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("setup").style.display = "none";
         document.body.style.cursor = "none";
     };
+    
+    // glowRandom(); unused yet
 });
+
+function randint(a, b) {
+    return Math.floor(Math.random() * (b - a)) + a;
+}
+
+function glowRandom() {
+    const arr = [...document.querySelectorAll(".lb-top .lb-row-score")];
+    console.log(arr);
+    if (arr.length != 0) {
+        const elem = arr[Math.floor(Math.random() * arr.length)];
+        elem.classList.add("glow-active");
+        setTimeout(() => {
+            elem.classList.remove("glow-active");
+        }, 2000);
+    }
+    setTimeout(glowRandom, randint(3000, 5000));
+}
+
