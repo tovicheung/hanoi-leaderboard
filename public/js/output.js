@@ -4,16 +4,14 @@ function parseTime(millis) {
 }
 
 function updateLeaderboards() {
-    updateLeaderboard("leaderboard1", leaderboard1);
-    updateLeaderboard("leaderboard2", leaderboard2);
-
-    updateLeaderboardNew("lb-4", leaderboard1);
-    updateLeaderboardNew("lb-5", leaderboard2);
+    if (theme == "demonslayer") {
+        updateLeaderboardNew("lb-4", leaderboard1);
+        updateLeaderboardNew("lb-5", leaderboard2);
+    } else {
+        updateLeaderboard("leaderboard1", leaderboard1);
+        updateLeaderboard("leaderboard2", leaderboard2);
+    }
 }
-
-const queryString = window.location.search;
-const urlParams = new URLSearchParams(queryString);
-const old = urlParams.get("old") !== null;
 
 var leaderboard1 = [];
 var leaderboard2 = [];
@@ -27,6 +25,12 @@ const MAX_TRIES = 5;
 var offline = false;
 
 var theme = "gojo";
+
+const currentUrl = new URL(window.location.href);
+const urlParams = currentUrl.searchParams;
+if (urlParams.get("theme") == "demonslayer") {
+    theme = "demonslayer";
+}
 
 function openSocket() {
     if (offline) return;
@@ -92,6 +96,10 @@ function socketOnMessage(e) {
     if (e.data.startsWith("@")) {
         if (e.data.startsWith("@meta:")) {
             const newData = JSON.parse(e.data.slice("@meta:".length));
+            if (newData.theme != theme) { // TODO: bad code quality
+                theme = newData.theme;
+                applyTheme();
+            }
             theme = newData.theme;
         }
         return;
@@ -250,16 +258,6 @@ function renderRecord(container, rank, name, score) {
     recordTime.classList.add("record-time");
     recordTime.innerText = parseTime(score);
     record.appendChild(recordRank);
-    
-    // if (theme == "demonslayer") {
-    //     const avatar = document.createElement("div");
-    //     avatar.classList.add("record-avatar");
-    //     const img = document.createElement("img");
-    //     img.src = "/assets/tan.png";
-    //     avatar.appendChild(img);
-    //     record.appendChild(avatar);
-    // }
-
     record.appendChild(recordName);
     record.appendChild(recordTime);
     container.appendChild(record);
@@ -480,6 +478,11 @@ setInterval(() => {
     document.body.style.cursor = "none";
 }, 8000);
 
+function applyTheme() {
+    urlParams.set("theme", theme);
+    window.location.replace(currentUrl.toString());
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("title").innerText = title;
     
@@ -489,6 +492,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.style.cursor = "none";
     };
     
+    if (theme == "demonslayer") {
+        document.getElementById("lbs-gojo").style.display = "none";
+    } else {
+        document.getElementById("lbs-demonslayer").style.display = "none";
+    }
     // glowRandom(); unused yet
 });
 

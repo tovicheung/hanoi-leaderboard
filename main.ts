@@ -94,6 +94,24 @@ async function setupKv() {
             },
             data: [[], []]
         });
+    } else {
+        for (const name of names) {
+            let lb = (await kv.get(["instances", name])).value;
+            if (!("meta" in lb)) {
+                lb = {
+                    meta: {
+                        timeLimits: {
+                            "leaderboard1": 3 * 60 * 1000,
+                            "leaderboard2": 4 * 60 * 1000,
+                        },
+                        theme: "gojo",
+                    },
+                    data: lb,
+                };
+                console.log("fixed instance:", name);
+                await kv.set(["instances", name], lb);
+            }
+        }
     }
     
     if ((await kv.get(["instanceName"])).value === null) {
@@ -143,6 +161,7 @@ function broadcast(msg: string) {
 }
 
 async function getData(): Promise<Leaderboard[]> {
+    // @ts-ignore :)
     const leaderboards = (await kv.get(["leaderboards"])).value;
     return <Leaderboard[]>leaderboards ?? [[], []];
 }
@@ -188,20 +207,25 @@ async function getInstances() {
 }
 
 async function switchInstance(newInstance: string) {
-    const newData = (await kv.get(["instances", newInstance])).value;
-    if (newData === null) return;
+    const newLb = (await kv.get(["instances", newInstance])).value;
+    if (newLb === null) return;
 
     const currentInstance = (await kv.get(["instanceName"])).value;
     if (typeof currentInstance !== "string") {
         return;
     }
-    await kv.set(["instances", currentInstance], (await kv.get(["leaderboards"])).value);
+    await kv.set(["instances", currentInstance], {
+        meta: (await kv.get(["meta"])).value,
+        data: (await kv.get(["leaderboards"])).value,
+    });
     await kv.atomic()
         .set(["instanceName"], newInstance)
-        .set(["leaderboards"], newData)
+        .set(["leaderboards"], newLb.data)
+        .set(["meta"], newLb.meta)
         .commit();
 
     broadcast("!reload-all");
+    getAdminSocket()?.send(`@meta:${JSON.stringify(await getMeta())}`);
 }
 
 async function adminSendInstancesData() {
@@ -502,7 +526,16 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 const name = body.name;
                 if (name.length == 0) return bad("String is empty.");
                 if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
-                await kv.set(["instances", name], [[], []]);
+                await kv.set(["instances", name], {
+                    meta: {
+                        timeLimits: {
+                            "leaderboard1": 3 * 60 * 1000,
+                            "leaderboard2": 4 * 60 * 1000,
+                        },
+                        theme: "gojo",
+                    },
+                    data: [[], []]
+                });
             }
         } else if (path == "/api/instance/switch" && method == "POST") {
             if ("name" in body && typeof body.name == "string") {
