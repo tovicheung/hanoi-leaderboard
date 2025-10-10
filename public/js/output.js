@@ -24,12 +24,12 @@ var fails = 0;
 const MAX_TRIES = 5;
 var offline = false;
 
-var theme = "gojo";
+var theme = "demonslayer";
 
 const currentUrl = new URL(window.location.href);
 const urlParams = currentUrl.searchParams;
-if (urlParams.get("theme") == "demonslayer") {
-    theme = "demonslayer";
+if (urlParams.get("theme") == "gojo") {
+    theme = "gojo";
 }
 
 function openSocket() {
@@ -96,10 +96,10 @@ function socketOnMessage(e) {
     if (e.data.startsWith("@")) {
         if (e.data.startsWith("@meta:")) {
             const newData = JSON.parse(e.data.slice("@meta:".length));
-            if (newData.theme != theme) { // TODO: bad code quality
-                theme = newData.theme;
-                applyTheme();
-            }
+            // if (newData.theme != theme) {
+            //     window.location.reload();
+            // }
+            // manually reload if want change theme!
             theme = newData.theme;
         }
         return;
@@ -313,20 +313,24 @@ function updateLeaderboardNew(id, data) {
         totalRows: totalRows,
         totalPages: totalPages,
         interval: null,
-        bottomEl: lbElement.querySelector('.lb-bottom'),
-        scrollEl: lbElement.querySelector('.lb-scroll'),
-        topEl: lbElement.querySelector('.lb-top')
+        bottomEl: lbElement.querySelector(".lb-bottom"),
+        scrollEl: lbElement.querySelector(".lb-scroll"),
+        topEl: lbElement.querySelector(".lb-top")
     };
     const state = leaderboardStates[id];
-    state.topEl.innerHTML = topData.map((item, index) => renderRow(item, index + 1, true)).join('');
-    state.bottomEl.innerHTML = scrollData.map((item, index) => renderRow(item, index + 4, false)).join('');
+    state.topEl.innerHTML = topData.map((item, index) => renderRow(item, index + 1, true)).join("");
+    state.bottomEl.innerHTML = scrollData.map((item, index) => renderRow(item, index + 4, false)).join("");
     state.bottomEl.style.transition = `transform ${ANIMATION_DURATION_MS / 1000}s ease-in-out`;
     
+    if (data.length == 0) {
+        state.topEl.innerHTML = "<div class='lb-row'><span class='lb-row-name' style='text-align: center; color: yellow;'>Waiting for challengers ...</span></div>";
+    }
+
     startCycle(id);
 }
 
 function renderRow(item, rank, isTop) {
-    const topClass = isTop ? 'top-rank' : '';
+    const topClass = isTop ? "top-rank" : "";
     if (isTop) {
         return `
             <div class="lb-row">
@@ -370,11 +374,11 @@ function cyclePages(id) {
     } else {
         state.currentPageIndex++;
     }
-    state.scrollEl.classList.add('is-scrolling');
+    state.scrollEl.classList.add("is-scrolling");
     setTimeout(() => {
         updateScrollPosition(id);
         setTimeout(() => {
-            state.scrollEl.classList.remove('is-scrolling');
+            state.scrollEl.classList.remove("is-scrolling");
         }, ANIMATION_DURATION_MS);
     }, 500);
 }
@@ -444,7 +448,7 @@ var currentPages = [0, 0];
 setInterval(shiftPages, Math.max(5000, height * 900));
 
 function rand(length) {
-    let result = '';
+    let result = "";
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()[]{}\|;:,./<>?`~-=_+ ";
     const charactersLength = characters.length;
     let counter = 0;
@@ -477,11 +481,6 @@ setInterval(() => {
     document.getElementById("setup").style.display = "none";
     document.body.style.cursor = "none";
 }, 8000);
-
-function applyTheme() {
-    urlParams.set("theme", theme);
-    window.location.replace(currentUrl.toString());
-}
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("title").innerText = title;

@@ -250,10 +250,6 @@ websocket.onmessage = e => {
             info.connectionStatus = "connected as admin";
             serverConfig = JSON.parse(e.data.slice("ADMIN:SERVERCONFIG:".length));
             updateInfo();
-        } else if (e.data.startsWith("ADMIN:request-session:")) {
-            // unused
-            const sessionName = e.data.slice("ADMIN:request-session:");
-            const ans = prompt(`[Session request] \"${sessionName}\".\n\nm`)
         }
     } else if (e.data == "pong") {
         report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
