@@ -50,8 +50,6 @@ function switchScreen(n) {
     } else if (n == 6) {
         document.getElementById("custom-name-input").value = "";
         document.getElementById("custom-name-input").focus();
-    } else if (n == 997) {
-        connectionTest();
     }
 }
 
@@ -64,13 +62,11 @@ function connectionTest2() {
             if (response.ok) {
                 disp.innerHTML = "<span style='color: brown'>HTTP ok; socket closed</span>";
                 actions.innerHTML = "Reload this page to reconnect.";
-                document.getElementById("test-again").style.display = "";
             } else {
                 disp.innerHTML = `<span style='color: red'>Server returned an error<br>${response.status} ${response.statusText}</span>`;
                 actions.innerHTML = "* Do NOT reload anything.<br>"
-                + "* Test the connection again and again using the button below. (the server *should* restart soon)<br>"
+                + "* Test the connection again and again. (the server *should* restart soon)<br>"
                 + "* When the connection is finally resumed, reload everything.";
-                document.getElementById("test-again").style.display = "";
             }
         })
         .catch(error => {
@@ -78,14 +74,13 @@ function connectionTest2() {
             actions.innerHTML = "Check the internet connection on this device.<br>"
                 + "If it is not a problem with internet connection:<br>"
                 + "* Do NOT reload anything.<br>"
-                + "* Test the connection again and again using the button below. (the server *should* restart soon)<br>"
+                + "* Test the connection again and again. (the server *should* restart soon)<br>"
                 + "* When the connection is finally resumed, reload everything.";
-                document.getElementById("test-again").style.display = "";
         });
 }
 
 function connectionTest() {
-    document.getElementById("test-again").style.display = "none";
+    document.getElementById("connection-test").style.display = "block";
     const disp = document.getElementById("connection-test-display");
     const actions = document.getElementById("connection-test-actions");
     disp.innerHTML = "Testing socket connection ...";
@@ -263,8 +258,10 @@ websocket.onopen = e => {
 
 websocket.onclose = e => {
     console.log("DISCONNECTED");
-    setStatus("Disconnected. Reload to reconnect.");
-    document.getElementById("reload-this-button").style.color = "blue";
+    setStatus("Disconnected.");
+    // document.getElementById("reload-this-button").style.color = "blue";
+    // document.getElementById("reload-this-button").style.color = "blue";
+    connectionTest();
 };
 
 websocket.onmessage = e => {
@@ -515,6 +512,7 @@ function editTimeLimit(id) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("connection-test").style.display = "none";
     document.getElementById("new-trial-4").onclick = () => newTrial(4);
     document.getElementById("new-trial-5").onclick = () => newTrial(5);
 

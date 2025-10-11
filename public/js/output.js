@@ -137,10 +137,19 @@ function handleCommand(cmd) {
     } else if (cmd == "!fullscreen-all-output") {
         document.body.requestFullscreen();
     } else if (cmd.startsWith("!adjust-height-")) {
-        const newBaseHeight = parseInt(cmd.slice(15));
-        height = newBaseHeight + (height - baseHeight);
-        baseHeight = newBaseHeight;
-        shiftPages();
+        let n = parseInt(cmd.slice(15));
+        if (n <= 0) return;
+        if (theme == "gojo") {
+            const newBaseHeight = n;
+            height = newBaseHeight + (height - baseHeight);
+            baseHeight = newBaseHeight;
+            shiftPages();
+        } else if (theme == "demonslayer") {
+            rowsPerPage = n;
+            document.querySelectorAll(".lb-scroll").forEach(e => e.style.height = `${ROW_HEIGHT * rowsPerPage - 6}px`);
+            // cyclePages();
+            updateLeaderboards();
+        }
     } else if (cmd == "!toggle-l4") {
         toggleDisplay(document.getElementById("leaderboard1"));
     } else if (cmd == "!toggle-l5") {
@@ -264,12 +273,9 @@ function renderRecord(container, rank, name, score) {
 }
 
 
-const ROWS_PER_PAGE = 7;
+let rowsPerPage = 7;
 const PAGE_DURATION_MS = 5000;
-const ANIMATION_DURATION_MS = 1000
-let currentPageIndex = 0;
-let totalRows = 0;
-let totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+const ANIMATION_DURATION_MS = 1000;
 
 const leaderboardStates = {};
 const ROW_HEIGHT = 50 + 6;
@@ -306,7 +312,7 @@ function updateLeaderboardNew(id, data) {
     const scrollData = data.slice(3);
     
     const totalRows = scrollData.length;
-    const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
 
     leaderboardStates[id] = {
         currentPageIndex: 0,
@@ -325,6 +331,9 @@ function updateLeaderboardNew(id, data) {
     if (data.length == 0) {
         state.topEl.innerHTML = "<div class='lb-row'><span class='lb-row-name' style='text-align: center; color: yellow;'>Waiting for challengers ...</span></div>";
     }
+
+    lbElement.style.backgroundColor = "rgba(0, 255, 0, 0.3)";
+    setTimeout(() => lbElement.style.backgroundColor = "", 300);
 
     startCycle(id);
 }
@@ -357,7 +366,7 @@ function updateScrollPosition(id) {
     const state = leaderboardStates[id];
     if (!state || !state.bottomEl) return;
 
-    const offsetRows = state.currentPageIndex * ROWS_PER_PAGE;
+    const offsetRows = state.currentPageIndex * rowsPerPage;
     const offsetPixels = offsetRows * ROW_HEIGHT;
 
     state.bottomEl.style.transform = `translateY(-${offsetPixels}px)`;

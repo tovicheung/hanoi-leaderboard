@@ -79,6 +79,7 @@
         font-family: Arial;
         font-size: 20px;
         font-weight: normal;
+        text-align: left;
     }
 </style>
 
@@ -129,10 +130,17 @@
             <button id="clear-animation-button" class="small">Clear animation</button>
             <button id="announce-button" class="small">Announce</button>
             <!-- <button id="hide-announcement-button" class="small">Hide announce</button> -->
-            <button class="small" onclick="switchScreen(997)">Test connection</button>
+            <button class="small" onclick="connectionTest()">Test connection</button>
         </div>
         <h2 id="status" style="color: blue;">Connecting to server ...</h2>
-        <!-- <h3 id="backup" style="color: purple;">This is the backup system. <span class="action" onclick="switchScreen(996)">[backup system actions]</span></h3> -->
+        <div id="connection-test" style="border: 4px solid blue; margin: 10px 0px; padding: 10px; font-size: 20px;">
+            <b>Connection Test</b>
+            <p>Status: <span id="connection-test-display">Loading ...</span></p>
+            <p>Actions:</p>
+            <span id="connection-test-actions"></span>
+            <br>
+            <button style="margin: 0; padding: 10px; font-size: 16px;" onclick="document.getElementById('connection-test').style.display = 'none'">Close</button>
+        </div>
         <div class="leaderboards">
             <div id="leaderboard1" class="leaderboard">Connecting to server ...</div>
             <div id="leaderboard2" class="leaderboard">Connecting to server ...</div>
@@ -193,14 +201,14 @@
             <button class="screen-1-button">Back</button>
         </div>
     </div>
-    <div id="screen997">
+    <!-- <div id="screen997">
         <div class="centered">
             <h1>Connection Test</h1>
             <br>
             <br>
             <h2 id="connection-test-display">Loading ...</h2>
             <br>
-            <h2 style="background-color: white; padding: 12px; text-align: left; width: 50vw;">Actions:<br><span id="connection-test-actions"></span></h2>
+            <h2>Actions:<br><span id="connection-test-actions"></span></h2>
             <br>
             <br>
             <div class="row">
@@ -209,7 +217,7 @@
                 <button class="screen-1-button">Back</button>
             </div>
         </div>
-    </div>
+    </div> -->
 </div>
 <link rel="prefetch" href="/assets/bg1.jpg" as="image">
 <script src="js/input.js"></script>
