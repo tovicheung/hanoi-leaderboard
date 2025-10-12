@@ -23,12 +23,17 @@ const id2titles = {
     "leaderboard2": "5 disks",
 };
 
+let statusTimeout = null;
+
 function setStatus(msg, vanish = false) {
+    if (statusTimeout !== null) {
+        clearTimeout(statusTimeout); // clear previous timeout
+    }
     const elem = document.getElementById("status");
     elem.style.display = "block";
     elem.innerText = msg;
     if (vanish) {
-        setTimeout(() => elem.style.display = "none", 1500);
+        statusTimeout = setTimeout(() => elem.style.display = "none", 1500);
     }
 }
 

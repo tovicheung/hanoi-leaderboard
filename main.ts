@@ -31,6 +31,11 @@ interface InstanceMeta {
     theme: string,
 }
 
+interface Lb {
+    meta: InstanceMeta,
+    data: Leaderboard[],
+}
+
 const DEFAULT_CONFIG: Config = {
     inputAccess: "restricted",
     outputAccess: "everyone",
@@ -90,13 +95,13 @@ async function setupKv() {
                     "leaderboard1": 3 * 60 * 1000,
                     "leaderboard2": 4 * 60 * 1000,
                 },
-                theme: "gojo",
+                theme: "demonslayer",
             },
             data: [[], []]
         });
     } else {
         for (const name of names) {
-            let lb = (await kv.get(["instances", name])).value;
+            let lb = <Lb>(await kv.get(["instances", name])).value;
             if (!("meta" in lb)) {
                 lb = {
                     meta: {
@@ -104,7 +109,7 @@ async function setupKv() {
                             "leaderboard1": 3 * 60 * 1000,
                             "leaderboard2": 4 * 60 * 1000,
                         },
-                        theme: "gojo",
+                        theme: "demonslayer",
                     },
                     data: lb,
                 };
@@ -122,15 +127,9 @@ async function setupKv() {
         await kv.set(["leaderboards"], [[], []]);
     }
 
-    if ((await kv.get(["meta"])).value === null) {
-        await kv.set(["meta"], {
-                timeLimits: {
-                    "leaderboard1": 3 * 60 * 1000,
-                    "leaderboard2": 4 * 60 * 1000,
-                },
-                theme: "gojo",
-            }
-        );
+    if ((await kv.get(["meta"])).value === null) { // active .meta
+        const lb = <Lb>(await kv.get(["instances"])).value;
+        await kv.set(["meta"], lb.meta);
     }
 
     if ((await kv.get(["timeLimits"])).value !== null) {
@@ -141,9 +140,6 @@ async function setupKv() {
         // });
     }
 
-    if ((await kv.get(["meta"])).value === null) { // active .meta
-        await kv.set(["meta"], {});
-    }
 
     if ((await kv.get(["timeLimit"])).value !== null) {
         await kv.delete(["timeLimit"]);
@@ -532,9 +528,9 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                             "leaderboard1": 3 * 60 * 1000,
                             "leaderboard2": 4 * 60 * 1000,
                         },
-                        theme: "gojo",
+                        theme: "demonslayer",
                     },
-                    data: [[], []]
+                    data: [[], []],
                 });
             }
         } else if (path == "/api/instance/switch" && method == "POST") {
