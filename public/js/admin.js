@@ -226,6 +226,7 @@ websocket.onmessage = e => {
             return;
         } else if (e.data.startsWith("ADMIN:INSTANCES:")) {
             const instanceData = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
+            console.log(instanceData);
             const segment = document.getElementById("instances");
             while (segment.children.length) {
                 segment.removeChild(segment.children[0]);

@@ -157,9 +157,7 @@ function broadcast(msg: string) {
 }
 
 async function getData(): Promise<Leaderboard[]> {
-    // @ts-ignore :)
-    const leaderboards = (await kv.get(["leaderboards"])).value;
-    return <Leaderboard[]>leaderboards ?? [[], []];
+    return <Leaderboard[]>(await kv.get(["leaderboards"])).value;
 }
 
 async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
@@ -550,7 +548,10 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 const name = body.name;
                 if (name.length == 0) return bad("String is empty.");
                 if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
-                await kv.set(["instances", name], (await kv.get(["leaderboards"])).value);
+                await kv.set(["instances", name], {
+                    meta: getMeta(),
+                    data: getData(),
+                });
             }
         } else if (path == "/api/instance/import" && method == "POST") {
             if ("data" in body) {
