@@ -76,6 +76,19 @@ interface Record {
 
 type Leaderboard = Record[];
 
+function getDefaultInstance() {
+    return {
+        meta: {
+            timeLimits: {
+                "leaderboard1": 3 * 60 * 1000,
+                "leaderboard2": 4 * 60 * 1000,
+            },
+            theme: "demonslayer",
+        },
+        data: [[], []]
+    };
+}
+
 async function setupKv() {
     let config = (await kv.get(["config"])).value;
     if (config === null) {
@@ -89,34 +102,7 @@ async function setupKv() {
         names.push(entry.key[1]);
     }
     if (names.length == 0) {
-        await kv.set(["instances", "_default"], {
-            meta: {
-                timeLimits: {
-                    "leaderboard1": 3 * 60 * 1000,
-                    "leaderboard2": 4 * 60 * 1000,
-                },
-                theme: "demonslayer",
-            },
-            data: [[], []]
-        });
-    } else {
-        for (const name of names) {
-            let lb = <Lb>(await kv.get(["instances", name])).value;
-            if (!("meta" in lb)) {
-                lb = {
-                    meta: {
-                        timeLimits: {
-                            "leaderboard1": 3 * 60 * 1000,
-                            "leaderboard2": 4 * 60 * 1000,
-                        },
-                        theme: "demonslayer",
-                    },
-                    data: lb,
-                };
-                console.log("fixed instance:", name);
-                await kv.set(["instances", name], lb);
-            }
-        }
+        await kv.set(["instances", "_default"], getDefaultInstance());
     }
     
     if ((await kv.get(["instanceName"])).value === null) {
@@ -130,20 +116,6 @@ async function setupKv() {
     if ((await kv.get(["meta"])).value === null) { // active .meta
         const lb = <Lb>(await kv.get(["instances"])).value;
         await kv.set(["meta"], lb.meta);
-    }
-
-    if ((await kv.get(["timeLimits"])).value !== null) {
-        await kv.delete(["timeLimits"]);
-        // await kv.set(["timeLimits"], {
-        //     "leaderboard1": 3 * 60 * 1000,
-        //     "leaderboard2": 4 * 60 * 1000,
-        // });
-    }
-
-
-    if ((await kv.get(["timeLimit"])).value !== null) {
-        await kv.delete(["timeLimit"]);
-        // await kv.set(["timeLimit"], 4 * 60 * 1000);
     }
 }
 
@@ -307,14 +279,13 @@ function connectSocket(req: Request) {
     socket.addEventListener("open", async () => {
         console.log(`client ${clientId} connected!`);
         socket.send(`@meta:${JSON.stringify(await getMeta())}`);
-        socket.send(JSON.stringify(await getData())); // actual display data - most prioritized
+        socket.send(JSON.stringify(await getData()));
         broadcast(`@nclients:${clients.size}`);
         if (config.inputAccess == "everyone") {
             socket.send("AUTH:success");
         } else {
             socket.send("AUTH:required");
         }
-        // socket.send(`@timeLimits:${JSON.stringify(await getTimeLimits())}`);
         adminSendClientsData();
     });
 
@@ -417,6 +388,7 @@ function connectSocket(req: Request) {
         }
         
         if (event.data.startsWith("@theme:")) {
+            return; // disabled for now
             const newTheme = event.data.slice("@theme:".length);
             const meta = await getMeta();
             meta.theme = newTheme;
@@ -511,6 +483,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         return resp;
     }
     const body = method == "GET" ? {} : await req.json();
+
     if (path == "/api/data" && method == "POST") {
         // TODO: check structure
         broadcastAndSaveData(body);
@@ -520,16 +493,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 const name = body.name;
                 if (name.length == 0) return bad("String is empty.");
                 if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
-                await kv.set(["instances", name], {
-                    meta: {
-                        timeLimits: {
-                            "leaderboard1": 3 * 60 * 1000,
-                            "leaderboard2": 4 * 60 * 1000,
-                        },
-                        theme: "demonslayer",
-                    },
-                    data: [[], []],
-                });
+                await kv.set(["instances", name], getDefaultInstance());
             }
         } else if (path == "/api/instance/switch" && method == "POST") {
             if ("name" in body && typeof body.name == "string") {
@@ -569,7 +533,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         }
         await kv.set(["config"], config);
         adminSendServerConfig();
-    }  else if (path == "/api/token/create" && method == "POST") {
+    } else if (path == "/api/token/create" && method == "POST") {
         const { token, expireIn } = body;
         if (typeof token !== "string") return bad("Invalid token name.");
         if (typeof expireIn !== "number") return bad("Invalid expiry.");
@@ -589,7 +553,7 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         await kv.delete(["tokens", token]);
     } else if (path == "/api/token" && method == "GET") {
         return new Response(JSON.stringify(await getAccessData()), { status: 200 });
-    } else{
+    } else {
         return bad("Unknown method");
     }
     return ok();

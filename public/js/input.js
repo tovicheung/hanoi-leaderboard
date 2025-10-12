@@ -9,12 +9,10 @@ function updateLeaderboards() {
     updateTimeLimits();
 }
 
-let timeLimit = -1;
 let timeLimits = {
     "leaderboard1": -1,
     "leaderboard2": -1,
 };
-let theme = "gojo";
 let leaderboard1 = [];
 let leaderboard2 = [];
 
@@ -265,7 +263,6 @@ websocket.onclose = e => {
     console.log("DISCONNECTED");
     setStatus("Disconnected.");
     // document.getElementById("reload-this-button").style.color = "blue";
-    // document.getElementById("reload-this-button").style.color = "blue";
     connectionTest();
 };
 
@@ -277,7 +274,6 @@ websocket.onmessage = e => {
         } else if (e.data.startsWith("@meta:")) {
             const newData = JSON.parse(e.data.slice("@meta:".length));
             timeLimits = newData.timeLimits;
-            theme = newData.theme;
             updateTimeLimits();
         }
         return;
@@ -496,11 +492,7 @@ function customName() {
     const custom = prompt("Enter name:");
     if (custom === null) return;
     trialOptions.name = custom;
-    // document.getElementById("confirm-class").innerText = trialOptions.cls;
-    // document.getElementById("confirm-classno").innerText = trialOptions.clsno;
     switchScreen(4);
-    // handled at screen 4
-    // websocket.send(`!reginit-${trialOptions.ndisks}${custom}`);
 }
 
 function editTimeLimit(id) {
@@ -648,4 +640,4 @@ document.addEventListener("DOMContentLoaded", () => {
         const parent = document.querySelector("#screen3 > .centered");
         parent.insertBefore(row, parent.childNodes[parent.childNodes.length - 2]);
     }
-})
+});

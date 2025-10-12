@@ -456,7 +456,7 @@ const reset = () => {
 };
 
 function updateTheme(value) {
-    websocket.send(`@theme:${value}`)
+    // websocket.send(`@theme:${value}`)
 }
 
 document.addEventListener("DOMContentLoaded", () => {

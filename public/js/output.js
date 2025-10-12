@@ -254,50 +254,12 @@ function handleCommand(cmd) {
     }
 }
 
-function renderRecord(container, rank, name, score) {
-    const record = document.createElement("div");
-    record.classList.add("record");
-    const recordRank = document.createElement("span");
-    recordRank.classList.add("record-rank");
-    recordRank.innerHTML = rank <= 3 ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1] : rank.toString();
-    const recordName = document.createElement("span");
-    recordName.classList.add("record-name");
-    recordName.innerText = name;
-    const recordTime = document.createElement("span");
-    recordTime.classList.add("record-time");
-    recordTime.innerText = parseTime(score);
-    record.appendChild(recordRank);
-    record.appendChild(recordName);
-    record.appendChild(recordTime);
-    container.appendChild(record);
-}
-
-
 let rowsPerPage = 7;
 const PAGE_DURATION_MS = 5000;
 const ANIMATION_DURATION_MS = 1000;
 
 const leaderboardStates = {};
 const ROW_HEIGHT = 50 + 6;
-
-function renderRecordNew(container, rank, name, score) {
-    const record = document.createElement("div");
-    record.classList.add("lb-row");
-    const recordRank = document.createElement("div");
-    recordRank.classList.add("lb-row-rank");
-    recordRank.innerText = rank.toString();
-    // recordRank.innerHTML = rank <= 3 ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1] : rank.toString();
-    const recordName = document.createElement("div");
-    recordName.classList.add("lb-row-name");
-    recordName.innerText = name;
-    const recordTime = document.createElement("div");
-    recordTime.classList.add("lb-row-score");
-    recordTime.innerText = parseTime(score);
-    record.appendChild(recordRank);
-    record.appendChild(recordName);
-    record.appendChild(recordTime);
-    container.appendChild(record);
-}
 
 function updateLeaderboardNew(id, data) {
     const lbElement = document.getElementById(id);
@@ -339,7 +301,6 @@ function updateLeaderboardNew(id, data) {
 }
 
 function renderRow(item, rank, isTop) {
-    const topClass = isTop ? "top-rank" : "";
     if (isTop) {
         return `
             <div class="lb-row">
@@ -377,9 +338,7 @@ function cyclePages(id) {
     if (!state || state.totalPages <= 1) return;
 
     if (state.currentPageIndex >= state.totalPages - 1) {
-        state.currentPageIndex = 0;
-
-        
+        state.currentPageIndex = 0;        
     } else {
         state.currentPageIndex++;
     }
@@ -410,11 +369,25 @@ function startCycle(id) {
 
 
 
+// OLD SYSTEM BEGIN
 
-
-
-
-
+function renderRecord(container, rank, name, score) {
+    const record = document.createElement("div");
+    record.classList.add("record");
+    const recordRank = document.createElement("span");
+    recordRank.classList.add("record-rank");
+    recordRank.innerHTML = rank <= 3 ? ["&#129351;", "&#129352;", "&#129353;"][rank - 1] : rank.toString();
+    const recordName = document.createElement("span");
+    recordName.classList.add("record-name");
+    recordName.innerText = name;
+    const recordTime = document.createElement("span");
+    recordTime.classList.add("record-time");
+    recordTime.innerText = parseTime(score);
+    record.appendChild(recordRank);
+    record.appendChild(recordName);
+    record.appendChild(recordTime);
+    container.appendChild(record);
+}
 
 function updateLeaderboard(id, leaderboard) {
     const container = document.getElementById(id);
@@ -454,7 +427,12 @@ function shiftPages() {
 var baseHeight = 7;
 var height = baseHeight;
 var currentPages = [0, 0];
-setInterval(shiftPages, Math.max(5000, height * 900));
+
+if (theme == "gojo") {
+    setInterval(shiftPages, Math.max(5000, height * 900));
+}
+
+// OLD SYSTEM END
 
 function rand(length) {
     let result = "";
@@ -524,4 +502,3 @@ function glowRandom() {
     }
     setTimeout(glowRandom, randint(3000, 5000));
 }
-
