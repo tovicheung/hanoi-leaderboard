@@ -69,12 +69,12 @@ const config: Config = await (async () => {
     return DEFAULT_CONFIG;
 })();
 
-interface Record {
+interface LbRecord {
     name: string;
     score: number;
 }
 
-type Leaderboard = Record[];
+type Leaderboard = LbRecord[];
 
 function getDefaultInstance() {
     return {
@@ -297,11 +297,12 @@ function connectSocket(req: Request) {
         if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
             if (adminId !== null && clients.has(adminId) && clientId != adminId) {
                 const oldAdmin = clients.get(adminId);
-                oldAdmin?.socket.send("ADMIN:OVERRIDEN");
+                oldAdmin?.socket.send("ADMIN:OVERRIDDEN");
             }
             adminId = clientId;
             clients.get(adminId)!.role = "Admin";
             clients.get(adminId)!.auth = { type: "admin" };
+            socket.send("ADMIN:OK");
             adminSendServerConfig();
             adminSendClientsData();
             await adminSendInstancesData();
@@ -561,6 +562,15 @@ async function handleApi(path: string, req: Request): Promise<Response> {
 
 const minjs = Deno.env.get("NO_MIN") === undefined;
 
+const routes: Record<string, string> = {
+    "/": "/index.html",
+    "/admin": "/admin.html",
+    "/sync": "/sync.html",
+    "/output": "/output.html",
+    "/disconnected": "/disconnected.html", // unused
+    "/admin2": "/admin2.html",
+};
+
 Deno.serve(async (req) => {
     let path = (new URL(req.url)).pathname;
     // console.log("request to path:", path);
@@ -573,26 +583,18 @@ Deno.serve(async (req) => {
         if (req.headers.get("upgrade") == "websocket") {
             return connectSocket(req);
         }
-    } else if (path === "/") {
-        path = "/index.html";
-    } else if (path === "/admin") {
-        path = "/admin.html";
-    } else if (path === "/sync") {
-        path = "/sync.html";
-    } else if (path === "/output") {
-        path = "/output.html";
-    } else if (path === "/disconnected") {
-        path = "/disconnected.html";
+    } else if (path in routes) {
+        path = routes[path];
     } else if (path === "/ping") {
         return ok();
-    } else if (path === "/assets/bg") {
+    } else if (path === "/assets/bg") { // dynamic assets
         const theme = (await getMeta()).theme;
         if (theme === "gojo") {
             path = "/assets/bg1.jpg";
         } else if (theme === "demonslayer") {
             path = "/assets/ds1.jpg"
         }
-    } else if (path === "/css-output") {
+    } else if (path === "/css-output") { // dynamic assets
         const theme = (await getMeta()).theme;
         path = `/css-output/${theme}.css`;
     }
