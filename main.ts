@@ -509,14 +509,29 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 await kv.delete(["instances", name]);
             }
         } else if (path == "/api/instance/clone" && method == "POST") {
-            if ("name" in body && typeof body.name == "string") {
-                const name = body.name;
-                if (name.length == 0) return bad("String is empty.");
-                if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
-                await kv.set(["instances", name], {
-                    meta: getMeta(),
-                    data: getData(),
-                });
+            if ("from" in body && typeof body.from == "string" && "to" in body && typeof body.to == "string") {
+                const from = body.from;
+                const to = body.to;
+                if (from.length == 0) {
+                    return bad("Name (from) is empty.");
+                }
+                if (from.length == 0) {
+                    return bad("Name (to) is empty.");
+                }
+                if ((await kv.get(["instances", from])).value === null) {
+                    return bad("Source name does not exist.");
+                }
+                if ((await kv.get(["instances", to])).value !== null) {
+                    return bad("New name is already in use.");
+                }
+                if (from == (await kv.get(["instanceName"])).value) {
+                    await kv.set(["instances", to], {
+                        meta: await getMeta(),
+                        data: await getData(),
+                    });
+                } else {
+                    await kv.set(["instances", to], (await kv.get(["instances", from])).value);
+                }
             }
         } else if (path == "/api/instance/import" && method == "POST") {
             if ("data" in body) {

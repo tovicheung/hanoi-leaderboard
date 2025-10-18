@@ -1,3 +1,4 @@
+<title>Hanoi Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
@@ -206,59 +207,137 @@
     .segment > button.selected {
         background-color: rgb(179, 255, 179);
     }
-</style>
-<div id="status">
-    <span style="font-weight: bold">Hanoi Admin</span>
-    <span style="flex: 1;"></span>
-    <span id="connection-status">Loading ...</span>
-</div>
-<div class="container">
-    <div class="tabs-list">
-        <button class="tab-btn active" data-tab="auth">Auth</button>
-        <button class="tab-btn" data-tab="clients">Clients</button>
-        <button class="tab-btn" data-tab="config">Configuration</button>
-        <button class="tab-btn" data-tab="instances">Instances</button>
-        <button class="tab-btn" data-tab="access-control">Access Control</button>
-    </div>
-    <div id="tab-content">
-        <div id="tab-auth">
-            <h2>Enter admin password:</h2>
-            <p id="auth-msg"></p>
-            <form id="auth-form">
-                <input id="password" type="password" autofocus>
-                <button class="btn" type="submit">Submit</button>
-            </form>
-            <button class="btn" onclick="window.location.replace('https://www.youtube.com/watch?v=dQw4w9WgXcQ')">Forgot password</button>            
-        </div>
-        <div id="tab-clients">
-            <h2>Connected Clients</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Connected</th>
-                        <th>Platform</th>
-                        <th>Role</th>
-                        <th>Permission</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="clients-data"></tbody>
-            </table>
-        </div>
-        <div id="tab-config">
-            <h2>Server Configuration</h2>
-            <p style="display: inline">Input Access: </p>
-            <div id="inputAccess" class="segment">
-                <button value="none">Locked</button>
-                <button value="restricted">Restricted</button>
-                <button value="everyone">Everyone</button>
-            </div>
-            <p>Output Access: everyone (uneditable)</p>
-        </div>
-        <div id="tab-instances"><h2>Database Instances</h2><p>Databases</p></div>
-        <div id="tab-access-control"><h2>Access Control</h2><p>Access Control</p></div>
-    </div>
-</div>
 
-<div id="notifications"></div>
-<script src="admin2.js"></script>
+
+    #instance-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid lightgray;
+            border-radius: 8px;
+            background-color: white;
+            transition: all 0.3s ease;
+        }
+
+        .instance-item:hover {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .instance-item.active {
+            border: 1px solid #28a745;
+            border-left: 6px solid #28a745;
+            background-color: #e0f7e9;
+        }
+
+        .active-status {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 700;
+            align-self: flex-start;
+            background-color: #28a745;
+            color: white;
+        }
+
+        .instance-info {
+            display: flex;
+            flex-direction: row;
+            flex-grow: 1;
+            gap: 8px;
+        }
+
+        .instance-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .instance-controls {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .instance-controls button {
+            padding: 6px 14px;
+            margin-right: 6px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 16px;
+        }
+</style>
+<body>
+    <div id="status">
+        <span style="font-weight: bold">Hanoi Admin</span>
+        <span style="flex: 1;"></span>
+        <span id="connection-status">Loading ...</span>
+    </div>
+    <div class="container">
+        <div class="tabs-list">
+            <button class="tab-btn active" data-tab="auth">Auth</button>
+            <button class="tab-btn" data-tab="clients">Clients</button>
+            <button class="tab-btn" data-tab="config">Configuration</button>
+            <button class="tab-btn" data-tab="instances">Instances</button>
+            <button class="tab-btn" data-tab="access-control">Access Control</button>
+        </div>
+        <div id="tab-content">
+            <div id="tab-auth">
+                <h2>Enter admin password:</h2>
+                <p id="auth-msg"></p>
+                <form id="auth-form">
+                    <input id="password" type="password" autofocus>
+                    <button class="btn" type="submit">Submit</button>
+                </form>
+                <button class="btn" onclick="window.location.replace('https://www.youtube.com/watch?v=dQw4w9WgXcQ')">Forgot password</button>            
+            </div>
+            <div id="tab-clients">
+                <h2>Connected Clients</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Connected</th>
+                            <th>Platform</th>
+                            <th>Role</th>
+                            <th>Permission</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-data"></tbody>
+                </table>
+            </div>
+            <div id="tab-config">
+                <h2>Server Configuration</h2>
+                <p style="display: inline">Input Access: </p>
+                <div id="inputAccess" class="segment">
+                    <button value="none">Locked</button>
+                    <button value="restricted">Restricted</button>
+                    <button value="everyone">Everyone</button>
+                </div>
+                <p>Output Access: everyone (uneditable)</p>
+            </div>
+            <div id="tab-instances">
+                <h2>Database Instances</h2>
+                <ul id="instance-list">
+                    <!-- Generated -->
+                </ul>
+            </div>
+            <div id="tab-access-control">
+                <h2>Access Control</h2>
+                <p>Access Control</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="notifications"></div>
+    <script src="admin2.js"></script>
+</body>

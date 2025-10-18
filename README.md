@@ -39,10 +39,11 @@ The following admin functions require a bearer token.
 
 * POST `/api/instance/clone`
 
-    Clone the data of the active instance to a new name.
+    Clones an instance.
     ```json
     {
-        "name": "Backup of Important Instance"
+        "from": "Important Instance",
+        "to": "Backup of Important Instance"
     }
     ```
 

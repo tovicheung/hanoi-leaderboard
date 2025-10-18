@@ -1,5 +1,3 @@
-
-
 const _ = (str, seed = 0) => {
     let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
     for (let i = 0, ch; i < str.length; i++) {
@@ -63,23 +61,8 @@ websocket.onmessage = e => {
             setConnectionStatus("Overridden");
             return;
         } else if (e.data.startsWith("ADMIN:INSTANCES:")) {
-            const instanceData = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
-            const segment = document.getElementById("instances");
-            while (segment.children.length) {
-                segment.removeChild(segment.children[0]);
-            }
-            for (const name of instanceData["instances"]) {
-                const btn = document.createElement("button");
-                btn.innerText = name;
-                btn.value = name;
-                btn.onclick = e => instanceUpdate(() => {
-                    req("/api/instance/switch", "POST", { name });
-                });
-                segment.appendChild(btn);
-                if (name == instanceData["current"]) {
-                    btn.classList.add("selected");
-                }
-            }
+            const instances = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
+            updateInstances(instances);
         } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
             const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
             updateClientData(data);
@@ -108,6 +91,49 @@ function checkAdmin() {
     websocket.send(`ADMIN:${__(document.getElementById("password").value)}`);
 }
 
+
+
+function updateInstances(data) {
+    const list = document.getElementById("instance-list");
+    list.innerHTML = "";
+    for (const name of data["instances"]) {
+        const li = document.createElement("li");
+        li.classList.add("instance-item");
+        if (name == data["current"]) {
+            li.classList.add("active");
+        }
+        li.innerHTML = `
+            <div class="instance-info">
+                <span class="instance-name"></span>
+                ${name === data["current"] ? `<span class="active-status">ACTIVE</span>` : ''}
+            </div>
+            <div class="instance-controls">
+                <button ${name === data["current"] ? 'disabled' : ''}>Select</button>
+                <button>Clone</button>
+                <button ${name === data["current"] ? 'disabled' : ''}>Delete</button>
+            </div>
+        `;
+        li.querySelector(".instance-name").innerText = name;
+        
+        // [Select]
+        li.querySelector("button:nth-child(1)").onclick = () => {
+            req("/api/instance/switch", "POST", { name });
+        };
+
+        // [Clone]
+        li.querySelector("button:nth-child(2)").onclick = () => {
+            const newName = prompt("Enter new name:");
+            if (newName === null) return;
+            req("/api/instance/clone", "POST", { from: name, to: newName });
+        };
+
+        // [Delete]
+        li.querySelector("button:nth-child(3)").onclick = () => {
+            req("/api/instance/delete", "DELETE", { name });
+        };
+        list.appendChild(li);
+    }
+}
 
 
 
@@ -220,10 +246,6 @@ function updateClientData(data) {
         tdAction.appendChild(btnAllowInput);
 
         tr.appendChild(tdAction);
-
-        // const tdFullId = document.createElement("td");
-        // tdFullId.innerText = entry.id;
-        // tr.appendChild(tdFullId);
 
         tbody.appendChild(tr);
     }
