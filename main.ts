@@ -287,6 +287,7 @@ function connectSocket(req: Request) {
             socket.send("AUTH:required");
         }
         adminSendClientsData();
+        adminSendInstancesData();
     });
 
     socket.addEventListener("message", async (event) => {
@@ -294,7 +295,10 @@ function connectSocket(req: Request) {
         console.log(`received from ${clientId}`)
         console.log(event.data);
 
-        if (event.data == `ADMIN:${Deno.env.get("ADMIN")}`) {
+        // for easy local development
+        const fastpass = event.data == "ADMIN:TEST" && Deno.env.get("TEST") !== undefined;
+
+        if (event.data == `ADMIN:${Deno.env.get("ADMIN")}` || fastpass) {
             if (adminId !== null && clients.has(adminId) && clientId != adminId) {
                 const oldAdmin = clients.get(adminId);
                 oldAdmin?.socket.send("ADMIN:OVERRIDDEN");
@@ -471,9 +475,21 @@ function ok() {
 
 async function handleApi(path: string, req: Request): Promise<Response> {
     const method = req.method;
-
     
     if (path == "/api/data" && method == "GET") {
+        const url = new URL(req.url);
+        const name = url.searchParams.get("name");
+        if (name) {
+            const inst = (await kv.get(["instances", name])).value;
+            if (inst === null) {
+                return bad("Instance does not exist.");
+            }
+            if (typeof inst !== "object" || !("data" in inst)) {
+                // TODO: add similar checks all over the code
+                return bad("Invalid instance data.");
+            }
+            return new Response(JSON.stringify(inst.data), { status: 200 });
+        }
         return new Response(JSON.stringify(await getData()), { status: 200 });
     }
 

@@ -3,6 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
 
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=content_copy,delete,text_select_end" />
 <style>
     * {
         font-family: "Ubuntu", sans-serif;
@@ -25,6 +26,7 @@
     }
 
     .tabs-list {
+        min-width: 160px;
         width: 160px;
         background: #f8f9fb;
         border-right: 1px solid #ececec;
@@ -55,7 +57,12 @@
 
     #tab-content {
         flex: 1;
+        min-width: 0; /* prevent horizontal overflow */
         padding: 32px 28px;
+    }
+
+    #tab-content > div {
+        width: 100%;
     }
 
     #tab-content > div {
@@ -210,71 +217,127 @@
 
 
     #instance-list {
-            list-style: none;
-            padding: 0;
-        }
+        list-style: none;
+        padding: 0;
+        width: 100%;
+    }
 
-        .instance-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            margin-bottom: 12px;
-            border: 1px solid lightgray;
-            border-radius: 8px;
-            background-color: white;
-            transition: all 0.3s ease;
-        }
+    .instance-item {
+        padding: 15px;
+        margin-bottom: 12px;
+        border: 1px solid lightgray;
+        border-radius: 8px;
+        background-color: white;
+        transition: all 0.3s ease;
+    }
 
-        .instance-item:hover {
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        }
+    .instance-item:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        cursor: pointer;
+    }
 
-        .instance-item.active {
-            border: 1px solid #28a745;
-            border-left: 6px solid #28a745;
-            background-color: #e0f7e9;
-        }
+    .instance-item.active {
+        border: 1px solid #28a745;
+        border-left: 6px solid #28a745;
+        background-color: #e0f7e9;
+    }
 
-        .active-status {
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 700;
-            align-self: flex-start;
-            background-color: #28a745;
-            color: white;
-        }
+    .instance-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-        .instance-info {
-            display: flex;
-            flex-direction: row;
-            flex-grow: 1;
-            gap: 8px;
-        }
+    .active-status {
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 700;
+        align-self: flex-start;
+        background-color: #28a745;
+        color: white;
+    }
 
-        .instance-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
+    .instance-info {
+        display: flex;
+        flex-direction: row;
+        flex-grow: 1;
+        gap: 8px;
+    }
 
-        .instance-controls {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
+    .instance-name {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
 
-        .instance-controls button {
-            padding: 6px 14px;
-            margin-right: 6px;
-            border: none;
-            border-radius: 6px;
-            background: transparent;
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 16px;
-        }
+    .instance-controls {
+        display: flex;
+        flex-shrink: 0;
+    }
+
+    .instance-controls button {
+        padding: 6px 14px;
+        margin-right: 6px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .instance-controls button:not(:disabled):hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .instance-item {
+        transition: background-color 0.2s ease;
+    }
+
+    .instance-bottom {
+        overflow: hidden;
+        transition: max-height 0.2s ease, padding 0.2s ease;
+        
+        display: flex;
+        gap: 10%;
+    }
+
+    .instance-item:not(.expanded) .instance-bottom {
+        max-height: 0;
+        padding: 0 12px;
+    }
+
+    .instance-item.expanded .instance-bottom {
+        max-height: 999px;
+        padding: 12px;
+    }
+
+    .instance-item.expanded {
+        background-color: #fafafa
+    }
+
+    .instance-data-col {
+        width: 30%;
+    }
+
+    .instance-data-row {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .instance-data-rank {
+        flex-basis: 10%;
+    }
+
+    .instance-data-name {
+        flex-grow: 1;
+        flex-basis: 60%;
+        text-align: left;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
 </style>
 <body>
     <div id="status">
@@ -327,6 +390,7 @@
             </div>
             <div id="tab-instances">
                 <h2>Database Instances</h2>
+                <button class="btn" onclick="createNewInstance()">Create</button>
                 <ul id="instance-list">
                     <!-- Generated -->
                 </ul>
@@ -339,5 +403,5 @@
     </div>
 
     <div id="notifications"></div>
-    <script src="admin2.js"></script>
+    <script src="js/admin2.js"></script>
 </body>

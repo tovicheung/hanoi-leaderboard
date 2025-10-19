@@ -36,7 +36,8 @@ websocket.send = msg => {
 }
 
 websocket.onopen = () => {
-    setConnectionStatus("Authentication required")
+    setConnectionStatus("Authentication required");
+    websocket.send("ADMIN:TEST"); // try fastpass
 }
 
 websocket.onclose = () => {
@@ -57,8 +58,8 @@ websocket.onmessage = e => {
             document.getElementById("auth-msg").innerText = "Authenticated";
             document.getElementById("auth-msg").style.color = "green";
         } else if (e.data == "ADMIN:OVERRIDDEN") {
+            websocket.onclose = () => setConnectionStatus("<span style='color: red'>Overridden</span>");
             websocket.close();
-            setConnectionStatus("Overridden");
             return;
         } else if (e.data.startsWith("ADMIN:INSTANCES:")) {
             const instances = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
@@ -92,6 +93,11 @@ function checkAdmin() {
 }
 
 
+function createNewInstance() {
+    const name = prompt("Enter name for new instance:");
+    if (name === null) return null;
+    req("/api/instance/create", "POST", { name });
+}
 
 function updateInstances(data) {
     const list = document.getElementById("instance-list");
@@ -103,32 +109,68 @@ function updateInstances(data) {
             li.classList.add("active");
         }
         li.innerHTML = `
-            <div class="instance-info">
-                <span class="instance-name"></span>
-                ${name === data["current"] ? `<span class="active-status">ACTIVE</span>` : ''}
+            <div class="instance-top">
+                <div class="instance-info">
+                    <span class="instance-name"></span>
+                    ${name === data["current"] ? `<span class="active-status">ACTIVE</span>` : ''}
+                </div>
+                <div class="instance-controls">
+                    <button ${name === data["current"] ? 'disabled' : ''}>Select</button>
+                    <button><span class="material-symbols-outlined">content_copy</span></button>
+                    <button ${name === data["current"] ? 'disabled' : ''}><span class="material-symbols-outlined">delete</span></button>
+                </div>
             </div>
-            <div class="instance-controls">
-                <button ${name === data["current"] ? 'disabled' : ''}>Select</button>
-                <button>Clone</button>
-                <button ${name === data["current"] ? 'disabled' : ''}>Delete</button>
-            </div>
+            <div class="instance-bottom"></div>
         `;
         li.querySelector(".instance-name").innerText = name;
+
+        li.onclick = e => {
+            req(`/api/data?name=${name}`, "GET")
+                .then(resp => {
+                    resp.json().then(json => {
+                        // li.querySelector(".instance-bottom").innerText = json;
+                        li.classList.toggle("expanded");
+                        const btm = li.querySelector(".instance-bottom");
+                        btm.innerHTML = `
+                            <div class="instance-data-col"></div>
+                            <div class="instance-data-col"></div>
+                        `;
+                        btm.querySelectorAll(".instance-data-col").forEach((col, i) => {
+                            const data = json[i];
+                            for (let j = 0; j < data.length; j++) {
+                                const row = document.createElement("div");
+                                row.classList.add("instance-data-row");
+                                row.innerHTML = `
+                                    <div class="instance-data-rank">${j+1}</div>
+                                    <div class="instance-data-name">${data[j].name}</div>
+                                    <div class="instance-data-score">${data[j].score}</div>
+                                `;
+                                col.appendChild(row);
+                            }
+                        });
+                    })
+                })
+        };
         
         // [Select]
-        li.querySelector("button:nth-child(1)").onclick = () => {
+        li.querySelector("button:nth-child(1)").onclick = e => {
+            e.stopPropagation();
             req("/api/instance/switch", "POST", { name });
         };
 
         // [Clone]
-        li.querySelector("button:nth-child(2)").onclick = () => {
+        li.querySelector("button:nth-child(2)").onclick = e => {
+            e.stopPropagation();
             const newName = prompt("Enter new name:");
             if (newName === null) return;
             req("/api/instance/clone", "POST", { from: name, to: newName });
         };
 
         // [Delete]
-        li.querySelector("button:nth-child(3)").onclick = () => {
+        li.querySelector("button:nth-child(3)").onclick = e => {
+            e.stopPropagation();
+            const check = prompt("Type the instance name again to confirm deletion:");
+            if (check !== name) return;
             req("/api/instance/delete", "DELETE", { name });
         };
         list.appendChild(li);
@@ -194,58 +236,47 @@ function updateClientData(data) {
     tbody.innerHTML = "";
     for (const entry of data) {
         const tr = document.createElement("tr");
-
-        const tdTimestamp = document.createElement("td");
-        tdTimestamp.innerText = fullDateFmt(new Date(entry.connectTimestamp));
-        tr.appendChild(tdTimestamp);
-
-        const tdUA = document.createElement("td");
-        const sniffed = uasniff(entry.userAgent);
-        tdUA.innerText = `${sniffed.os}, ${sniffed.browser}`;
-        tr.appendChild(tdUA);
-
-        const tdRole = document.createElement("td");
-        if (entry.role === undefined) {
-            tdRole.innerText = "Unknown";
-        } else {
-            tdRole.innerText = entry.role;
-        }
-        tr.appendChild(tdRole);
         
-        const tdAuth = document.createElement("td");
+        // just use react atp
+
+        const sniffed = uasniff(entry.userAgent);
+
         const _auth = entry.auth;
+        let authText;
         if (_auth.type == "admin") {
-            tdAuth.innerText = "Admin";
+            authText = "Admin";
         } else if (_auth.type == "token") {
-            tdAuth.innerText = `Token; Until ${fullDateFmt(new Date(parseInt(_auth.expireIn)))}`;
+            authText = `Token; Until ${fullDateFmt(new Date(parseInt(_auth.expireIn)))}`;
         } else if (_auth.type == "elevated") {
-            tdAuth.innerText = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
+            authText = `Elevated at ${fullDateFmt(new Date(_auth.timestamp))}`;
         } else if (_auth.type == "none") {
-            tdAuth.innerText = "None";
+            authText = "None";
         } else {
-            tdAuth.innerText = "Malformed";
+            authText = "Malformed";
         }
-        tr.appendChild(tdAuth);
+
+        tr.innerHTML = `
+            <td>${fullDateFmt(new Date(entry.connectTimestamp))}</td>
+            <td>${sniffed.os}, ${sniffed.browser}</td>
+            <td>${entry.role === undefined ? "Unknown" : entry.role}</td>
+            <td>${authText}</td>
+            <td>
+                <button>Disconnect</button>
+                <button>Allow input</button>
+            </td>
+        `;
 
         const tdAction = document.createElement("td");
 
         // [Disconnect]
-        const btnDisconnect = document.createElement("button");
-        btnDisconnect.innerText = "Disconnect";
-        btnDisconnect.onclick = () => {
+        tr.querySelector("button:nth-child(1)").onclick = () => {
             websocket.send(`ADMIN:clients-disconnect:${entry.id}`);
         };
-        tdAction.appendChild(btnDisconnect);
         
         // [Allow input]
-        const btnAllowInput = document.createElement("button");
-        btnAllowInput.innerText = "Allow input";
-        btnAllowInput.onclick = () => {
+        tr.querySelector("button:nth-child(2)").onclick = () => {
             websocket.send(`ADMIN:clients-allow-input:${entry.id}`);
         };
-        tdAction.appendChild(btnAllowInput);
-
-        tr.appendChild(tdAction);
 
         tbody.appendChild(tr);
     }
