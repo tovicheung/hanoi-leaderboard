@@ -215,7 +215,7 @@ function adminSendClientsData() {
 }
 
 async function getAccessData() {
-    const entries = await kv.list({ prefix: ["tokens"] });
+    const entries = kv.list({ prefix: ["tokens"] });
     const result: any = {};
     for await (const entry of entries) {
         const token = entry.key[1];
@@ -297,6 +297,10 @@ function connectSocket(req: Request) {
 
         // for easy local development
         const fastpass = event.data == "ADMIN:TEST" && Deno.env.get("TEST") !== undefined;
+        
+        if (event.data == "ADMIN:TEST" && !fastpass) {
+            return;
+        }
 
         if (event.data == `ADMIN:${Deno.env.get("ADMIN")}` || fastpass) {
             if (adminId !== null && clients.has(adminId) && clientId != adminId) {
@@ -323,6 +327,7 @@ function connectSocket(req: Request) {
                 const id = data.slice("clients-allow-input:".length);
                 const c = clients.get(id);
                 if (!c) return;
+                if (c.auth.type == "admin") return;
                 c.auth = { type: "elevated", timestamp: Date.now() };
                 c.socket.send("AUTH:success");
                 adminSendClientsData();

@@ -57,9 +57,12 @@ websocket.onmessage = e => {
             showNotification("Authenticated!", 1);
             document.getElementById("auth-msg").innerText = "Authenticated";
             document.getElementById("auth-msg").style.color = "green";
+            loadAccessData();
         } else if (e.data == "ADMIN:OVERRIDDEN") {
+            document.getElementById("password").value = "";
             websocket.onclose = () => setConnectionStatus("<span style='color: red'>Overridden</span>");
             websocket.close();
+            showNotification("This session is overridden by another session. Reload to reconnect.", type = 0, { duration: 5000 });
             return;
         } else if (e.data.startsWith("ADMIN:INSTANCES:")) {
             const instances = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
@@ -70,7 +73,12 @@ websocket.onmessage = e => {
         } else if (e.data.startsWith("ADMIN:SERVERCONFIG:")) {
             serverConfig = JSON.parse(e.data.slice("ADMIN:SERVERCONFIG:".length));
             setSegmentButtons("inputAccess", serverConfig.inputAccess);
-
+            if (serverConfig.backupUrl === null) {
+                document.getElementById("backup-url").innerText = "[unset]"
+            } else {
+                document.getElementById("backup-url").innerText = serverConfig.backupUrl;
+            }
+            document.getElementById("parent-url").innerText = serverConfig.parentUrl === null ? "[unset]" : serverConfig.parentUrl;
         }
     } else if (e.data == "pong") {
         report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
@@ -338,7 +346,6 @@ async function req(url, method, data) {
         showNotification(`[${response.status}] ${await response.text()}`, 0);
     } else if (method != "GET") {
         showNotification("Success", 1);
-        // document.getElementById("instance-management").style.opacity = 1;
     }
     return response;
 }
@@ -346,6 +353,93 @@ async function req(url, method, data) {
 function configUpdate(newConfig) {
     req("/api/config/update", "POST", newConfig);
 }
+
+
+
+async function createToken() {
+    const token = prompt("Enter access token (at least 4 chars):");
+    if (token === null) return;
+    const tonight = new Date;
+    tonight.setHours(23, 59, 59);
+    const dateString = prompt("Enter expiry date (YYYY-MM-DD hh:mm:ss):", fullDateFmt(tonight));
+    if (dateString === null) return;
+    const expireIn = Date.parse(dateString);
+    await req("/api/token/create", "POST", { token, expireIn });
+    loadAccessData();
+}
+
+function updateAccessData() {
+    const tbody = document.getElementById("access-data-body");
+    tbody.innerHTML = "";
+    const vis = document.getElementById("vis").checked;
+    for (const token in _tokdata) {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${vis ? token : "****"}</td>
+            <td>${fullDateFmt(new Date(_tokdata[token]))}</td>
+            <td>
+                <button>Modify</button>
+                <button>Delete</button>
+            </td>
+        `;
+
+        // [Modify]
+        tr.querySelector("button:nth-child(1)").onclick = async () => {
+            const dateString = prompt("Enter new expiry date (YYYY-MM-DD hh:mm:ss):", fullDateFmt(new Date(_tokdata[token])));
+            if (dateString === null) return;
+            const expireIn = Date.parse(dateString);
+            await req("/api/token/modify", "POST", {
+                token,
+                expireIn,
+            });
+            loadAccessData();
+        }
+        
+        // [Delete]
+        tr.querySelector("button:nth-child(2)").onclick = async () => {
+            const check = prompt("Type the token again to confirm deletion:");
+            if (check !== token) return;
+            await req("/api/token/delete", "POST", {
+                token,
+            });
+            loadAccessData();
+        }
+
+        tbody.appendChild(tr);
+    }
+}
+
+let _tokdata = {};
+
+async function loadAccessData() {
+    const resp = await req("/api/token", "GET");
+    if (!resp.ok) return;
+    _tokdata = await resp.json();
+    updateAccessData();
+}
+
+
+
+
+function modifyBackupUrl() {
+    let newUrl = prompt("Enter new backup url:", serverConfig.backupUrl);
+    if (newUrl == null) return;
+    if (newUrl == "") {
+        newUrl = null
+    }
+    configUpdate({ backupUrl: newUrl });
+}
+
+function modifyParentUrl() {
+    let newUrl = prompt("Enter new parent url:", serverConfig.parentUrl);
+    if (newUrl == null) return;
+    if (newUrl == "") {
+        newUrl = null
+    }
+    configUpdate({ parentUrl: newUrl });
+}
+
 
 function setupSegmentButtons(id, onchange) {
     const parent = document.getElementById(id);
