@@ -277,7 +277,6 @@ function connectSocket(req: Request) {
     });
 
     socket.addEventListener("open", async () => {
-        console.log(`client ${clientId} connected!`);
         socket.send(`@meta:${JSON.stringify(await getMeta())}`);
         socket.send(JSON.stringify(await getData()));
         broadcast(`@nclients:${clients.size}`);
@@ -292,8 +291,8 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("message", async (event) => {
         if (!clients.has(clientId)) return;
-        console.log(`received from ${clientId}`)
-        console.log(event.data);
+        // console.log(`received from ${clientId}`)
+        // console.log(event.data);
 
         // for easy local development
         const fastpass = event.data == "ADMIN:TEST" && Deno.env.get("TEST") !== undefined;
@@ -440,7 +439,6 @@ function connectSocket(req: Request) {
     });
 
     socket.addEventListener("close", () => {
-        console.log(`client ${clientId} disconnected`);
         clients.delete(clientId);
         broadcast(`@nclients:${clients.size}`);
         if (clientId === adminId) adminId = null;
@@ -578,15 +576,25 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         adminCreateToken(token, expireIn);
     } else if (path == "/api/token/modify" && method == "POST") {
         const { token, expireIn } = body;
-        if (typeof token !== "string") return bad("Invalid token name.");
-        if (typeof expireIn !== "number") return bad("Invalid expiry.");
-        if ((await kv.get(["tokens", token])).value === null) return bad("Token does not exist.");
+        if (typeof token !== "string") {
+            return bad("Invalid token name.");
+        }
+        if (typeof expireIn !== "number") {
+            return bad("Invalid expiry.");
+        }
+        if ((await kv.get(["tokens", token])).value === null) {
+            return bad("Token does not exist.");
+        }
         await kv.delete(["tokens", token]);
         adminCreateToken(token, expireIn);
     } else if (path == "/api/token/delete" && (method == "POST" || method == "DELETE")) {
         const { token } = body;
-        if (typeof token !== "string") return bad("Invalid token name.");
-        if ((await kv.get(["tokens", token])).value === null) return bad("Token does not exist.")
+        if (typeof token !== "string") {
+            return bad("Invalid token name.");
+        }
+        if ((await kv.get(["tokens", token])).value === null) {
+            return bad("Token does not exist.");
+        }
         await kv.delete(["tokens", token]);
     } else if (path == "/api/token" && method == "GET") {
         return new Response(JSON.stringify(await getAccessData()), { status: 200 });

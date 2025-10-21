@@ -46,13 +46,17 @@
     }
 
     .tab-btn.active {
-        background: white;
+        background-color: white;
         color: blue;
         font-weight: 600;
     }
 
     .tab-btn:not(:last-child) {
         border-bottom: 1px solid #ececec;
+    }
+
+    .tab-btn.warn:not(.active) {
+        background-color: pink;
     }
 
     #tab-content {
@@ -105,6 +109,10 @@
         font-weight: 500;
         cursor: pointer;
         font-size: 0.95rem;
+    }
+    
+    table button:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     }
 
     h2 {
@@ -188,6 +196,35 @@
         flex-direction: row;
     }
 
+    #nav {
+        width: fit-content;
+        margin: 30px auto;
+        margin-bottom: 0px;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 14px;
+        text-align: center;
+        font-size: 1.08rem;
+    }
+
+    #nav a {
+        margin-left: 20px;
+        text-decoration: none;
+    }
+
+    #nav a:link,
+    #nav a:visited,
+    #nav a:hover,
+    #nav a:active {
+        color: gray;
+        text-decoration: none;
+    }
+    
+    #nav a:hover {
+        color: black;
+    }
+
     .segment {
         display: inline-flex;
         flex-direction: row;
@@ -232,7 +269,6 @@
 
     .instance-item:hover {
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        cursor: pointer;
     }
 
     .instance-item.active {
@@ -245,6 +281,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        cursor: pointer;
     }
 
     .active-status {
@@ -354,7 +391,7 @@
     </div>
     <div class="container">
         <div class="tabs-list">
-            <button class="tab-btn active" data-tab="auth">Auth</button>
+            <button class="tab-btn active warn" data-tab="auth">Auth</button>
             <button class="tab-btn" data-tab="clients">Clients</button>
             <button class="tab-btn" data-tab="config">Configuration</button>
             <button class="tab-btn" data-tab="instances">Instances</button>
@@ -424,6 +461,12 @@
                 </table>
             </div>
         </div>
+    </div>
+    <div id="nav">
+        <span style="font-weight: bold">Hanoi System:</span>
+        <a href="/">Input</a>
+        <a href="/output">Output</a>
+        <a href="/admin">Old Admin</a>
     </div>
 
     <div id="notifications"></div>

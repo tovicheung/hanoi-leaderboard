@@ -58,6 +58,7 @@ websocket.onmessage = e => {
             document.getElementById("auth-msg").innerText = "Authenticated";
             document.getElementById("auth-msg").style.color = "green";
             loadAccessData();
+            document.querySelector(".tab-btn.warn").classList.remove("warn");
         } else if (e.data == "ADMIN:OVERRIDDEN") {
             document.getElementById("password").value = "";
             websocket.onclose = () => setConnectionStatus("<span style='color: red'>Overridden</span>");
@@ -84,8 +85,8 @@ websocket.onmessage = e => {
         report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
         lastPing = null;
     } else if (e.data.startsWith("@meta:")) {
-        const theme = JSON.parse(e.data.slice("@meta:".length)).theme;
-        document.getElementById("theme").value = theme;
+        // const theme = JSON.parse(e.data.slice("@meta:".length)).theme;
+        // document.getElementById("theme").value = theme;
     }
 }
 
@@ -132,13 +133,17 @@ function updateInstances(data) {
         `;
         li.querySelector(".instance-name").innerText = name;
 
-        li.onclick = e => {
+        li.querySelector(".instance-top").onclick = () => {
+            li.classList.toggle("expanded");
+            if (!li.classList.contains("expanded")) {
+                return;
+            }
+            const btm = li.querySelector(".instance-bottom");
+            btm.innerHTML = "<p>Loading ...</p>";
+
             req(`/api/data?name=${name}`, "GET")
                 .then(resp => {
                     resp.json().then(json => {
-                        // li.querySelector(".instance-bottom").innerText = json;
-                        li.classList.toggle("expanded");
-                        const btm = li.querySelector(".instance-bottom");
                         btm.innerHTML = `
                             <div class="instance-data-col"></div>
                             <div class="instance-data-col"></div>
@@ -157,7 +162,7 @@ function updateInstances(data) {
                             }
                         });
                     })
-                })
+                });
         };
         
         // [Select]
@@ -183,6 +188,18 @@ function updateInstances(data) {
         };
         list.appendChild(li);
     }
+
+    // preload tab with its icons
+    const tab = document.getElementById("tab-instances");
+
+    if (tab.classList.contains("active")) return;
+
+    tab.style.visibility = "hidden";
+    tab.style.display = "block";
+    setTimeout(() => {
+        tab.style.display = "";
+        tab.style.visibility = "";
+    }, 10);
 }
 
 
