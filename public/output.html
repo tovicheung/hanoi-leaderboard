@@ -3,9 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200..800&display=swap" rel="stylesheet">
 <link rel="preload" href="/assets/bg" as="image">
 <link rel="stylesheet" href="/style.css">
@@ -181,9 +179,11 @@
     }
 
     .lb-row-score {
-        font-family: "Oxanium";
+        font-family: "Oxanium", "Roboto Mono", monospace;
         font-weight: 500;
         transform: scaleX(1.1);
+        line-height: 55px;
+        height: 50px;
     }
 
     .lb-row-score .small {
@@ -230,7 +230,6 @@
     }
 
 
-    /* Top Glow Definition */
     .lb-scroll::before {
         top: 0;
         background: linear-gradient(to bottom, 
@@ -239,7 +238,6 @@
         );
     }
 
-    /* Bottom Glow Definition */
     .lb-scroll::after {
         bottom: 0;
         background: linear-gradient(to top, 
@@ -271,10 +269,11 @@
         display: flex;
         flex-direction: row;
         align-items: center;
+        gap: 24px;
     }
 
     .lb-row-rank {
-        flex-basis: 12%;
+        flex-basis: 8%;
         font-family: "Audiowide";
     }
 
@@ -357,7 +356,6 @@
         
         transition: background-position-x 0s; 
         }
-
 </style>
 
 <div id="container">
