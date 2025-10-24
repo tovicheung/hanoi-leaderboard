@@ -6,6 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200..800&display=swap" rel="stylesheet">
 <link rel="preload" href="/assets/bg" as="image">
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css-output">
@@ -26,6 +27,8 @@
         background-image: url("assets/bg");
         background-position-x: center;
         background-size: cover;
+        -webkit-user-select: none;
+        user-select: none;
     }
 
     body::backdrop {
@@ -176,7 +179,13 @@
     }
 
     .lb-row-score {
-        font-family: monospace;
+        font-family: "Oxanium";
+        font-weight: 500;
+        transform: scaleX(1.1);
+    }
+
+    .lb-row-score .small {
+        font-size: 0.7em;
     }
 
     .lb {

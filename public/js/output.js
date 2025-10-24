@@ -3,6 +3,11 @@ function parseTime(millis) {
     return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}.${dur.getMilliseconds().toString().padStart(3, "0")}`
 }
 
+function parseTimeStyled(millis) {
+    const dur = new Date(millis);
+    return `${dur.getMinutes().toString().padStart(2, "0")}:${dur.getSeconds().toString().padStart(2, "0")}<span class="small">.${dur.getMilliseconds().toString().padStart(3, "0")}</span>`
+}
+
 function updateLeaderboards() {
     if (theme == "demonslayer") {
         updateLeaderboardNew("lb-4", leaderboard1);
@@ -310,7 +315,7 @@ function renderRow(item, rank, isTop) {
                 </div>
                 <!-- <span class="lb-row-rank">${["&#129351;", "&#129352;", "&#129353;"][rank - 1]}</span> -->
                 <span class="lb-row-name">${item.name}</span>
-                <span class="lb-row-score">${parseTime(item.score)}</span>
+                <span class="lb-row-score">${parseTimeStyled(item.score)}</span>
             </div>
         `;
     }
@@ -318,7 +323,7 @@ function renderRow(item, rank, isTop) {
         <div class="lb-row">
             <span class="lb-row-rank">${rank}</span>
             <span class="lb-row-name">${item.name}</span>
-            <span class="lb-row-score">${parseTime(item.score)}</span>
+            <span class="lb-row-score">${parseTimeStyled(item.score)}</span>
         </div>
     `;
 }
@@ -342,12 +347,13 @@ function cyclePages(id) {
     } else {
         state.currentPageIndex++;
     }
-    state.scrollEl.classList.add("is-scrolling");
+    // scroll glow is disabled
+    // state.scrollEl.classList.add("is-scrolling");
     setTimeout(() => {
         updateScrollPosition(id);
-        setTimeout(() => {
-            state.scrollEl.classList.remove("is-scrolling");
-        }, ANIMATION_DURATION_MS);
+        // setTimeout(() => {
+        //     state.scrollEl.classList.remove("is-scrolling");
+        // }, ANIMATION_DURATION_MS);
     }, 500);
 }
 
