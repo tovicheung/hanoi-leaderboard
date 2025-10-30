@@ -256,11 +256,15 @@ function handleCommand(cmd) {
         clearTimeout(timeoutToClean);
         clearInterval(regInterval);
         height = baseHeight;
+    } else if (cmd.startsWith("!highlight-")) {
+        const data = JSON.parse(cmd.slice("!highlight-".length));
+        const { id, name } = data;
+        jumpToRecord(id, name);
     }
 }
 
 let rowsPerPage = 7;
-const PAGE_DURATION_MS = 5000;
+const PAGE_DURATION_MS = 10000;
 const ANIMATION_DURATION_MS = 1000;
 
 const leaderboardStates = {};
@@ -369,6 +373,56 @@ function startCycle(id) {
     state.interval = setInterval(() => {
         cyclePages(id);
     }, PAGE_DURATION_MS);
+}
+
+// crappy code but whatever
+function nameToRecordNumber(id, name) {
+    let lb = null;
+    if (id === "lb-4" || id === "leaderboard1") {
+        lb = leaderboard1;
+    } else if (id === "lb-5" || id === "leaderboard2") {
+        lb = leaderboard2;
+    } else {
+        return null;
+    }
+
+    for (let i = 0; i < lb.length; i++) {
+        if (lb[i].name === name) return i + 1;
+    }
+    return null; 
+}
+
+function jumpToRecord(id, name) {
+    const recordNumber = nameToRecordNumber(id, name);
+    if (recordNumber === null) {
+        console.warn("record not found");
+        return;
+    }
+
+    const state = leaderboardStates[id];
+    if (!state) return;
+    if (!Number.isInteger(recordNumber) || recordNumber <= 3) return;
+
+    const bottomIndex = recordNumber - 4;
+    const targetPage = Math.max(0, Math.min(Math.floor(bottomIndex / rowsPerPage), Math.max(0, state.totalPages - 1)));
+
+    state.currentPageIndex = targetPage;
+    updateScrollPosition(id);
+
+    setTimeout(() => {
+        highlightRowInBoard(state, recordNumber);
+    }, 300);
+}
+
+function highlightRowInBoard(state, recordNumber) {
+    const rows = [...state.topEl.querySelectorAll(".lb-row"), ...state.bottomEl.querySelectorAll(".lb-row")];
+    const target = rows.find(r => {
+        const spans = [...r.querySelectorAll("span")];
+        return spans.some(s => s.textContent.trim() === String(recordNumber));
+    });
+    if (!target) return;
+    target.classList.add("record-highlight");
+    setTimeout(() => target.classList.remove("record-highlight"), 20000);
 }
 
 

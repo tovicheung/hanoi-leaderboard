@@ -119,14 +119,16 @@ const trialOptions = {
     timeLimit: -1,
 };
 
-function sendUpdate() {
+function sendUpdate(highlight = null) {
     websocket.send(JSON.stringify({
         type: "update",
         leaderboards: [leaderboard1, leaderboard2],
+        highlight,
     }));
 }
 
-function pushRecord(leaderboard, name, score) {
+function pushRecord(disks, name, score) {
+    const leaderboard = parseInt(disks) == 4 ? leaderboard1 : leaderboard2;
     leaderboard.forEach((data, i) => {
         if (data.name == name) {
             if (data.score < score) score = data.score;
@@ -136,6 +138,11 @@ function pushRecord(leaderboard, name, score) {
     leaderboard.push({
         name: name,
         score: score,
+    });
+    leaderboard.sort((a, b) => a.score - b.score);
+    sendUpdate({ // highlight
+        id: `lb-${disks}`,
+        name,
     });
 }
 
@@ -198,17 +205,15 @@ function addRaw() {
         score = timeStringToMillis(score);
     }
     pushRecord(
-        ndisks == "4" ? leaderboard1 : leaderboard2,
+        ndisks,
         name,
         score,
     );
-    sendUpdate();
 }
 
 function sendNewRecord() {
     websocket.send("!regconfirm");
-    pushRecord(trialOptions.ndisks == 4 ? leaderboard1 : leaderboard2, trialOptions.name, score);
-    sendUpdate();
+    pushRecord(trialOptions.ndisks, trialOptions.name, score);
     switchScreen(1);
 }
 
@@ -409,7 +414,7 @@ function updateLeaderboard(id, leaderboard) {
         rank++;
     }
     if (leaderboard.length == 0) {
-        container.innerHTML = "<h2>empty</h2>";
+        container.innerHTML += "<h2>empty</h2>";
     }
     container.style.backgroundColor = "lightgreen";
     setTimeout(() => container.style.backgroundColor = "", 300);

@@ -435,6 +435,10 @@ function connectSocket(req: Request) {
             const leaderboards: Leaderboard[] = obj.leaderboards;
             leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
             await broadcastAndSaveData(leaderboards);
+
+            if ("highlight" in obj && obj.highlight !== null && "id" in obj.highlight && "name" in obj.highlight) {
+                broadcast(`!highlight-${JSON.stringify(obj.highlight)}`);
+            }
         }
     });
 
