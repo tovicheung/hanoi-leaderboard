@@ -101,6 +101,7 @@ async function setupKv() {
     for await (const entry of entries) {
         names.push(entry.key[1]);
     }
+
     if (names.length == 0) {
         await kv.set(["instances", "_default"], getDefaultInstance());
     }
@@ -109,13 +110,22 @@ async function setupKv() {
         await kv.set(["instanceName"], "_default");
     }
 
-    if ((await kv.get(["leaderboards"])).value === null) { // active .data
-        await kv.set(["leaderboards"], [[], []]);
+    if ((await kv.get(["leaderboards"])).value !== null) {
+        const name = (await kv.get(["instanceName"])).value;
+        await kv.set(["instances", name], {data: (await kv.get(["leaderboards"])).value, 
+            meta: {
+                timeLimits: {
+                    "leaderboard1": 3 * 60 * 1000,
+                    "leaderboard2": 4 * 60 * 1000,
+                },
+                theme: "demonslayer",
+            },});
+        await kv.delete(["leaderboards"]);
+        // await kv.set(["leaderboards"], [[], []]);
     }
 
-    if ((await kv.get(["meta"])).value === null) { // active .meta
-        const lb = <Lb>(await kv.get(["instances"])).value;
-        await kv.set(["meta"], lb.meta);
+    if ((await kv.get(["meta"])).value !== null) { // active .meta
+        await kv.delete(["meta"]);
     }
 }
 
@@ -129,12 +139,18 @@ function broadcast(msg: string) {
 }
 
 async function getData(): Promise<Leaderboard[]> {
-    return <Leaderboard[]>(await kv.get(["leaderboards"])).value;
+    const name = (await kv.get(["instanceName"])).value;
+    return <Leaderboard[]>(await kv.get(["instances", name])).value.data;
 }
 
 async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
     broadcast(JSON.stringify(leaderboards));
-    await kv.set(["leaderboards"], leaderboards);
+    const name = (await kv.get(["instanceName"])).value;
+    // temp
+    const temp = (await kv.get(["instances", name])).value;
+    temp.data = leaderboards;
+    await kv.set(["instances", name], temp);
+
 
     if (config.backupUrl == null) {
         return;
@@ -176,19 +192,21 @@ async function switchInstance(newInstance: string) {
     const newLb = (await kv.get(["instances", newInstance])).value;
     if (newLb === null) return;
 
-    const currentInstance = (await kv.get(["instanceName"])).value;
-    if (typeof currentInstance !== "string") {
-        return;
-    }
-    await kv.set(["instances", currentInstance], {
-        meta: (await kv.get(["meta"])).value,
-        data: (await kv.get(["leaderboards"])).value,
-    });
-    await kv.atomic()
-        .set(["instanceName"], newInstance)
-        .set(["leaderboards"], newLb.data)
-        .set(["meta"], newLb.meta)
-        .commit();
+    // const currentInstance = (await kv.get(["instanceName"])).value;
+    // if (typeof currentInstance !== "string") {
+    //     return;
+    // }
+    // await kv.set(["instances", currentInstance], {
+    //     meta: (await kv.get(["meta"])).value,
+    //     data: (await kv.get(["leaderboards"])).value,
+    // });
+    // await kv.atomic()
+    //     .set(["instanceName"], newInstance)
+    //     .set(["leaderboards"], newLb.data)
+    //     .set(["meta"], newLb.meta)
+    //     .commit();
+    
+    await kv.set(["instanceName"], newInstance);
 
     broadcast("!reload-all");
     getAdminSocket()?.send(`@meta:${JSON.stringify(await getMeta())}`);
@@ -558,7 +576,10 @@ async function handleApi(path: string, req: Request): Promise<Response> {
             }
         } else if (path == "/api/instance/import" && method == "POST") {
             if ("data" in body) {
-                await kv.set(["leaderboards"], body.data);
+                const name = (await kv.get(["instanceName"])).value;
+                const temp = (await kv.get(["instances", name])).value;
+                temp.data = body.data;
+                await kv.set(["instances", name], temp);
                 broadcast("!reload-all");
             }
         }
