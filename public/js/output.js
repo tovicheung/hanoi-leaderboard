@@ -524,10 +524,10 @@ function titleAnim(n) {
 }
 
 setInterval(() => titleAnim(1), 30000);
-setInterval(() => {
+setTimeout(() => {
     document.getElementById("setup").style.display = "none";
     document.body.style.cursor = "none";
-}, 8000);
+}, 10000);
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("title").innerText = title;

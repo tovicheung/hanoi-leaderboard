@@ -505,6 +505,34 @@ function connectSocket(req: Request) {
 
 // HTTPS
 
+function validateLeaderboardData(data: object): string | null {
+    if (!Array.isArray(data)) {
+        return "Data must be an array of leaderboards.";
+    }
+    if (data.length !== 2) {
+        return "Data must contain exactly 2 leaderboards.";
+    }
+    for (let i = 0; i < data.length; i++) {
+        const lb = data[i];
+        if (!Array.isArray(lb)) {
+            return `Leaderboard at index ${i} is not an array.`;
+        }
+        for (let j = 0; j < lb.length; j++) {
+            const record = lb[j];
+            if (typeof record !== "object" || record === null) {
+                return `Invalid record at leaderboard ${i} index ${j}.`;
+            }
+            if (typeof (record as any).name !== "string") {
+                return `Invalid name at leaderboard ${i} index ${j}.`;
+            }
+            if (typeof (record as any).score !== "number" || !Number.isFinite((record as any).score)) {
+                return `Invalid score at leaderboard ${i} index ${j}.`;
+            }
+        }
+    }
+    return null;
+}
+
 function httpsAuthAdmin(req: Request): Response | null {
     const authHeader = req.headers.get("Authorization");
 
@@ -557,8 +585,13 @@ async function handleApi(path: string, req: Request): Promise<Response> {
     const body = method == "GET" ? {} : await req.json();
 
     if (path == "/api/data" && method == "POST") {
-        // TODO: check structure
-        broadcastAndSaveData(body);
+        const issue = validateLeaderboardData(body);
+        if (issue !== null) {
+            return bad(issue);
+        }
+        // sort each leaderboard by score ascending
+        (body as any[]).forEach((l) => l.sort((a: any, b: any) => a.score - b.score));
+        await broadcastAndSaveData(body);
     } else if (path.startsWith("/api/instance")) {
         // grouped since admin has to be notified
 
@@ -691,16 +724,18 @@ Deno.serve(async (req) => {
         path = routes[path];
     } else if (path === "/ping") {
         return ok();
-    } else if (path === "/assets/bg") { // dynamic assets
-        const theme = (await getMeta()).theme;
-        if (theme === "gojo") {
-            path = "/assets/bg1.jpg";
-        } else if (theme === "demonslayer") {
-            path = "/assets/ds1.jpg"
-        }
-    } else if (path === "/css-output") { // dynamic assets
-        const theme = (await getMeta()).theme;
-        path = `/css-output/${theme}.css`;
+    } else if (path === "/assets/bg") { // dynamic assets (disabled for now)
+        path = "/assets/ds1.jpg";
+        // const theme = (await getMeta()).theme;
+        // if (theme === "gojo") {
+        //     path = "/assets/bg1.jpg";
+        // } else if (theme === "demonslayer") {
+        //     path = "/assets/ds1.jpg"
+        // }
+    } else if (path === "/css-output") { // dynamic assets (disabled for now)
+        path = "/css-output/demonslayer.css";
+        // const theme = (await getMeta()).theme;
+        // path = `/css-output/${theme}.css`;
     }
 
     if (minjs && path.startsWith("/js/")) {
