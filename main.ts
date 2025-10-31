@@ -76,6 +76,30 @@ interface LbRecord {
 
 type Leaderboard = LbRecord[];
 
+function getNewMeta() {
+    return {
+        timeLimits: {
+            "leaderboard1": 3 * 60 * 1000,
+            "leaderboard2": 4 * 60 * 1000,
+        },
+        theme: "demonslayer",
+    };
+}
+
+async function createInstance(name: string) {
+    if (await instanceExists(name)) return;
+
+    await kv.atomic()
+        .set(["instances", name, "data"], [[], []])
+        .set(["instances", name, "meta"], getNewMeta())
+        .commit();
+}
+
+async function instanceExists(name: string) {
+    const test = await kv.get(["instances", name, "meta"]);
+    return test.value !== null;
+}
+
 function getDefaultInstance() {
     return {
         meta: {
@@ -97,35 +121,23 @@ async function setupKv() {
     }
     
     const entries = kv.list({ prefix: ["instances"] });
-    const names = [];
     for await (const entry of entries) {
-        names.push(entry.key[1]);
+        if (entry.key.length == 2) {
+            const name = entry.key[1];
+            const temp = (await kv.get(["instances", name])).value;
+            await kv.set(["instances", name, "data"], temp.data);
+            await kv.set(["instances", name, "meta"], temp.meta);
+            await kv.delete(["instances", name]);
+            console.log("Converted", name);
+        }
     }
 
-    if (names.length == 0) {
-        await kv.set(["instances", "_default"], getDefaultInstance());
+    if ((await getAllInstanceNames()).length == 0) {
+        await createInstance("_default");
     }
     
     if ((await kv.get(["instanceName"])).value === null) {
         await kv.set(["instanceName"], "_default");
-    }
-
-    if ((await kv.get(["leaderboards"])).value !== null) {
-        const name = (await kv.get(["instanceName"])).value;
-        await kv.set(["instances", name], {data: (await kv.get(["leaderboards"])).value, 
-            meta: {
-                timeLimits: {
-                    "leaderboard1": 3 * 60 * 1000,
-                    "leaderboard2": 4 * 60 * 1000,
-                },
-                theme: "demonslayer",
-            },});
-        await kv.delete(["leaderboards"]);
-        // await kv.set(["leaderboards"], [[], []]);
-    }
-
-    if ((await kv.get(["meta"])).value !== null) { // active .meta
-        await kv.delete(["meta"]);
     }
 }
 
@@ -138,18 +150,44 @@ function broadcast(msg: string) {
     });
 }
 
+async function getActiveName(): Promise<string> {
+    return (await kv.get<string>(["instanceName"])).value!;
+}
+
+async function getMeta(): Promise<InstanceMeta> {
+    const name = await getActiveName();
+    return <InstanceMeta>(await kv.get(["instances", name, "meta"])).value;
+}
+
+async function setMeta(meta: InstanceMeta) {
+    const name = await getActiveName();
+    await kv.set(["instances", name, "meta"], meta);
+}
+
+async function editMeta(callback: (meta: InstanceMeta) => void | Promise<void>) {
+    const meta = await getMeta();
+    await callback(meta);
+    await setMeta(meta);
+    broadcast(`@meta:${JSON.stringify(meta)}`);
+}
+
+async function getTimeLimits(): Promise<object> {
+    return (await getMeta()).timeLimits;
+}
+
 async function getData(): Promise<Leaderboard[]> {
-    const name = (await kv.get(["instanceName"])).value;
-    return <Leaderboard[]>(await kv.get(["instances", name])).value.data;
+    const name = await getActiveName();
+    return <Leaderboard[]>(await kv.get(["instances", name, "data"])).value;
+}
+
+async function setData(leaderboards: Leaderboard[]) {
+    const name = await getActiveName();
+    await kv.set(["instances", name, "data"], leaderboards);
 }
 
 async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
     broadcast(JSON.stringify(leaderboards));
-    const name = (await kv.get(["instanceName"])).value;
-    // temp
-    const temp = (await kv.get(["instances", name])).value;
-    temp.data = leaderboards;
-    await kv.set(["instances", name], temp);
+    await setData(leaderboards);
 
 
     if (config.backupUrl == null) {
@@ -179,18 +217,22 @@ function adminSendServerConfig() {
         ?.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
 }
 
-async function getInstances() {
+async function getAllInstanceNames() {
     const entries = kv.list({ prefix: ["instances"] });
-    const names = [];
+    const names: string[] = [];
     for await (const entry of entries) {
-        names.push(entry.key[1]);
+        if (entry.key.length == 3 && entry.key[2] == "meta") {
+            const name = entry.key[1];
+            if (typeof name === "string") {
+                names.push(name);
+            }
+        }
     }
     return names;
 }
 
 async function switchInstance(newInstance: string) {
-    const newLb = (await kv.get(["instances", newInstance])).value;
-    if (newLb === null) return;
+    if (!await instanceExists(newInstance)) return;
 
     // const currentInstance = (await kv.get(["instanceName"])).value;
     // if (typeof currentInstance !== "string") {
@@ -209,14 +251,14 @@ async function switchInstance(newInstance: string) {
     await kv.set(["instanceName"], newInstance);
 
     broadcast("!reload-all");
-    getAdminSocket()?.send(`@meta:${JSON.stringify(await getMeta())}`);
+    // getAdminSocket()?.send(`@meta:${JSON.stringify(await getMeta())}`);
 }
 
 async function adminSendInstancesData() {
     getAdminSocket()
         ?.send(`ADMIN:INSTANCES:${JSON.stringify({
-            instances: await getInstances(),
-            current: (await kv.get(["instanceName"])).value,
+            instances: await getAllInstanceNames(),
+            current: await getActiveName(),
         })}`);
 }
 
@@ -268,14 +310,6 @@ async function authCheckToken(token: string) {
     if (typeof tok.value !== "number") return false; // invalid token
     if (Date.now() >= tok.value) return false; // expired
     return tok.value;
-}
-
-async function getMeta(): Promise<InstanceMeta> {
-    return (await kv.get(["meta"])).value as InstanceMeta;
-}
-
-async function getTimeLimits(): Promise<object> {
-    return (await getMeta()).timeLimits;
 }
 
 function connectSocket(req: Request) {
@@ -407,10 +441,10 @@ function connectSocket(req: Request) {
             const timeLimits = await getTimeLimits();
             timeLimits[id] = newTimeLimit;
 
-            const meta = await getMeta();
-            meta.timeLimits = timeLimits;
-            await kv.set(["meta"], meta);
-            broadcast(`@meta:${JSON.stringify(meta)}`);
+            await editMeta(meta => {
+                meta.timeLimits = timeLimits;
+            })
+            
             return;
         }
         
@@ -505,15 +539,11 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         const url = new URL(req.url);
         const name = url.searchParams.get("name");
         if (name) {
-            const inst = (await kv.get(["instances", name])).value;
-            if (inst === null) {
+            const data = (await kv.get(["instances", name, "data"])).value;
+            if (data === null) {
                 return bad("Instance does not exist.");
             }
-            if (typeof inst !== "object" || !("data" in inst)) {
-                // TODO: add similar checks all over the code
-                return bad("Invalid instance data.");
-            }
-            return new Response(JSON.stringify(inst.data), { status: 200 });
+            return new Response(JSON.stringify(data), { status: 200 });
         }
         return new Response(JSON.stringify(await getData()), { status: 200 });
     }
@@ -530,24 +560,34 @@ async function handleApi(path: string, req: Request): Promise<Response> {
         // TODO: check structure
         broadcastAndSaveData(body);
     } else if (path.startsWith("/api/instance")) {
+        // grouped since admin has to be notified
+
         if (path == "/api/instance/create" && method == "POST") {
             if ("name" in body && typeof body.name == "string") {
-                const name = body.name;
-                if (name.length == 0) return bad("String is empty.");
-                if ((await kv.get(["instances", name])).value !== null) return bad("Name is already in use.");
-                await kv.set(["instances", name], getDefaultInstance());
+                if (body.name.length == 0) {
+                    return bad("String is empty.");
+                }
+                if (await instanceExists(body.name)) {
+                    return bad("Name is already in use.");
+                }
+                await createInstance(body.name);
             }
         } else if (path == "/api/instance/switch" && method == "POST") {
             if ("name" in body && typeof body.name == "string") {
-                const name = body.name;
-                await switchInstance(name);
+                await switchInstance(body.name);
             }
         } else if (path == "/api/instance/delete" && (method == "POST" || method == "DELETE")) {
             if ("name" in body && typeof body.name == "string") {
-                const name = body.name;
-                if (name == (await kv.get(["instanceName"])).value) return bad("Cannot be current instance.");
-                if ((await kv.get(["instances", name])).value === null) return bad("Instance does not exist.");
-                await kv.delete(["instances", name]);
+                if (body.name == await getActiveName()) {
+                    return bad("Active instance cannot be deleted.");
+                }
+                if (!await instanceExists(body.name)) {
+                    return bad("Instance does not exist.");
+                }
+
+                // TODO: atomicity
+                await kv.delete(["instances", name, "meta"]);
+                await kv.delete(["instances", name, "data"]);
             }
         } else if (path == "/api/instance/clone" && method == "POST") {
             if ("from" in body && typeof body.from == "string" && "to" in body && typeof body.to == "string") {
@@ -556,34 +596,29 @@ async function handleApi(path: string, req: Request): Promise<Response> {
                 if (from.length == 0) {
                     return bad("Name (from) is empty.");
                 }
-                if (from.length == 0) {
+                if (to.length == 0) {
                     return bad("Name (to) is empty.");
                 }
-                if ((await kv.get(["instances", from])).value === null) {
-                    return bad("Source name does not exist.");
+                if (!await instanceExists(from)) {
+                    return bad("Source instance does not exist.");
                 }
-                if ((await kv.get(["instances", to])).value !== null) {
-                    return bad("New name is already in use.");
+                if (await instanceExists(to)) {
+                    return bad("Target name is already in use.");
                 }
-                if (from == (await kv.get(["instanceName"])).value) {
-                    await kv.set(["instances", to], {
-                        meta: await getMeta(),
-                        data: await getData(),
-                    });
-                } else {
-                    await kv.set(["instances", to], (await kv.get(["instances", from])).value);
-                }
+
+                // TODO: apply checks and atomicity
+
+                await kv.set(["instances", to, "meta"], (await kv.get(["instances", from, "meta"])).value);
+                await kv.set(["instances", to, "data"], (await kv.get(["instances", from, "data"])).value);
             }
         } else if (path == "/api/instance/import" && method == "POST") {
             if ("data" in body) {
-                const name = (await kv.get(["instanceName"])).value;
-                const temp = (await kv.get(["instances", name])).value;
-                temp.data = body.data;
-                await kv.set(["instances", name], temp);
+                await setData(body.data);
                 broadcast("!reload-all");
             }
         }
         await adminSendInstancesData();
+    
     } else if (path == "/api/config/update" && method == "POST") {
         for (const fieldName in config) {
             if (fieldName in body) {
