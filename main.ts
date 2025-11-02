@@ -1,4 +1,5 @@
-// SOCKET
+import { Hono, Context, Next } from "@hono/hono";
+import { serveStatic } from "@hono/hono/deno";
 
 type Auth = { type: "none" }
     | { type: "admin" }
@@ -26,19 +27,19 @@ interface Config {
     parentUrl: string | null, // unused for now
 }
 
-interface InstanceMeta {
-    timeLimits: object,
-    theme: string,
+interface TimeLimits {
+    leaderboard1: number,
+    leaderboard2: number,
 }
 
-interface Lb {
-    meta: InstanceMeta,
-    data: Leaderboard[],
+interface InstanceMeta {
+    timeLimits: TimeLimits,
+    theme: string,
 }
 
 const DEFAULT_CONFIG: Config = {
     inputAccess: "restricted",
-    outputAccess: "everyone",
+    outputAccess: "everyone", // unused
     backupUrl: null,
     parentUrl: null,
 }
@@ -76,60 +77,11 @@ interface LbRecord {
 
 type Leaderboard = LbRecord[];
 
-function getNewMeta() {
-    return {
-        timeLimits: {
-            "leaderboard1": 3 * 60 * 1000,
-            "leaderboard2": 4 * 60 * 1000,
-        },
-        theme: "demonslayer",
-    };
-}
-
-async function createInstance(name: string) {
-    if (await instanceExists(name)) return;
-
-    await kv.atomic()
-        .set(["instances", name, "data"], [[], []])
-        .set(["instances", name, "meta"], getNewMeta())
-        .commit();
-}
-
-async function instanceExists(name: string) {
-    const test = await kv.get(["instances", name, "meta"]);
-    return test.value !== null;
-}
-
-function getDefaultInstance() {
-    return {
-        meta: {
-            timeLimits: {
-                "leaderboard1": 3 * 60 * 1000,
-                "leaderboard2": 4 * 60 * 1000,
-            },
-            theme: "demonslayer",
-        },
-        data: [[], []]
-    };
-}
-
 async function setupKv() {
     let config = (await kv.get(["config"])).value;
     if (config === null) {
         config = structuredClone(DEFAULT_CONFIG);
         await kv.set(["config"], config);
-    }
-    
-    const entries = kv.list({ prefix: ["instances"] });
-    for await (const entry of entries) {
-        if (entry.key.length == 2) {
-            const name = entry.key[1];
-            const temp = (await kv.get(["instances", name])).value;
-            await kv.set(["instances", name, "data"], temp.data);
-            await kv.set(["instances", name, "meta"], temp.meta);
-            await kv.delete(["instances", name]);
-            console.log("Converted", name);
-        }
     }
 
     if ((await getAllInstanceNames()).length == 0) {
@@ -143,78 +95,25 @@ async function setupKv() {
 
 await setupKv();
 
-function broadcast(msg: string) {
-    clients.forEach(c => {
-        if (c.socket.readyState == c.socket.CLOSED) return;
-        c.socket.send(msg);
-    });
-}
-
-async function getActiveName(): Promise<string> {
-    return (await kv.get<string>(["instanceName"])).value!;
-}
-
-async function getMeta(): Promise<InstanceMeta> {
-    const name = await getActiveName();
-    return <InstanceMeta>(await kv.get(["instances", name, "meta"])).value;
-}
-
-async function setMeta(meta: InstanceMeta) {
-    const name = await getActiveName();
-    await kv.set(["instances", name, "meta"], meta);
-}
-
-async function editMeta(callback: (meta: InstanceMeta) => void | Promise<void>) {
-    const meta = await getMeta();
-    await callback(meta);
-    await setMeta(meta);
-    broadcast(`@meta:${JSON.stringify(meta)}`);
-}
-
-async function getTimeLimits(): Promise<object> {
-    return (await getMeta()).timeLimits;
-}
-
-async function getData(): Promise<Leaderboard[]> {
-    const name = await getActiveName();
-    return <Leaderboard[]>(await kv.get(["instances", name, "data"])).value;
-}
-
-async function setData(leaderboards: Leaderboard[]) {
-    const name = await getActiveName();
-    await kv.set(["instances", name, "data"], leaderboards);
-}
-
-async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
-    broadcast(JSON.stringify(leaderboards));
-    await setData(leaderboards);
-
-
-    if (config.backupUrl == null) {
-        return;
-    }
-
-    const admin = Deno.env.get("ADMIN");
-
-    await fetch(config.backupUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${admin}`
+function getNewMeta() {
+    return {
+        timeLimits: {
+            "leaderboard1": 3 * 60 * 1000,
+            "leaderboard2": 4 * 60 * 1000,
         },
-        body: JSON.stringify(leaderboards),
-    });
+        theme: "demonslayer",
+    };
 }
 
-function getAdminSocket(): WebSocket | null {
-    if (adminId === null) return null;
-    if (!clients.has(adminId)) return null;
-    return clients.get(adminId)!.socket;
-}
+// INSTANCE HELPERS
 
-function adminSendServerConfig() {
-    getAdminSocket()
-        ?.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
+async function createInstance(name: string) {
+    if (await instanceExists(name)) return;
+
+    await kv.atomic()
+        .set(["instances", name, "data"], [[], []])
+        .set(["instances", name, "meta"], getNewMeta())
+        .commit();
 }
 
 async function getAllInstanceNames() {
@@ -254,6 +153,87 @@ async function switchInstance(newInstance: string) {
     // getAdminSocket()?.send(`@meta:${JSON.stringify(await getMeta())}`);
 }
 
+async function instanceExists(name: string) {
+    const test = await kv.get(["instances", name, "meta"]);
+    return test.value !== null;
+}
+
+async function getActiveName(): Promise<string> {
+    return (await kv.get<string>(["instanceName"])).value!;
+}
+
+async function getMeta(): Promise<InstanceMeta> {
+    const name = await getActiveName();
+    return <InstanceMeta>(await kv.get(["instances", name, "meta"])).value;
+}
+
+async function setMeta(meta: InstanceMeta) {
+    const name = await getActiveName();
+    await kv.set(["instances", name, "meta"], meta);
+}
+
+async function editMeta(callback: (meta: InstanceMeta) => void | Promise<void>) {
+    const meta = await getMeta();
+    await callback(meta);
+    await setMeta(meta);
+    broadcast(`@meta:${JSON.stringify(meta)}`);
+}
+
+async function getTimeLimits(): Promise<TimeLimits> {
+    return (await getMeta()).timeLimits;
+}
+
+async function getData(): Promise<Leaderboard[]> {
+    const name = await getActiveName();
+    return <Leaderboard[]>(await kv.get(["instances", name, "data"])).value;
+}
+
+async function setData(leaderboards: Leaderboard[]) {
+    const name = await getActiveName();
+    await kv.set(["instances", name, "data"], leaderboards);
+}
+
+// SOCKET HELPERS
+
+function broadcast(msg: string) {
+    clients.forEach(c => {
+        if (c.socket.readyState == c.socket.CLOSED) return;
+        c.socket.send(msg);
+    });
+}
+
+async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
+    broadcast(JSON.stringify(leaderboards));
+    await setData(leaderboards);
+
+
+    if (config.backupUrl == null) {
+        return;
+    }
+
+    const admin = Deno.env.get("ADMIN");
+
+    await fetch(config.backupUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${admin}`
+        },
+        body: JSON.stringify(leaderboards),
+    });
+}
+
+function getAdminSocket(): WebSocket | null {
+    if (adminId === null) return null;
+    if (!clients.has(adminId)) return null;
+    return clients.get(adminId)!.socket;
+}
+
+function adminSendServerConfig() {
+    getAdminSocket()
+        ?.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
+}
+
 async function adminSendInstancesData() {
     getAdminSocket()
         ?.send(`ADMIN:INSTANCES:${JSON.stringify({
@@ -264,47 +244,39 @@ async function adminSendInstancesData() {
 
 function adminSendClientsData() {
     const data = [];
-    for (const id of clients.keys()) {
+    for (const [id, client] of clients.entries()) {
         data.push({
-            id: id,
-            ...clients.get(id),
+            id,
+            connectTimestamp: client.connectTimestamp,
+            role: client.role,
+            auth: client.auth,
+            userAgent: client.userAgent,
         });
     }
     getAdminSocket()
         ?.send(`ADMIN:CLIENTS:${JSON.stringify(data)}`);
 }
 
-async function getAccessData() {
+type TokensData = Record<string, number>;
+
+async function getTokensData(): Promise<TokensData> {
     const entries = kv.list({ prefix: ["tokens"] });
-    const result: any = {};
+    const result: TokensData = {};
     for await (const entry of entries) {
         const token = entry.key[1];
         if (typeof token !== "string") continue;
-        const expireIn = entry.value;
+        const expireIn = <number>entry.value;
         result[token] = expireIn;
     }
     return result;
 }
-
-// async function adminSendAccessData() {
-//     const entries = await kv.list({ prefix: ["tokens"] });
-//     const result: any = {};
-//     for await (const entry of entries) {
-//         const token = entry.key[1];
-//         if (typeof token !== "string") continue;
-//         const expireIn = entry.value;
-//         result[token] = expireIn;
-//     }
-//     getAdminSocket()
-//         ?.send(`ADMIN:ACCESS:${JSON.stringify(result)}`);
-// }
 
 function adminCreateToken(token: string, expireIn: number) {
     const timedelta = expireIn - Date.now();
     kv.set(["tokens", token], expireIn, { expireIn: timedelta });
 }
 
-async function authCheckToken(token: string) {
+async function authCheckToken(token: string): Promise<number | false> {
     const tok = await kv.get(["tokens", token]);
     if (tok.value === null) return false;
     if (typeof tok.value !== "number") return false; // invalid token
@@ -433,7 +405,8 @@ function connectSocket(req: Request) {
             const parts = event.data.split(":");
             if (parts.length != 3) return;
 
-            const id = parts[1];
+            // extremely ugly code but whatever
+            const id = <"leaderboard1" | "leaderboard2">parts[1];
 
             const newTimeLimit = parseInt(parts[2]);
             if (isNaN(newTimeLimit)) return;
@@ -471,10 +444,6 @@ function connectSocket(req: Request) {
         }
         if (event.data == "refresh") {
             socket.send(JSON.stringify(leaderboards));
-            return;
-        }
-        if (event.data == "clear") {
-            await broadcastAndSaveData([[], []]);
             return;
         }
         let obj;
@@ -533,171 +502,226 @@ function validateLeaderboardData(data: object): string | null {
     return null;
 }
 
-function httpsAuthAdmin(req: Request): Response | null {
-    const authHeader = req.headers.get("Authorization");
+function bad(c: Context, msg: string | null = null) {
+    if (msg === null) {
+        return c.text("Invalid API call", 400);
+    }
+    return c.text(`Invalid API call: ${msg}`, 400);
+}
 
+function ok(c: Context) {
+    return c.text("Done", 200);
+}
+
+const app = new Hono();
+
+// auth middleware
+const adminAuth = async (c: Context, next: Next) => {
+    const authHeader = c.req.header("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response("Unauthorized: Missing or invalid Authorization header.", { status: 401 });
+        return c.body("Unauthorized: Missing or invalid Authorization header.", 401);
     }
 
     const token = authHeader.split(" ")[1];
 
     if (token !== Deno.env.get("ADMIN")) {
-        return new Response("Unauthorized: Invalid token.", { status: 401 });
+        return c.body("Unauthorized: Invalid token.", 401);
     }
 
-    return null;
-}
+    await next(); // auth ok
+};
 
-function bad(msg: string | null = null) {
-    if (msg === null) {
-        return new Response("Invalid API call", { status: 400 });
-    }
-    return new Response(`Invalid API call: ${msg}`, { status: 400 });
-}
-
-function ok() {
-    return new Response("Done", { status: 200 });
-}
-
-async function handleApi(path: string, req: Request): Promise<Response> {
-    const method = req.method;
-    
-    if (path == "/api/data" && method == "GET") {
-        const url = new URL(req.url);
-        const name = url.searchParams.get("name");
-        if (name) {
-            const data = (await kv.get(["instances", name, "data"])).value;
-            if (data === null) {
-                return bad("Instance does not exist.");
-            }
-            return new Response(JSON.stringify(data), { status: 200 });
+app.get("/api/data", async (c) => {
+    const name = c.req.query("name");
+    if (name) {
+        const data = (await kv.get(["instances", name, "data"])).value;
+        if (data === null) {
+            return bad(c, "Instance does not exist.");
         }
-        return new Response(JSON.stringify(await getData()), { status: 200 });
+        return c.json(data);
     }
+    return c.json(await getData());
+});
 
-    // admin territory below
-
-    const resp = httpsAuthAdmin(req);
-    if (resp !== null) {
-        return resp;
+app.post("/api/data", adminAuth, async (c) => {
+    const body = await c.req.json();
+    const issue = validateLeaderboardData(body);
+    if (issue !== null) {
+        return bad(c, issue);
     }
-    const body = method == "GET" ? {} : await req.json();
+    (body as LbRecord[][]).forEach((l) => l.sort((a, b) => a.score - b.score));
+    await broadcastAndSaveData(body);
+    return ok(c);
+});
 
-    if (path == "/api/data" && method == "POST") {
-        const issue = validateLeaderboardData(body);
-        if (issue !== null) {
-            return bad(issue);
+app.post("/api/instance/create", adminAuth, async (c) => {
+    const body = await c.req.json();
+    if ("name" in body && typeof body.name == "string") {
+        if (body.name.length == 0) {
+            return bad(c, "String is empty.");
         }
-        // sort each leaderboard by score ascending
-        (body as any[]).forEach((l) => l.sort((a: any, b: any) => a.score - b.score));
-        await broadcastAndSaveData(body);
-    } else if (path.startsWith("/api/instance")) {
-        // grouped since admin has to be notified
-
-        if (path == "/api/instance/create" && method == "POST") {
-            if ("name" in body && typeof body.name == "string") {
-                if (body.name.length == 0) {
-                    return bad("String is empty.");
-                }
-                if (await instanceExists(body.name)) {
-                    return bad("Name is already in use.");
-                }
-                await createInstance(body.name);
-            }
-        } else if (path == "/api/instance/switch" && method == "POST") {
-            if ("name" in body && typeof body.name == "string") {
-                await switchInstance(body.name);
-            }
-        } else if (path == "/api/instance/delete" && (method == "POST" || method == "DELETE")) {
-            if ("name" in body && typeof body.name == "string") {
-                if (body.name == await getActiveName()) {
-                    return bad("Active instance cannot be deleted.");
-                }
-                if (!await instanceExists(body.name)) {
-                    return bad("Instance does not exist.");
-                }
-
-                // TODO: atomicity
-                await kv.delete(["instances", name, "meta"]);
-                await kv.delete(["instances", name, "data"]);
-            }
-        } else if (path == "/api/instance/clone" && method == "POST") {
-            if ("from" in body && typeof body.from == "string" && "to" in body && typeof body.to == "string") {
-                const from = body.from;
-                const to = body.to;
-                if (from.length == 0) {
-                    return bad("Name (from) is empty.");
-                }
-                if (to.length == 0) {
-                    return bad("Name (to) is empty.");
-                }
-                if (!await instanceExists(from)) {
-                    return bad("Source instance does not exist.");
-                }
-                if (await instanceExists(to)) {
-                    return bad("Target name is already in use.");
-                }
-
-                // TODO: apply checks and atomicity
-
-                await kv.set(["instances", to, "meta"], (await kv.get(["instances", from, "meta"])).value);
-                await kv.set(["instances", to, "data"], (await kv.get(["instances", from, "data"])).value);
-            }
-        } else if (path == "/api/instance/import" && method == "POST") {
-            if ("data" in body) {
-                await setData(body.data);
-                broadcast("!reload-all");
-            }
+        if (await instanceExists(body.name)) {
+            return bad(c, "Name is already in use.");
         }
+        await createInstance(body.name);
         await adminSendInstancesData();
-    
-    } else if (path == "/api/config/update" && method == "POST") {
-        for (const fieldName in config) {
-            if (fieldName in body) {
-                // @ts-ignore :)
-                config[fieldName] = body[fieldName];
-            }
-        }
-        await kv.set(["config"], config);
-        adminSendServerConfig();
-    } else if (path == "/api/token/create" && method == "POST") {
-        const { token, expireIn } = body;
-        if (typeof token !== "string") return bad("Invalid token name.");
-        if (typeof expireIn !== "number") return bad("Invalid expiry.");
-        if (token.length < 4) return bad("Tokens must be at least 4 characters long.");
-        adminCreateToken(token, expireIn);
-    } else if (path == "/api/token/modify" && method == "POST") {
-        const { token, expireIn } = body;
-        if (typeof token !== "string") {
-            return bad("Invalid token name.");
-        }
-        if (typeof expireIn !== "number") {
-            return bad("Invalid expiry.");
-        }
-        if ((await kv.get(["tokens", token])).value === null) {
-            return bad("Token does not exist.");
-        }
-        await kv.delete(["tokens", token]);
-        adminCreateToken(token, expireIn);
-    } else if (path == "/api/token/delete" && (method == "POST" || method == "DELETE")) {
-        const { token } = body;
-        if (typeof token !== "string") {
-            return bad("Invalid token name.");
-        }
-        if ((await kv.get(["tokens", token])).value === null) {
-            return bad("Token does not exist.");
-        }
-        await kv.delete(["tokens", token]);
-    } else if (path == "/api/token" && method == "GET") {
-        return new Response(JSON.stringify(await getAccessData()), { status: 200 });
-    } else {
-        return bad("Unknown method");
+        return ok(c);
     }
-    return ok();
-}
+    return bad(c, "Invalid request body.");
+});
 
-const minjs = Deno.env.get("NO_MIN") === undefined;
+app.post("/api/instance/switch", adminAuth, async (c) => {
+    const body = await c.req.json();
+    if ("name" in body && typeof body.name == "string") {
+        await switchInstance(body.name);
+        await adminSendInstancesData();
+        return ok(c);
+    }
+    return bad(c, "Invalid request body.");
+});
+
+app.delete("/api/instance/delete", adminAuth, async (c) => {
+    const body = await c.req.json();
+    if ("name" in body && typeof body.name == "string") {
+        if (body.name == await getActiveName()) {
+            return bad(c, "Active instance cannot be deleted.");
+        }
+        if (!await instanceExists(body.name)) {
+            return bad(c, "Instance does not exist.");
+        }
+        await kv.delete(["instances", body.name, "meta"]);
+        await kv.delete(["instances", body.name, "data"]);
+        await adminSendInstancesData();
+        return ok(c);
+    }
+    return bad(c, "Invalid request body.");
+});
+
+app.post("/api/instance/clone", adminAuth, async (c) => {
+    const body = await c.req.json();
+    if ("from" in body && typeof body.from == "string" && "to" in body && typeof body.to == "string") {
+        const from = body.from;
+        const to = body.to;
+        if (from.length == 0) {
+            return bad(c, "Name (from) is empty.");
+        }
+        if (to.length == 0) {
+            return bad(c, "Name (to) is empty.");
+        }
+        if (!await instanceExists(from)) {
+            return bad(c, "Source instance does not exist.");
+        }
+        if (await instanceExists(to)) {
+            return bad(c, "Target name is already in use.");
+        }
+        await kv.set(["instances", to, "meta"], (await kv.get(["instances", from, "meta"])).value);
+        await kv.set(["instances", to, "data"], (await kv.get(["instances", from, "data"])).value);
+        await adminSendInstancesData();
+        return ok(c);
+    }
+    return bad(c, "Invalid request body.");
+});
+
+app.post("/api/instance/import", adminAuth, async (c) => {
+    const body = await c.req.json();
+    if ("data" in body) {
+        await setData(body.data);
+        broadcast("!reload-all");
+        await adminSendInstancesData();
+        return ok(c);
+    }
+    return bad(c, "Invalid request body.");
+});
+
+app.post("/api/config/update", adminAuth, async (c) => {
+    const body = await c.req.json();
+    for (const fieldName in config) {
+        if (fieldName in body) {
+            // @ts-ignore
+            config[fieldName] = body[fieldName];
+        }
+    }
+    await kv.set(["config"], config);
+    adminSendServerConfig();
+    return ok(c);
+});
+
+app.post("/api/token/create", adminAuth, async (c) => {
+    const { token, expireIn } = await c.req.json();
+    if (typeof token !== "string") {
+        return bad(c, "Invalid token name.");
+    }
+    if (typeof expireIn !== "number") {
+        return bad(c, "Invalid expiry.");
+    }
+    if (token.length < 4) {
+        return bad(c, "Tokens must be at least 4 characters long.");
+    }
+    adminCreateToken(token, expireIn);
+    return ok(c);
+});
+
+app.post("/api/token/modify", adminAuth, async (c) => {
+    const { token, expireIn } = await c.req.json();
+    if (typeof token !== "string") {
+        return bad(c, "Invalid token name.");
+    }
+    if (typeof expireIn !== "number") {
+        return bad(c, "Invalid expiry.");
+    }
+    if ((await kv.get(["tokens", token])).value === null) {
+        return bad(c, "Token does not exist.");
+    }
+    await kv.delete(["tokens", token]);
+    adminCreateToken(token, expireIn);
+    return ok(c);
+});
+
+app.delete("/api/token/delete", adminAuth, async (c) => {
+    const { token } = await c.req.json();
+    if (typeof token !== "string") {
+        return bad(c, "Invalid token name.");
+    }
+    if ((await kv.get(["tokens", token])).value === null) {
+        return bad(c, "Token does not exist.");
+    }
+    await kv.delete(["tokens", token]);
+    return ok(c);
+});
+
+app.get("/api/token", adminAuth, async (c) => {
+    return c.json(await getTokensData());
+});
+
+app.get("/ping", (c) => {
+    return ok(c);
+});
+
+app.get("/assets/bg", async (c) => {
+    const filePath = Deno.cwd() + "/public/assets/ds1.jpg"; // temp hard code
+    try {
+        const file = await Deno.open(filePath);
+        return c.body(file.readable);
+    } catch {
+        return c.notFound();
+    }
+});
+
+app.get("/css-output", async (c) => {
+    const filePath = Deno.cwd() + "/public/css-output/demonslayer.css"; // temp hard code
+    try {
+        const file = await Deno.open(filePath);
+        return c.body(file.readable, 200, { 'Content-Type': 'text/css' });
+    } catch {
+        return c.notFound();
+    }
+});
+
+app.get("/ws", (c: Context) => {
+    return connectSocket(c.req.raw); // raw request object
+});
+
+const MIN_JS = Deno.env.get("NO_MIN") === undefined;
 
 const routes: Record<string, string> = {
     "/": "/index.html",
@@ -708,50 +732,23 @@ const routes: Record<string, string> = {
     "/admin2": "/admin2.html",
 };
 
-Deno.serve(async (req) => {
-    let path = (new URL(req.url)).pathname;
-    // console.log("request to path:", path);
+app.use(
+    serveStatic({
+        root: "./public",
+        rewriteRequestPath: (path) => {
+            if (path in routes) {
+                path = routes[path];
+            }
+            if (MIN_JS && path.startsWith("/js/") && path.endsWith(".js")) {
+                path = path.replace("/js/", "/js-min/").replace(".js", ".min.js");
+            }
+            return path;
+        },
+    })
+);
 
-    if (path.startsWith("/api")) {
-        return await handleApi(path, req);
-    }
-
-    if (path === "/ws") {
-        if (req.headers.get("upgrade") == "websocket") {
-            return connectSocket(req);
-        }
-    } else if (path in routes) {
-        path = routes[path];
-    } else if (path === "/ping") {
-        return ok();
-    } else if (path === "/assets/bg") { // dynamic assets (disabled for now)
-        path = "/assets/ds1.jpg";
-        // const theme = (await getMeta()).theme;
-        // if (theme === "gojo") {
-        //     path = "/assets/bg1.jpg";
-        // } else if (theme === "demonslayer") {
-        //     path = "/assets/ds1.jpg"
-        // }
-    } else if (path === "/css-output") { // dynamic assets (disabled for now)
-        path = "/css-output/demonslayer.css";
-        // const theme = (await getMeta()).theme;
-        // path = `/css-output/${theme}.css`;
-    }
-
-    if (minjs && path.startsWith("/js/")) {
-        path = path.replace("/js/", "/js-min/").replace(".js", ".min.js");
-    }
-
-    try {
-        const filePath = Deno.cwd() + "/public" + path;
-        const fileInfo = await Deno.stat(filePath);
-        if (fileInfo.isDirectory) {
-            return new Response("Not Found", { status: 404 });
-        }
-        const file = await Deno.open(filePath);
-        return new Response(file.readable);
-    } catch {
-        // console.error(`Error serving file ${path}:`, e);
-        return new Response("Not Found", { status: 404 });
-    }
+app.notFound((c) => {
+    return c.text("Not Found", 404);
 });
+
+Deno.serve(app.fetch);
