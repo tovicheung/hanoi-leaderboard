@@ -318,7 +318,7 @@ function connectSocket(req: Request) {
         // console.log(`received from ${clientId}`)
         // console.log(event.data);
 
-        // for easy local development
+        // for easier local development
         const fastpass = event.data == "ADMIN:TEST" && Deno.env.get("TEST") !== undefined;
         
         if (event.data == "ADMIN:TEST" && !fastpass) {
