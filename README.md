@@ -10,6 +10,16 @@ Public functions
 
 The following admin functions require a bearer token.
 
+* POST `/api/data`
+
+    Returns the live JSON data.
+    ```json
+    [
+        [ /* leaderboard 1 */ ],
+        [ /* leaderboard 2 */ ]
+    ]
+    ```
+
 * POST `/api/instance/create`
     
     Create a new instance.
