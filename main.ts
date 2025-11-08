@@ -1,5 +1,6 @@
 import { Hono, Context, Next } from "@hono/hono";
 import { serveStatic } from "@hono/hono/deno";
+import { cache } from "@hono/hono/cache";
 
 type Auth = { type: "none" }
     | { type: "admin" }
@@ -743,6 +744,11 @@ app.use(
                 path = path.replace("/js/", "/js-min/").replace(".js", ".min.js");
             }
             return path;
+        },
+        onFound: (path, ctx) => {
+            if (path.includes("assets") && path.includes("static")) {
+                ctx.header("Cache-Control", "public, max-age=86400");
+            }
         },
     })
 );

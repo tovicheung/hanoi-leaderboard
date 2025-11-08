@@ -1,13 +1,24 @@
-<title>Hanoi Output</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200..800&display=swap" rel="stylesheet">
-<link rel="preload" href="/assets/bg" as="image">
-<link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/css-output">
+<html>
+<head>
+    <title>Hanoi Output</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!--
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap">
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200..800&display=swap" rel="stylesheet">
+    <link rel="preload" href="/assets/bg" as="image">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/css-output">
+
+    <link rel="preload" href="/assets/static/gold.png" as="image">
+    <link rel="preload" href="/assets/static/silver.png" as="image">
+    <link rel="preload" href="/assets/static/bronze.png" as="image">
+    <img src="/assets/static/gold.png" alt="" style="display: none" loading="eager" decoding="sync">
+    <img src="/assets/static/silver.png" alt="" style="display: none" loading="eager" decoding="sync">
+    <img src="/assets/static/bronze.png" alt="" style="display: none" loading="eager" decoding="sync">
 
 <style>
     @font-face {
@@ -15,7 +26,7 @@
         /* src: url("/assets/bloodcrowc.woff2") format("woff2"),
             url("/assets/bloodcrowc.woff") format("woff"),
             url("/assets/bloodcrowc.ttf") format("truetype"); */
-        src: url("/assets/bloodcrow.ttf") format("truetype");
+        src: url("/assets/static/bloodcrow.ttf") format("truetype");
         font-weight: normal;
         font-style: normal;
         font-display: swap; 
@@ -363,59 +374,62 @@
         transition: background-position-x 0s; 
         }
 </style>
-
-<div id="container">
-    <h1 id="title"></h1>
-    <h1 id="announcement" class="hidden">Announcement</h1>
-    <div id="lbs-gojo" class="leaderboards">
-        <div id="leaderboard1" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
-        <div id="leaderboard2" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
-    </div>
-    <div id="lbs-demonslayer" class="leaderboards lbs">
-        <div id="lb-4" class="lb">
-            <div class="lb-header">4 disks</div>
-            <div class="lb-top">
+</head>
+<body>
+    <div id="container">
+        <h1 id="title"></h1>
+        <h1 id="announcement" class="hidden">Announcement</h1>
+        <div id="lbs-gojo" class="leaderboards">
+            <div id="leaderboard1" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
+            <div id="leaderboard2" class="leaderboard"><h2 class="header">Connecting to server ...</h2></div>
+        </div>
+        <div id="lbs-demonslayer" class="leaderboards lbs">
+            <div id="lb-4" class="lb">
+                <div class="lb-header">4 disks</div>
+                <div class="lb-top">
+                </div>
+                <div class="lb-bottom-outer">
+                <div class="lb-scroll">
+                    <div class="lb-bottom"></div>
+                </div>
+                </div>
             </div>
-            <div class="lb-bottom-outer">
-            <div class="lb-scroll">
-                <div class="lb-bottom"></div>
-            </div>
+            <div id="lb-5" class="lb">
+                <div class="lb-header">5 disks</div>
+                <div class="lb-top">
+                </div>
+                <div class="lb-bottom-outer">
+                <div class="lb-scroll">
+                    <div class="lb-bottom"></div>
+                </div>
+                </div>
             </div>
         </div>
-        <div id="lb-5" class="lb">
-            <div class="lb-header">5 disks</div>
-            <div class="lb-top">
-            </div>
-            <div class="lb-bottom-outer">
-            <div class="lb-scroll">
-                <div class="lb-bottom"></div>
-            </div>
-            </div>
+        <div style="flex-grow: 2;"></div>
+    </div>
+
+    <div id="setup">
+        <button id="setup-fullscreen">Fullscreen</button>
+    </div>
+
+    <div id="loading">
+        <div id="loading-inner">
+            Connecting ...
         </div>
     </div>
-    <div style="flex-grow: 2;"></div>
-</div>
 
-<div id="setup">
-    <button id="setup-fullscreen">Fullscreen</button>
-</div>
+    <div id="overlay"></div>
 
-<div id="loading">
-    <div id="loading-inner">
-        Connecting ...
+    <div id="banner">
+        <h2>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;</h2>
+        <span id="banner-name"></span>
+        <div style="position: relative">
+            <img src="assets/nahidwin.png" style="width: 120px; transform: translateY(-90%); position: absolute;">
+        </div>
+        <div style="flex-grow: 2;"></div>
+        <h2 id="banner-time">Waiting to start</h2><span id="dots"></span>
     </div>
-</div>
 
-<div id="overlay"></div>
-
-<div id="banner">
-    <h2>Challenger (<span id="banner-ndisks"></span> disks) :&nbsp;&nbsp;&nbsp;</h2>
-    <span id="banner-name"></span>
-    <div style="position: relative">
-        <img src="assets/nahidwin.png" style="width: 120px; transform: translateY(-90%); position: absolute;">
-    </div>
-    <div style="flex-grow: 2;"></div>
-    <h2 id="banner-time">Waiting to start</h2><span id="dots"></span>
-</div>
-
-<script src="js/output.js"></script>
+    <script src="js/output.js"></script>
+</body>
+</html>
