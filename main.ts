@@ -95,7 +95,6 @@ async function setupKv() {
     }
 
     for (const name of await getAllInstanceNames()) {
-        console.log("checking", name);
         const data = (await kv.get(["instances", name, "data"])).value;
         if (Array.isArray(data)) {
             console.log("fixed data of", name);
@@ -109,6 +108,8 @@ async function setupKv() {
             console.log("fixed meta of", name);
             meta.timeLimits.lb4 = meta.timeLimits.leaderboard1;
             meta.timeLimits.lb5 = meta.timeLimits.leaderboard2;
+            delete meta.timeLimits.leaderboard1;
+            delete meta.timeLimits.leaderboard2;
             await kv.set(["instances", name, "meta"], meta);
         }
     }
@@ -501,7 +502,7 @@ function connectSocket(req: Request) {
 
 // HTTPS
 
-function validateLeaderboardData(data: any): string | null {
+function validateHanoiData(data: any): string | null {
     if (!("lb4" in data)) {
         return "Missing 'lb4'";
     }
@@ -574,7 +575,7 @@ app.get("/api/data", async (c) => {
 
 app.post("/api/data", adminAuth, async (c) => {
     const body = await c.req.json();
-    const issue = validateLeaderboardData(body);
+    const issue = validateHanoiData(body);
     if (issue !== null) {
         return bad(c, issue);
     }
@@ -657,16 +658,16 @@ app.post("/api/instance/clone", adminAuth, async (c) => {
     return bad(c, "Invalid request body.");
 });
 
-app.post("/api/instance/import", adminAuth, async (c) => {
-    const body = await c.req.json();
-    if ("data" in body) {
-        await setData(body.data);
-        broadcast("!reload-all");
-        await adminSendInstancesData();
-        return ok(c);
-    }
-    return bad(c, "Invalid request body.");
-});
+// app.post("/api/instance/import", adminAuth, async (c) => {
+//     const body = await c.req.json();
+//     if ("data" in body) {
+//         await setData(body.data);
+//         broadcast("!reload-all");
+//         await adminSendInstancesData();
+//         return ok(c);
+//     }
+//     return bad(c, "Invalid request body.");
+// });
 
 app.post("/api/config/update", adminAuth, async (c) => {
     const body = await c.req.json();
@@ -760,11 +761,12 @@ const MIN_JS = Deno.env.get("NO_MIN") === undefined;
 
 const routes: Record<string, string> = {
     "/": "/index.html",
+    "/input": "/index.html",
+    "/output": "/output.html",
     "/admin": "/admin.html",
     "/sync": "/sync.html",
-    "/output": "/output.html",
     "/disconnected": "/disconnected.html", // unused
-    "/admin2": "/admin2.html",
+    "/admin/legacy": "/admin_legacy.html",
 };
 
 app.use(

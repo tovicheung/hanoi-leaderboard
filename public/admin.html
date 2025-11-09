@@ -1,41 +1,233 @@
 <title>Hanoi Admin</title>
-<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=content_copy,delete,text_select_end" />
+
 <style>
-    body {
-        display: flex;
-        flex-direction: column;
-        align-items: start;
-        gap: 30px;
-        padding: 20px;
-        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    * {
+        font-family: "Ubuntu", sans-serif;
     }
 
-    #msg {
+    body {    
+        background: #f5f6fa;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        display: flex;
+        max-width: 80%;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        overflow: hidden;
+    }
+
+    .tabs-list {
+        min-width: 160px;
+        width: 160px;
+        background: #f8f9fb;
+        border-right: 1px solid #ececec;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tab-btn {
+        padding: 18px 20px;
+        border: none;
+        background: none;
+        text-align: left;
+        font-size: 1rem;
+        color: #444;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .tab-btn.active {
+        background-color: white;
         color: blue;
+        font-weight: 600;
+    }
+
+    .tab-btn:not(:last-child) {
+        border-bottom: 1px solid #ececec;
+    }
+
+    .tab-btn.warn:not(.active) {
+        background-color: pink;
+    }
+
+    #tab-content {
+        flex: 1;
+        min-width: 0; /* prevent horizontal overflow */
+        padding: 32px 28px;
+    }
+
+    #tab-content > div {
+        width: 100%;
+    }
+
+    #tab-content > div {
+        display: none;
+    }
+
+    #tab-content > div.active {
+        display: block;
+    }
+
+    table {
+        border-collapse: collapse;
+        font-size: 1rem;
+    }
+
+    tr {
+        background-color: white;
+    }
+
+    th {
+        text-align: left;
+        padding: 10px 8px;
+        border-bottom: 1px solid #ececec;
+        text-align: center;
+    }
+
+    td {
+        padding: 10px 20px;
+        border-bottom: 1px solid #ececec;
+        text-align: center;
+    }
+
+    table button {
+        padding: 6px 14px;
+        margin-right: 6px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: rgb(48, 176, 255);
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+
+    table button:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+    
+    table button:not(:disabled):hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+        margin-bottom: 20px;
+    }
+
+    #notifications {
+        position: fixed;
+        top: 24px;
+        right: 32px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        pointer-events: none;
+    }
+
+    .notification {
+        min-width: 260px;
+        max-width: 340px;
+        background: #fff;
+        color: #333;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+        padding: 18px 24px;
+        font-size: 1rem;
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        animation: fadeIn 0.3s;
+    }
+
+    .notification .close-btn {
+        background: none;
+        border: none;
+        color: #888888;
+        font-size: 1.2rem;
+        cursor: pointer;
+        margin-left: 18px;
+        padding: 0;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px);}
+        to { opacity: 1; transform: translateY(0);}
+    }
+
+    .btn {
+        color: black;
+        border-radius: 6px;
+        border: none;
+        padding: 8px 12px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: none;
+    }
+
+    .btn:hover {
+        background: #d1d9e6;
     }
 
     input[type = password] {
-        height: 40px;
-        width: 300px;
-        padding: 10px;
-        border: 3px solid red;
-    }
-
-    button {
         padding: 8px;
-        margin: 4px;
-        font-size: 14px;
-        border-radius: 8px;
+        font-size: 1rem;
     }
 
-    button:hover:not(:disabled) {
-        opacity: 0.8;
+    #status {
+        max-width: 400px;
+        margin: 30px auto;
+        margin-bottom: 0px;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 14px;
+        text-align: center;
+        font-size: 1.08rem;
+
+        display: flex;
+        flex-direction: row;
     }
 
-    button:disabled, button[disabled] {
-        opacity: 0.4;
-        cursor: auto;
+    #nav {
+        width: fit-content;
+        margin: 30px auto;
+        margin-bottom: 0px;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+        padding: 14px;
+        text-align: center;
+        font-size: 1.08rem;
+    }
+
+    #nav a {
+        margin-left: 20px;
+        text-decoration: none;
+    }
+
+    #nav a:link,
+    #nav a:visited,
+    #nav a:hover,
+    #nav a:active {
+        color: gray;
+        text-decoration: none;
+    }
+    
+    #nav a:hover {
+        color: black;
     }
 
     .segment {
@@ -47,157 +239,246 @@
     .segment > button {
         box-sizing: content-box;
         padding: 6px 12px;
-        border: #322641 solid 1px;
+        border: black solid 1px;
         border-radius: 0;
         margin: 0;
         margin-left: -1px;
-        font-family: "Noto Emoji", "Open Sans", "Microsoft JhengHei", dotum;
-        color: #322641;
+        color: black;
         background-color: transparent;
+        cursor: pointer;
     }
 
-    .segment > button:hover {
-        color: white;
-        background-color: #322641 !important;
-        opacity: 1;
+    .segment > button:not(.selected):hover {
+        background-color: lightgray !important;
     }
 
     .segment > button.selected {
         background-color: rgb(179, 255, 179);
     }
 
-    #logs {
-        width: 100%;
-        white-space: nowrap;
-        overflow: auto;
-    }
 
-    #logs p {
-        font-family: "Montserrat", monospace;
-    }
-
-    div:has(.table) {
+    #instance-list {
+        list-style: none;
+        padding: 0;
         width: 100%;
     }
 
-    .table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        border-spacing: 1px;
-        font-size: 14px;
+    .instance-item {
+        padding: 15px;
+        margin-bottom: 12px;
+        border: 1px solid lightgray;
+        border-radius: 8px;
+        background-color: white;
+        transition: all 0.3s ease;
     }
 
-    .table td:nth-child(n-1) {
-        font-family: "Montserrat", monospace;
+    .instance-item:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     }
 
-    .table td {
-        padding: 0px 10px;
-        text-align: center;
-    }
-    
-    .table button {
-        font-size: 14px;
-        padding: 4px 8px;
+    .instance-item.active {
+        border: 1px solid #28a745;
+        border-left: 6px solid #28a745;
+        background-color: #e0f7e9;
     }
 
-    #popup {
-        position: fixed;
-        top: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 8px;
-        z-index: 99;
-        width: fit-content;
-        color: white;
-        background-color: green;
-        display: none;
-    }
-    
-    .action {
+    .instance-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         cursor: pointer;
-        color: rgb(97, 97, 97);
-        padding: 2px;
-        text-decoration: none;
+    }
+
+    .active-status {
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 700;
+        align-self: flex-start;
+        background-color: #28a745;
+        color: white;
+    }
+
+    .instance-info {
+        display: flex;
+        flex-direction: row;
+        flex-grow: 1;
+        gap: 8px;
+    }
+
+    .instance-name {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    .instance-controls {
+        display: flex;
+        flex-shrink: 0;
+    }
+
+    .instance-controls button {
+        padding: 6px 14px;
+        margin-right: 6px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .instance-controls button:not(:disabled):hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .instance-item {
+        transition: background-color 0.2s ease;
+    }
+
+    .instance-bottom {
+        overflow: hidden;
+        transition: max-height 0.2s ease, padding 0.2s ease;
+        
+        display: flex;
+        gap: 10%;
+    }
+
+    .instance-item:not(.expanded) .instance-bottom {
+        max-height: 0;
+        padding: 0 12px;
+    }
+
+    .instance-item.expanded .instance-bottom {
+        max-height: 999px;
+        padding: 12px;
+    }
+
+    .instance-item.expanded {
+        background-color: #fafafa
+    }
+
+    .instance-data-col {
+        width: 30%;
+    }
+
+    .instance-data-row {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .instance-data-rank {
+        flex-basis: 10%;
+    }
+
+    .instance-data-name {
+        flex-grow: 1;
+        flex-basis: 60%;
+        text-align: left;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .code {
+        font-family: monospace;
+        background-color: #f0f0f0;
+        width: fit-content;
+        padding: 5px;
+        margin: 0px 5px;
     }
 </style>
 <body>
-    <h2>Admin Dashboard</h2>
-    <div>
-        <p>Verify your identity:</p>
-        <input id="password" type="password">
-        <button id="button-verify" onclick="checkAdmin()">Send to server</button>
-        <button id="button-test" onclick="testConnection()">Test connection</button>
+    <div id="status">
+        <span style="font-weight: bold">Hanoi Admin</span>
+        <span style="flex: 1;"></span>
+        <span id="connection-status">Loading ...</span>
     </div>
-    <div>
-        <h2 id="msg"></h2>
-        <h4>Connection status: <span id="connection-status"></span></h4>
-        <h4>Input access: <span id="input-access"></span></h4>
-        
-        <button style="background-color: red;" onclick="configUpdate({ inputAccess: 'none' })">Lock</button>
-        <button style="background-color: #1896bb;" onclick="configUpdate({ inputAccess: 'restricted' })">Restrict</button>
-        <button style="background-color: #2e9a2e;" onclick="configUpdate({ inputAccess: 'everyone' })">Unlock</button>
-        
-        <h4 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h4>
-        <h4>Backup server: <span id="backup-url"></span> <span class="action" onclick="modifyBackupUrl()">[Modify]</span></h4>
-        <h4>Parent server: <span id="parent-url"></span> <span class="action" onclick="modifyParentUrl()">[Modify]</span></h4>
-    </div>
-    <div id="instance-management">
-        <h2>Instance Management</h2>
-        <button onclick="instanceUpdate(createNewInstance)">Create</button>
-        <button onclick="instanceUpdate(deleteInstance)">Delete</button>
-        <br>
-        Switch instance:
-        <div id="instances" class="segment"></div>
-        <br>
-        <button onclick="instanceUpdate(importAndOverwrite)">Import and overwrite</button>
-        <button onclick="exportData()">Export</button>
-        <button onclick="instanceUpdate(cloneInstance)">Create copy</button>
-        <br>
-        <label>Theme (uneditable): </label>
-        <select id="theme" onchange="updateTheme(this.value)">
-            <option value="gojo">Gojo</option>
-            <option value="demonslayer">Demon Slayer</option>
-        </select>
-    </div>
-    <div id="access-control">
-        <h2>Access Control</h2>
-        <button onclick="createToken()">Create Token</button>
-        <button id="load-access-data-btn" onclick="loadAccessData()">Load data</button>
-        <button onclick="document.getElementById('access-data-body').innerHTML = ''; document.getElementById('access-data').style.display = 'none'; document.getElementById('load-access-data-btn').innerText = 'Load data'">Hide</button>
-        <table id="access-data" style="display: none" class="table">
-            <thead>
-                <tr>
-                    <th>Token</th>
-                    <th>Expiry</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="access-data-body"></tbody>
-        </table>
-    </div>
-    <div id="client-management">
-        <h2>Connected Clients</h2>
-        <div>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Connected</th>
-                        <th>Platform</th>
-                        <th>Role</th>
-                        <th>Input Permission</th>
-                        <th>Action</th>
-                        <th>Full ID</th>
-                    </tr>
-                </thead>
-                <tbody id="clients-data"></tbody>
-            </table>
+    <div class="container">
+        <div class="tabs-list">
+            <button class="tab-btn active warn" data-tab="auth">Auth</button>
+            <button class="tab-btn" data-tab="clients">Clients</button>
+            <button class="tab-btn" data-tab="config">Configuration</button>
+            <button class="tab-btn" data-tab="instances">Instances</button>
+            <button class="tab-btn" data-tab="access-control">Tokens</button>
+        </div>
+        <div id="tab-content">
+            <div id="tab-auth">
+                <h2>Enter admin password:</h2>
+                <p id="auth-msg"></p>
+                <form id="auth-form">
+                    <input id="password" type="password" autofocus>
+                    <button class="btn" type="submit">Submit</button>
+                </form>
+                <button class="btn" onclick="window.location.replace('https://www.youtube.com/watch?v=dQw4w9WgXcQ')">Forgot password</button>            
+            </div>
+            <div id="tab-clients">
+                <h2>Connected Clients</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Connected</th>
+                            <th>Platform</th>
+                            <th>Role</th>
+                            <th>Permission</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-data"></tbody>
+                </table>
+            </div>
+            <div id="tab-config">
+                <h2>Server Configuration</h2>
+                <p style="display: inline">Input Access: </p>
+                <div id="inputAccess" class="segment">
+                    <button value="none">Locked</button>
+                    <button value="restricted">Restricted</button>
+                    <button value="everyone">Everyone</button>
+                </div>
+                <p>Output Access: everyone (uneditable)</p>
+                <hr>
+                
+                <p>Backup system: <span id="backup-url" class="code"></span><button class="btn" onclick="modifyBackupUrl()">Edit</button></p>
+                <p>Parent system: <span id="parent-url" class="code"></span><button class="btn" onclick="modifyParentUrl()">Edit</button></p>
+            </div>
+            <div id="tab-instances">
+                <h2>Database Instances</h2>
+                <div>
+                    <button class="btn" onclick="createNewInstance()">Create</button>
+                    <span style="margin-left: 12px;">Active:</span>
+                    <button class="btn" onclick="instanceImport()">Import</button>
+                    <button class="btn" onclick="instanceExport()">Export</button>
+                </div>
+                <ul id="instance-list">
+                    <!-- Generated -->
+                </ul>
+            </div>
+            <div id="tab-access-control">
+                <h2>Access Control</h2>
+                <button class="btn" onclick="createToken()">Create Token</button>
+                <button class="btn" onclick="loadAccessData()">Refresh</button>
+                <input type="checkbox" id="vis" name="vis" onchange="updateAccessData()">
+                <label for="vis">Show tokens</label>
+                <table id="access-data">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Expiry</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="access-data-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
-    <button onclick="window.location.href = './'" style="background-color: rgb(0, 30, 181);">Back to controller</button>
-    <div id="logs"></div>
-    <div id="popup">This message should not appear.</div>
-</body>
+    <div id="nav">
+        <span style="font-weight: bold">Hanoi System:</span>
+        <a href="/">Input</a>
+        <a href="/output">Output</a>
+        <a href="/admin/legacy">Old Admin</a>
+    </div>
 
-<script src="js/admin.js"></script>
+    <div id="notifications"></div>
+    <script src="/js/admin.js"></script>
+</body>

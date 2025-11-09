@@ -1,0 +1,203 @@
+<title>Hanoi Admin</title>
+<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<link rel="stylesheet" href="/style.css">
+<style>
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        gap: 30px;
+        padding: 20px;
+        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    }
+
+    #msg {
+        color: blue;
+    }
+
+    input[type = password] {
+        height: 40px;
+        width: 300px;
+        padding: 10px;
+        border: 3px solid red;
+    }
+
+    button {
+        padding: 8px;
+        margin: 4px;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+
+    button:hover:not(:disabled) {
+        opacity: 0.8;
+    }
+
+    button:disabled, button[disabled] {
+        opacity: 0.4;
+        cursor: auto;
+    }
+
+    .segment {
+        display: inline-flex;
+        flex-direction: row;
+        gap: 0;
+    }
+
+    .segment > button {
+        box-sizing: content-box;
+        padding: 6px 12px;
+        border: #322641 solid 1px;
+        border-radius: 0;
+        margin: 0;
+        margin-left: -1px;
+        font-family: "Noto Emoji", "Open Sans", "Microsoft JhengHei", dotum;
+        color: #322641;
+        background-color: transparent;
+    }
+
+    .segment > button:hover {
+        color: white;
+        background-color: #322641 !important;
+        opacity: 1;
+    }
+
+    .segment > button.selected {
+        background-color: rgb(179, 255, 179);
+    }
+
+    #logs {
+        width: 100%;
+        white-space: nowrap;
+        overflow: auto;
+    }
+
+    #logs p {
+        font-family: "Montserrat", monospace;
+    }
+
+    div:has(.table) {
+        width: 100%;
+    }
+
+    .table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        border-spacing: 1px;
+        font-size: 14px;
+    }
+
+    .table td:nth-child(n-1) {
+        font-family: "Montserrat", monospace;
+    }
+
+    .table td {
+        padding: 0px 10px;
+        text-align: center;
+    }
+    
+    .table button {
+        font-size: 14px;
+        padding: 4px 8px;
+    }
+
+    #popup {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px;
+        z-index: 99;
+        width: fit-content;
+        color: white;
+        background-color: green;
+        display: none;
+    }
+    
+    .action {
+        cursor: pointer;
+        color: rgb(97, 97, 97);
+        padding: 2px;
+        text-decoration: none;
+    }
+</style>
+<body>
+    <h2>Admin Dashboard</h2>
+    <div>
+        <p>Verify your identity:</p>
+        <input id="password" type="password">
+        <button id="button-verify" onclick="checkAdmin()">Send to server</button>
+        <button id="button-test" onclick="testConnection()">Test connection</button>
+    </div>
+    <div>
+        <h2 id="msg"></h2>
+        <h4>Connection status: <span id="connection-status"></span></h4>
+        <h4>Input access: <span id="input-access"></span></h4>
+        
+        <button style="background-color: red;" onclick="configUpdate({ inputAccess: 'none' })">Lock</button>
+        <button style="background-color: #1896bb;" onclick="configUpdate({ inputAccess: 'restricted' })">Restrict</button>
+        <button style="background-color: #2e9a2e;" onclick="configUpdate({ inputAccess: 'everyone' })">Unlock</button>
+        
+        <h4 style="color: gray;">Output access (uneditable): <span id="output-access"></span></h4>
+        <h4>Backup server: <span id="backup-url"></span> <span class="action" onclick="modifyBackupUrl()">[Modify]</span></h4>
+        <h4>Parent server: <span id="parent-url"></span> <span class="action" onclick="modifyParentUrl()">[Modify]</span></h4>
+    </div>
+    <div id="instance-management">
+        <h2>Instance Management</h2>
+        <button onclick="instanceUpdate(createNewInstance)">Create</button>
+        <button onclick="instanceUpdate(deleteInstance)">Delete</button>
+        <br>
+        Switch instance:
+        <div id="instances" class="segment"></div>
+        <br>
+        <button onclick="instanceUpdate(importAndOverwrite)">Import and overwrite</button>
+        <button onclick="exportData()">Export</button>
+        <button onclick="instanceUpdate(cloneInstance)">Create copy</button>
+        <br>
+        <label>Theme (uneditable): </label>
+        <select id="theme" onchange="updateTheme(this.value)">
+            <option value="gojo">Gojo</option>
+            <option value="demonslayer">Demon Slayer</option>
+        </select>
+    </div>
+    <div id="access-control">
+        <h2>Access Control</h2>
+        <button onclick="createToken()">Create Token</button>
+        <button id="load-access-data-btn" onclick="loadAccessData()">Load data</button>
+        <button onclick="document.getElementById('access-data-body').innerHTML = ''; document.getElementById('access-data').style.display = 'none'; document.getElementById('load-access-data-btn').innerText = 'Load data'">Hide</button>
+        <table id="access-data" style="display: none" class="table">
+            <thead>
+                <tr>
+                    <th>Token</th>
+                    <th>Expiry</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="access-data-body"></tbody>
+        </table>
+    </div>
+    <div id="client-management">
+        <h2>Connected Clients</h2>
+        <div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Connected</th>
+                        <th>Platform</th>
+                        <th>Role</th>
+                        <th>Input Permission</th>
+                        <th>Action</th>
+                        <th>Full ID</th>
+                    </tr>
+                </thead>
+                <tbody id="clients-data"></tbody>
+            </table>
+        </div>
+    </div>
+    <button onclick="window.location.href = '/'" style="background-color: rgb(0, 30, 181);">Back to controller</button>
+    <div id="logs"></div>
+    <div id="popup">This message should not appear.</div>
+</body>
+
+<script src="/js/admin_legacy.js"></script>

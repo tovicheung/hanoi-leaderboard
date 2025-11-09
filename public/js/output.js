@@ -318,7 +318,7 @@ function renderRow(item, rank, isTop) {
         return `
             <div class="lb-row">
                 <div class="lb-row-rank-top">
-                    <img class="lb-row-avatar" src="assets/static/${["gold", "silver", "bronze"][rank - 1]}.png">
+                    <img class="lb-row-avatar" src="/assets/static/${["gold", "silver", "bronze"][rank - 1]}.png">
                     <span>${rank}</span>
                 </div>
                 <!-- <span class="lb-row-rank">${["&#129351;", "&#129352;", "&#129353;"][rank - 1]}</span> -->
