@@ -9,17 +9,20 @@ function parseTimeStyled(millis) {
 }
 
 function updateLeaderboards() {
-    if (theme == "demonslayer") {
-        updateLeaderboardNew("lb-4", leaderboard1);
-        updateLeaderboardNew("lb-5", leaderboard2);
+    if (true /*theme == "demonslayer"*/ ) {
+        for (const id in leaderboards) {
+            updateLeaderboardNew(id, leaderboards[id]);
+        }
     } else {
         updateLeaderboard("leaderboard1", leaderboard1);
         updateLeaderboard("leaderboard2", leaderboard2);
     }
 }
 
-var leaderboard1 = [];
-var leaderboard2 = [];
+var leaderboards = {
+    lb4: [],
+    lb5: [],
+}
 
 var regStart = 0;
 var regInterval = 0;
@@ -62,8 +65,7 @@ function openSocket() {
             return;
         }
         fails++;
-        // window.location.href = "./disconnected"
-        document.getElementById("loading-inner").innerHTML = `Disconnected.<br><br>Reconnecting ... ${fails}/${MAX_TRIES}`;
+        document.getElementById("loading-inner").innerHTML = `Disconnected<br><br>Reconnecting ... (Try ${fails}/${MAX_TRIES})`;
         document.getElementById("loading").style.display = "block";
         setTimeout(openSocket, 3000);
     };
@@ -76,8 +78,8 @@ function openSocket() {
 }
 
 const id2titles = {
-    "leaderboard1": "4 disks",
-    "leaderboard2": "5 disks",
+    lb4: "4 disks",
+    lb5: "5 disks",
 };
 
 var dotsInterval = 0;
@@ -114,10 +116,11 @@ function socketOnMessage(e) {
         return;
     }
     if (e.data.startsWith("AUTH:")) return;
-    const data = JSON.parse(e.data);
-    leaderboard1 = data[0];
-    leaderboard2 = data[1];
-    updateLeaderboards();
+    if (e.data.startsWith("DATA:")) {
+        const data = JSON.parse(e.data.slice("DATA:".length));
+        leaderboards = data;
+        updateLeaderboards();
+    }
 }
 
 function appendRegName(name, i) {
@@ -155,10 +158,11 @@ function handleCommand(cmd) {
             // cyclePages();
             updateLeaderboards();
         }
-    } else if (cmd == "!toggle-l4") {
-        toggleDisplay(document.getElementById("leaderboard1"));
-    } else if (cmd == "!toggle-l5") {
-        toggleDisplay(document.getElementById("leaderboard2"));
+    } else if (cmd.startsWith("!toggle:")) {
+        const id = cmd.slice("!toggle:".length);
+        if (id in leaderboards) {
+            toggleDisplay(document.getElementById(id));
+        }
     } else if (cmd.startsWith("!announcement-show:")) {
         const msg = cmd.slice("!announcement-show:".length);
         document.getElementById("announcement").innerText = msg;
@@ -286,7 +290,7 @@ function updateLeaderboardNew(id, data) {
     const totalPages = Math.ceil(totalRows / rowsPerPage);
 
     leaderboardStates[id] = {
-        currentPageIndex: 0,
+        currentPageIndex: 0, // TODO: dynamic
         totalRows: totalRows,
         totalPages: totalPages,
         interval: null,
@@ -375,16 +379,10 @@ function startCycle(id) {
     }, PAGE_DURATION_MS);
 }
 
-// crappy code but whatever
 function nameToRecordNumber(id, name) {
-    let lb = null;
-    if (id === "lb-4" || id === "leaderboard1") {
-        lb = leaderboard1;
-    } else if (id === "lb-5" || id === "leaderboard2") {
-        lb = leaderboard2;
-    } else {
-        return null;
-    }
+    if (!(id in leaderboards)) return;
+
+    const lb = leaderboards[id];
 
     for (let i = 0; i < lb.length; i++) {
         if (lb[i].name === name) return i + 1;
@@ -393,9 +391,10 @@ function nameToRecordNumber(id, name) {
 }
 
 function jumpToRecord(id, name) {
+    console.log("jumping", id, name);
     const recordNumber = nameToRecordNumber(id, name);
     if (recordNumber === null) {
-        console.warn("record not found");
+        console.warn("record not found:", id, name);
         return;
     }
 

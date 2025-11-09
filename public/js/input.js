@@ -4,21 +4,25 @@ function parseTime(millis) {
 }
 
 function updateLeaderboards() {
-    updateLeaderboard("leaderboard1", leaderboard1);
-    updateLeaderboard("leaderboard2", leaderboard2);
+    for (const id in leaderboards) {
+        updateLeaderboard(id, leaderboards[id]);
+    }
     updateTimeLimits();
 }
 
 let timeLimits = {
-    "leaderboard1": -1,
-    "leaderboard2": -1,
+    lb4: -1,
+    lb5: -1,
 };
-let leaderboard1 = [];
-let leaderboard2 = [];
+
+var leaderboards = {
+    lb4: [],
+    lb5: [],
+}
 
 const id2titles = {
-    "leaderboard1": "4 disks",
-    "leaderboard2": "5 disks",
+    lb4: "4 disks",
+    lb5: "5 disks",
 };
 
 let statusTimeout = null;
@@ -120,15 +124,14 @@ const trialOptions = {
 };
 
 function sendUpdate(highlight = null) {
-    websocket.send(JSON.stringify({
-        type: "update",
-        leaderboards: [leaderboard1, leaderboard2],
+    websocket.send(`UPDATE:${JSON.stringify({
+        leaderboards,
         highlight,
-    }));
+    })}`);
 }
 
 function pushRecord(disks, name, score) {
-    const leaderboard = parseInt(disks) == 4 ? leaderboard1 : leaderboard2;
+    const leaderboard = leaderboards[`lb${parseInt(disks)}`];
     leaderboard.forEach((data, i) => {
         if (data.name == name) {
             if (data.score < score) score = data.score;
@@ -141,7 +144,7 @@ function pushRecord(disks, name, score) {
     });
     leaderboard.sort((a, b) => a.score - b.score);
     sendUpdate({ // highlight
-        id: `lb-${disks}`,
+        id: `lb${disks}`,
         name,
     });
 }
@@ -164,13 +167,13 @@ function announce() {
 
 function checkName(name) {
     let result = [];
-    for (const record of leaderboard1) {
+    for (const record of leaderboards.lb4) {
         if (record.name === name) {
             result.push({disks: 4, record});
             break;
         }
     }
-    if (result.length == 0) for (const record of leaderboard2) {
+    if (result.length == 0) for (const record of leaderboards.lb5) {
         if (record.name === name) {
             result.push({disks: 5, record});
             break;
@@ -182,9 +185,9 @@ function checkName(name) {
 
     msg = `The name '${name}' already exists:\n\n`
     for (const found of result) {
-        msg += `${found.disks} disks  -  ${found.record.name}  -  ${parseTime(found.record.score)}\n`
+        msg += `[${found.disks} DISKS]  ${found.record.name}  -  ${parseTime(found.record.score)}\n`
     }
-    msg += "\nClick OK if this is intentional; else, click cancel to cancel the operation."
+    msg += "\nClick OK if this is intentional.\nClick cancel to cancel the operation."
     
     return window.confirm(msg)
 }
@@ -235,7 +238,7 @@ function timerClickListener(obj) {
 }
 
 function startTimer() {
-    trialOptions.timeLimit = timeLimits[trialOptions.ndisks == 4 ? "leaderboard1" : "leaderboard2"];
+    trialOptions.timeLimit = timeLimits[`lb${trialOptions.ndisks}`];
     trialOptions.startTime = Date.now();
     trialOptions.timerInterval = setInterval(() => {
         document.getElementById("timer").innerText = parseTime(Date.now() - trialOptions.startTime);
@@ -281,15 +284,11 @@ websocket.onmessage = e => {
             timeLimits = newData.timeLimits;
             updateTimeLimits();
         }
-        return;
-    }
-    if (e.data.startsWith("!")) {
+    } else if (e.data.startsWith("!")) {
         if (e.data == "!reload-all") {
             window.location.reload();
         }
-        return;
-    };
-    if (e.data.startsWith("AUTH:")) {
+    } else if (e.data.startsWith("AUTH:")) {
         if (e.data == "AUTH:required") {
             // server requires auth
             const token = localStorage.getItem("token");
@@ -308,12 +307,11 @@ websocket.onmessage = e => {
             switchScreen(999);
             setStatus("Server blocked input requests.");
         }
-        return;
+    } else if (e.data.startsWith("DATA:")) {
+        const data = JSON.parse(e.data.slice("DATA:".length));
+        leaderboards = data;
+        updateLeaderboards();
     }
-    const data = JSON.parse(e.data);
-    leaderboard1 = data[0];
-    leaderboard2 = data[1];
-    updateLeaderboards();
 };
 
 websocket.onerror = e => {
@@ -520,7 +518,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("new-trial-5").onclick = () => newTrial(5);
 
     document.getElementById("refresh-all-button").onclick = () => {
-        websocket.send("refresh-all");
+        websocket.send("refresh-all"); // note: not to be broadcasted!
     };
 
     document.getElementById("reload-all-button").onclick = () => {
@@ -536,12 +534,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     document.getElementById("reset-l4-button").onclick = () => {
-        leaderboard1 = [];
+        leaderboards.lb4 = [];
         sendUpdate();
     };
 
     document.getElementById("reset-l5-button").onclick = () => {
-        leaderboard2 = [];
+        leaderboards.lb5 = [];
         sendUpdate();
     };
 

@@ -149,7 +149,7 @@ function updateInstances(data) {
                             <div class="instance-data-col"></div>
                         `;
                         btm.querySelectorAll(".instance-data-col").forEach((col, i) => {
-                            const data = json[i];
+                            const data = json[`lb${i+4}`];
                             for (let j = 0; j < data.length; j++) {
                                 const row = document.createElement("div");
                                 row.classList.add("instance-data-row");

@@ -1,6 +1,5 @@
 import { Hono, Context, Next } from "@hono/hono";
 import { serveStatic } from "@hono/hono/deno";
-import { cache } from "@hono/hono/cache";
 
 type Auth = { type: "none" }
     | { type: "admin" }
@@ -29,8 +28,8 @@ interface Config {
 }
 
 interface TimeLimits {
-    leaderboard1: number,
-    leaderboard2: number,
+    lb4: number,
+    lb5: number,
 }
 
 interface InstanceMeta {
@@ -65,11 +64,6 @@ function isValidConfig(obj: unknown): obj is Config {
 }
 
 const kv = await Deno.openKv();
-const config: Config = await (async () => {
-    const tmp = (await kv.get(["config"])).value;
-    if (isValidConfig(tmp)) return tmp;
-    return DEFAULT_CONFIG;
-})();
 
 interface LbRecord {
     name: string;
@@ -77,12 +71,19 @@ interface LbRecord {
 }
 
 type Leaderboard = LbRecord[];
+type HanoiData = {
+    lb4: Leaderboard,
+    lb5: Leaderboard,
+}
 
 async function setupKv() {
-    let config = (await kv.get(["config"])).value;
-    if (config === null) {
-        config = structuredClone(DEFAULT_CONFIG);
-        await kv.set(["config"], config);
+    // Base structure
+    // * config
+    // * instances/_default
+    // * instanceName = "_default"
+    
+    if ((await kv.get(["config"])).value === null) {
+        await kv.set(["config"], structuredClone(DEFAULT_CONFIG));
     }
 
     if ((await getAllInstanceNames()).length == 0) {
@@ -92,15 +93,40 @@ async function setupKv() {
     if ((await kv.get(["instanceName"])).value === null) {
         await kv.set(["instanceName"], "_default");
     }
+
+    for (const name of await getAllInstanceNames()) {
+        console.log("checking", name);
+        const data = (await kv.get(["instances", name, "data"])).value;
+        if (Array.isArray(data)) {
+            console.log("fixed data of", name);
+            await kv.set(["instances", name, "data"], {
+                lb4: data[0],
+                lb5: data[1],
+            });
+        }
+        const meta = (await kv.get(["instances", name, "meta"])).value;
+        if ("leaderboard1" in meta.timeLimits) {
+            console.log("fixed meta of", name);
+            meta.timeLimits.lb4 = meta.timeLimits.leaderboard1;
+            meta.timeLimits.lb5 = meta.timeLimits.leaderboard2;
+            await kv.set(["instances", name, "meta"], meta);
+        }
+    }
 }
 
 await setupKv();
 
+const config: Config = await (async () => {
+    const tmp = (await kv.get(["config"])).value;
+    if (isValidConfig(tmp)) return tmp;
+    return DEFAULT_CONFIG;
+})();
+
 function getNewMeta() {
     return {
         timeLimits: {
-            "leaderboard1": 3 * 60 * 1000,
-            "leaderboard2": 4 * 60 * 1000,
+            lb4: 3 * 60 * 1000,
+            lb5: 4 * 60 * 1000,
         },
         theme: "demonslayer",
     };
@@ -112,7 +138,10 @@ async function createInstance(name: string) {
     if (await instanceExists(name)) return;
 
     await kv.atomic()
-        .set(["instances", name, "data"], [[], []])
+        .set(["instances", name, "data"], {
+            lb4: [],
+            lb5: [],
+        })
         .set(["instances", name, "meta"], getNewMeta())
         .commit();
 }
@@ -184,12 +213,12 @@ async function getTimeLimits(): Promise<TimeLimits> {
     return (await getMeta()).timeLimits;
 }
 
-async function getData(): Promise<Leaderboard[]> {
+async function getData(): Promise<HanoiData> {
     const name = await getActiveName();
-    return <Leaderboard[]>(await kv.get(["instances", name, "data"])).value;
+    return <HanoiData>(await kv.get(["instances", name, "data"])).value;
 }
 
-async function setData(leaderboards: Leaderboard[]) {
+async function setData(leaderboards: HanoiData) {
     const name = await getActiveName();
     await kv.set(["instances", name, "data"], leaderboards);
 }
@@ -203,10 +232,9 @@ function broadcast(msg: string) {
     });
 }
 
-async function broadcastAndSaveData(leaderboards: Leaderboard[]) {
-    broadcast(JSON.stringify(leaderboards));
+async function broadcastAndSaveData(leaderboards: HanoiData) {
+    broadcast(`DATA:${JSON.stringify(leaderboards)}`);
     await setData(leaderboards);
-
 
     if (config.backupUrl == null) {
         return;
@@ -303,7 +331,7 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("open", async () => {
         socket.send(`@meta:${JSON.stringify(await getMeta())}`);
-        socket.send(JSON.stringify(await getData()));
+        socket.send(`DATA:${JSON.stringify(await getData())}`);
         broadcast(`@nclients:${clients.size}`);
         if (config.inputAccess == "everyone") {
             socket.send("AUTH:success");
@@ -402,12 +430,25 @@ function connectSocket(req: Request) {
 
         // at this point, client is checked to have input permissions
         
+        if (event.data.startsWith("UPDATE:")) {
+            const obj = JSON.parse(event.data.slice("UPDATE:".length));
+            if ("leaderboards" in obj) {
+                const leaderboards: HanoiData = obj.leaderboards;
+                Object.values(leaderboards).forEach(l => l.sort((a, b) => a.score - b.score));
+                await broadcastAndSaveData(leaderboards);
+
+                if ("highlight" in obj && obj.highlight !== null && "id" in obj.highlight && "name" in obj.highlight) {
+                    broadcast(`!highlight-${JSON.stringify(obj.highlight)}`);
+                }
+            }
+        }
+        
         if (event.data.startsWith("@timeLimit:")) {
             const parts = event.data.split(":");
             if (parts.length != 3) return;
 
             // extremely ugly code but whatever
-            const id = <"leaderboard1" | "leaderboard2">parts[1];
+            const id = <"lb4" | "lb5">parts[1];
 
             const newTimeLimit = parseInt(parts[2]);
             if (isNaN(newTimeLimit)) return;
@@ -439,28 +480,13 @@ function connectSocket(req: Request) {
 
         const leaderboards = await getData();
         if (event.data == "refresh-all") {
-            leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
+            Object.values(leaderboards).forEach(l => l.sort((a, b) => a.score - b.score));
             await broadcastAndSaveData(leaderboards);
             return;
         }
         if (event.data == "refresh") {
             socket.send(JSON.stringify(leaderboards));
             return;
-        }
-        let obj;
-        try {
-            obj = JSON.parse(event.data);
-        } catch {
-            return;
-        }
-        if ("type" in obj && obj.type === "update" && "leaderboards" in obj) {
-            const leaderboards: Leaderboard[] = obj.leaderboards;
-            leaderboards.forEach(l => l.sort((a, b) => a.score - b.score));
-            await broadcastAndSaveData(leaderboards);
-
-            if ("highlight" in obj && obj.highlight !== null && "id" in obj.highlight && "name" in obj.highlight) {
-                broadcast(`!highlight-${JSON.stringify(obj.highlight)}`);
-            }
         }
     });
 
@@ -475,28 +501,30 @@ function connectSocket(req: Request) {
 
 // HTTPS
 
-function validateLeaderboardData(data: object): string | null {
-    if (!Array.isArray(data)) {
-        return "Data must be an array of leaderboards.";
+function validateLeaderboardData(data: any): string | null {
+    if (!("lb4" in data)) {
+        return "Missing 'lb4'";
     }
-    if (data.length !== 2) {
-        return "Data must contain exactly 2 leaderboards.";
+
+    if (!("lb5" in data)) {
+        return "Missing 'lb5'";
     }
-    for (let i = 0; i < data.length; i++) {
-        const lb = data[i];
+
+    for (const id of ["lb4", "lb5"]) {
+        const lb = data[id];
         if (!Array.isArray(lb)) {
-            return `Leaderboard at index ${i} is not an array.`;
+            return `Leaderboard '${id}' is not an array.`;
         }
         for (let j = 0; j < lb.length; j++) {
             const record = lb[j];
             if (typeof record !== "object" || record === null) {
-                return `Invalid record at leaderboard ${i} index ${j}.`;
+                return `Invalid record at leaderboard '${id}' index ${j}.`;
             }
             if (typeof (record as any).name !== "string") {
-                return `Invalid name at leaderboard ${i} index ${j}.`;
+                return `Invalid name at leaderboard '${id}' index ${j}.`;
             }
             if (typeof (record as any).score !== "number" || !Number.isFinite((record as any).score)) {
-                return `Invalid score at leaderboard ${i} index ${j}.`;
+                return `Invalid score at leaderboard '${id}' index ${j}.`;
             }
         }
     }
@@ -550,7 +578,7 @@ app.post("/api/data", adminAuth, async (c) => {
     if (issue !== null) {
         return bad(c, issue);
     }
-    (body as LbRecord[][]).forEach((l) => l.sort((a, b) => a.score - b.score));
+    Object.values(body as HanoiData).forEach((l) => l.sort((a, b) => a.score - b.score));
     await broadcastAndSaveData(body);
     return ok(c);
 });
@@ -615,10 +643,16 @@ app.post("/api/instance/clone", adminAuth, async (c) => {
         if (await instanceExists(to)) {
             return bad(c, "Target name is already in use.");
         }
-        await kv.set(["instances", to, "meta"], (await kv.get(["instances", from, "meta"])).value);
-        await kv.set(["instances", to, "data"], (await kv.get(["instances", from, "data"])).value);
+        const result = await kv.atomic()
+            .set(["instances", to, "meta"], (await kv.get(["instances", from, "meta"])).value)
+            .set(["instances", to, "data"], (await kv.get(["instances", from, "data"])).value)
+            .commit();
         await adminSendInstancesData();
-        return ok(c);
+        if (result.ok) {
+            return ok(c);
+        } else {
+            return bad(c, "KV write failed.");
+        }
     }
     return bad(c, "Invalid request body.");
 });
