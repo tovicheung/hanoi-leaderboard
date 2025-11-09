@@ -130,7 +130,7 @@ function sendUpdate(highlight = null) {
     })}`);
 }
 
-function pushRecord(disks, name, score) {
+function pushRecord(disks, name, score, highlight = false) {
     const leaderboard = leaderboards[`lb${parseInt(disks)}`];
     leaderboard.forEach((data, i) => {
         if (data.name == name) {
@@ -143,10 +143,14 @@ function pushRecord(disks, name, score) {
         score: score,
     });
     leaderboard.sort((a, b) => a.score - b.score);
-    sendUpdate({ // highlight
-        id: `lb${disks}`,
-        name,
-    });
+    if (highlight) {
+        sendUpdate({ // highlight
+            id: `lb${disks}`,
+            name,
+        });
+    } else {
+        sendUpdate();
+    }
 }
 
 function adjustHeight() {
@@ -173,7 +177,7 @@ function checkName(name) {
             break;
         }
     }
-    if (result.length == 0) for (const record of leaderboards.lb5) {
+    for (const record of leaderboards.lb5) {
         if (record.name === name) {
             result.push({disks: 5, record});
             break;
@@ -344,7 +348,8 @@ function updateTimeLimits() {
     }
 }
 
-function modifyRank(leaderboard, n) {
+function modifyRank(id, n) {
+    const leaderboard = leaderboards[id];
     const name = prompt("Modify Record (Step 1/2)\nEdit the name:", leaderboard[n-1].name);
     if (name === null) return;
     if (name != leaderboard[n-1].name && !checkName(name)) return;
@@ -358,8 +363,10 @@ function modifyRank(leaderboard, n) {
     } else {
         score = timeStringToMillis(newTime);
     }
-    leaderboard[n-1] = { name, score };
-    sendUpdate();
+    leaderboard.splice(n-1, 1);
+    pushRecord(parseInt(id[2]), name, score); // resolve name clashes
+    // leaderboard[n-1] = { name, score };
+    // sendUpdate();
 }
 
 function removeRank(leaderboard, n) {
@@ -393,7 +400,7 @@ function updateLeaderboard(id, leaderboard) {
         modifyButton.innerText = "[Mod]";
         modifyButton._rank = rank
         modifyButton.style.marginLeft = "12px";
-        modifyButton.onclick = e => modifyRank(leaderboard, e.target._rank);
+        modifyButton.onclick = e => modifyRank(id, e.target._rank);
 
         const removeButton = document.createElement("span");
         removeButton.classList.add("action");
