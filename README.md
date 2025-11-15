@@ -1,24 +1,51 @@
 This is a live leaderboard service used to host mathematics club events at my school.
 
+## Schema
+
+Leaderboard data is stored in the following format:
+
+```json
+{
+    "lb4": [
+        { "name": "John", "score": 12345 },
+        { "name": "Peter", "score": 12346 },
+        { "name": "Chris", "score": 12347 }
+    ],
+    "lb5": [ /* ... */ ]
+}
+```
+
+## Authentication
+
+There are 3 types of authentication for websockets, as described in backend:
+
+```ts
+type Auth = { type: "none" }
+    | { type: "admin" }
+    | { type: "token", token: string, expireIn: number }
+    | { type: "elevated", timestamp: number }
+```
+
+* **Admins** have full access to all features
+
+    * Admins can create and control **tokens**.
+
+* Event helpers can use their **token** to authenticate and get input permission, allowing them to insert and modify leaderboard data (for the active leaderboard only).
+
+* Admins can also **elevate** a session to temporarily grant them input permission via the admin dashblard.
+
+
 ## HTTP API
 
-Public functions
+Public functions:
 
 * GET `/api/data`
 
-    Returns the live JSON data.
+    Returns the active leaderboard data.
 
-The following admin functions require a bearer token.
+The following functions require the admin bearer token:
 
 * POST `/api/data`
-
-    Returns the live JSON data.
-    ```json
-    [
-        [ /* leaderboard 1 */ ],
-        [ /* leaderboard 2 */ ]
-    ]
-    ```
 
 * POST `/api/instance/create`
     
@@ -54,15 +81,6 @@ The following admin functions require a bearer token.
     {
         "from": "Important Instance",
         "to": "Backup of Important Instance"
-    }
-    ```
-
-* POST `/api/instance/import`
-
-    Overwrite the data of the active instance with the provided JSON.
-    ```json
-    {
-        "data": [[], []]
     }
     ```
 
@@ -109,10 +127,10 @@ The following admin functions require a bearer token.
 ## Socket API
 
 The following communications are done through websocket:
-* status of ongoing run
-* leaderboard data updates
-* display controls
+* leaderboard data updates (`DATA:`)
 * authentication (`AUTH:`)
 * role reporting
-* cross-client communication (`!` and `@`)
-* admin: live operations such as session-wise permission management (`ADMIN:`)
+* cross-node communication (`!` and `@`)
+    * status of ongoing run
+    * display controls
+* admin: live operations such as client management (`ADMIN:`)

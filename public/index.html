@@ -1,202 +1,208 @@
-<title>Hanoi Input</title>
-<link rel="stylesheet" href="style.css">
-<style>
-    * {
-        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-    }
-    
-    #container > div {
-        width: 100%;
-        height: 100%;
-    }
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hanoi Input</title>
+    <link rel="stylesheet" href="/global.css">
+    <style>
+        * {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+        
+        #container > div {
+            width: 100%;
+            height: 100%;
+        }
 
-    .centered {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        .centered {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
 
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-    .row {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-    }
+        .row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
 
-    .leaderboard > .header {
-        padding: 10px;
-        background-color: lightgray;
-    }
+        .leaderboard > .header {
+            padding: 10px;
+            background-color: lightgray;
+        }
 
-    .leaderboard > .header2 {
-        position: relative;
-        background-color: rgb(237, 237, 237);
-        padding: 6px;
-    }
+        .leaderboard > .header2 {
+            position: relative;
+            background-color: rgb(237, 237, 237);
+            padding: 6px;
+        }
 
-    .leaderboard > .header2 > .action {
-        position: absolute;
-        right: 10;
-    }
+        .leaderboard > .header2 > .action {
+            position: absolute;
+            right: 10;
+        }
 
-    .leaderboards {
-        gap: 10px;
-    }
+        .leaderboards {
+            gap: 10px;
+        }
 
-    .record {
-        padding: 10px;
-    }
+        .record {
+            padding: 10px;
+        }
 
-    .record > * {
-        font-size: 20px;
-    }
+        .record > * {
+            font-size: 20px;
+        }
 
-    .leaderboard .action {
-        color: rgb(97, 97, 97);
-        padding: 2px;
-    }
+        .leaderboard .action {
+            color: rgb(97, 97, 97);
+            padding: 2px;
+        }
 
-    #timer {
-        font-size: 120px;
-        font-family: Consolas, Courier, monospace;
-    }
+        #timer {
+            font-size: 120px;
+            font-family: Consolas, Courier, monospace;
+        }
 
-    .action {
-        color: rgb(97, 97, 97);
-        padding: 2px;
-        cursor: pointer;
-    }
-    
-    a.action {
-        text-decoration: none;
-    }
+        .action {
+            color: rgb(97, 97, 97);
+            padding: 2px;
+            cursor: pointer;
+        }
+        
+        a.action {
+            text-decoration: none;
+        }
 
-    #custom-name-input {
-        font-size: 50px;
-        padding: 16px;
-        margin: 60px;
-    }
-    
-    #connection-test-actions {
-        font-family: Arial;
-        font-size: 20px;
-        font-weight: normal;
-        text-align: left;
-    }
-</style>
-
-<div id="container">
-    <div id="screen999">
-        <div class="centered">
-            <h1>Input: Permission Denied</h1>
-            <h3>All input requests from this device are ignored by the server.</h3>
-            <a href="./output"><button>Switch to output</button></a>
-            <br>
-            <p>
-                <span class="action screen-1-button">[ view controller anyways ]</span>
-                <span id="action-use-access-token" class="action">[ use access token ]</span>
-                <a class="action" href="/admin">[ admin ]</a>
-            </p>
-        </div>
-    </div>
-    <div id="screen998">
-        <div class="centered">
-            <h1>Input permission granted by admin</h1>
-            <button class="screen-1-button">Proceed</button>
-        </div>
-    </div>
-    <div id="screen1">
-        <div class="ctrl-row">
-            <button id="new-trial-4" onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
-            <button id="new-trial-5" onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
-            <button id="reload-this-button" class="small" onclick="window.location.reload()">Reload this</button>
-            <a href="/sync"><button class="small">Sync</button></a>
-            <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
-            <a href="/admin"><button class="small">Admin</button></a>
-            <a href="/output"><button>Switch to output</button></a>
-        </div>
-        <div class="ctrl-row">
-            <h2 style="display: inline; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
-            <button id="refresh-all-button" class="small">Refresh all</button>
-            <button id="reload-all-button" class="small">Reload all</button>
-            <button id="disconnect-all-button" class="small">Disconnect all output</button>
-            <button id="manual-input-button" class="small">Manual input</button>
-            <button id="reset-l4-button" class="small" dangerous>Reset L4</button>
-            <button id="reset-l5-button" class="small" dangerous>Reset L5</button>
-        </div>
-        <div class="ctrl-row">
-            <button id="toggle-l4-button" class="small">Toggle L4</button>
-            <button id="toggle-l5-button" class="small">Toggle L5</button>
-            <button id="adjust-height-button" class="small">Adjust display rows</button>
-            <button id="clear-animation-button" class="small">Clear animation</button>
-            <button id="announce-button" class="small">Announce</button>
-            <!-- <button id="hide-announcement-button" class="small">Hide announce</button> -->
-            <button class="small" onclick="connectionTest()">Test connection</button>
-        </div>
-        <h2 id="status" style="color: blue;">Connecting to server ...</h2>
-        <div id="connection-test" style="border: 4px solid blue; margin: 10px 0px; padding: 10px; font-size: 20px;">
-            <b>Connection Test</b>
-            <p>Status: <span id="connection-test-display">Loading ...</span></p>
-            <p>Actions:</p>
-            <span id="connection-test-actions"></span>
-            <br>
-            <button style="margin: 0; padding: 10px; font-size: 16px;" onclick="document.getElementById('connection-test').style.display = 'none'">Close</button>
-        </div>
-        <div class="leaderboards">
-            <div id="lb4" class="leaderboard">Connecting to server ...</div>
-            <div id="lb5" class="leaderboard">Connecting to server ...</div>
-        </div>
-    </div>
-    <div id="screen2">
-        <div class="centered">
-            <h1>Select class</h1>
-            <button id="custom-name-button" class="small">&gt; Use custom name &lt;</button>
-            <!-- Generated -->
-            <button id="custom-name-button" class="small" onclick="switchScreen(1)">Back</button>
-        </div>
-    </div>
-    <div id="screen3">
-        <div class="centered">
-            <h1>Select class number</h1>
-            <!-- Generated -->
-            <button id="custom-name-button" class="small" onclick="switchScreen(2)">Back</button>
-        </div>
-    </div>
-    <div id="screen4">
-        <div class="centered">
-            <h2><span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
-            <h2 id="timer">00:00.000</h2>
-            <div class="row">
-                <button id="timer-start-button">Start</button>
-                <button id="timer-cancel-button" onclick="websocket.send('!regcancel'); switchScreen(1);">Cancel</button>
-            </div>
-            <h2>When finished, press anywhere to stop the timer</h2>
-        </div>
-    </div>
-    <div id="screen5">
-        <div class="centered">
-            <h2><span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
-            <h1 class="trial-result"></h1>
-            <div class="row">
-                <button id="result-confirm-button">Confirm</button>
-                <button id="result-cancel-button">Cancel</button>
+        #custom-name-input {
+            font-size: 50px;
+            padding: 16px;
+            margin: 60px;
+        }
+        
+        #connection-test-actions {
+            font-family: Arial;
+            font-size: 20px;
+            font-weight: normal;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="screen999">
+            <div class="centered">
+                <h1>Input: Permission Denied</h1>
+                <h3>All input requests from this device are ignored by the server.</h3>
+                <a href="./output"><button>Switch to output</button></a>
+                <br>
+                <p>
+                    <span class="action screen-1-button">[ view controller anyways ]</span>
+                    <span id="action-use-access-token" class="action">[ use access token ]</span>
+                    <a class="action" href="/admin">[ admin ]</a>
+                </p>
             </div>
         </div>
-    </div>
-    <div id="screen6">
-        <div class="centered">
-            <h1>Enter your name:</h1>
-            <input type="text" id="custom-name-input" placeholder="Your name here ...">
-            <div class="row">
-                <button id="name-confirm-button">Confirm</button>
-                <button class="screen-1-button">Cancel</button>
+        <div id="screen998">
+            <div class="centered">
+                <h1>Input permission granted by admin</h1>
+                <button class="screen-1-button">Proceed</button>
+            </div>
+        </div>
+        <div id="screen1">
+            <div class="ctrl-row">
+                <button id="new-trial-4" onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
+                <button id="new-trial-5" onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
+                <button id="reload-this-button" class="small" onclick="window.location.reload()">Reload this</button>
+                <a href="/sync"><button class="small">Sync</button></a>
+                <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
+                <a href="/admin"><button class="small">Admin</button></a>
+                <a href="/output"><button>Switch to output</button></a>
+            </div>
+            <div class="ctrl-row">
+                <h2 style="display: inline; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
+                <button id="refresh-all-button" class="small">Refresh all</button>
+                <button id="reload-all-button" class="small">Reload all</button>
+                <button id="disconnect-all-button" class="small">Disconnect all output</button>
+                <button id="manual-input-button" class="small">Manual input</button>
+                <button id="reset-l4-button" class="small" dangerous>Reset L4</button>
+                <button id="reset-l5-button" class="small" dangerous>Reset L5</button>
+            </div>
+            <div class="ctrl-row">
+                <button id="toggle-l4-button" class="small">Toggle L4</button>
+                <button id="toggle-l5-button" class="small">Toggle L5</button>
+                <button id="adjust-height-button" class="small">Adjust display rows</button>
+                <button id="clear-animation-button" class="small">Clear animation</button>
+                <button id="announce-button" class="small">Announce</button>
+                <!-- <button id="hide-announcement-button" class="small">Hide announce</button> -->
+                <button class="small" onclick="connectionTest()">Test connection</button>
+            </div>
+            <h2 id="status" style="color: blue;">Connecting to server ...</h2>
+            <div id="connection-test" style="border: 4px solid blue; margin: 10px 0px; padding: 10px; font-size: 20px;">
+                <b>Connection Test</b>
+                <p>Status: <span id="connection-test-display">Loading ...</span></p>
+                <p>Actions:</p>
+                <span id="connection-test-actions"></span>
+                <br>
+                <button style="margin: 0; padding: 10px; font-size: 16px;" onclick="document.getElementById('connection-test').style.display = 'none'">Close</button>
+            </div>
+            <div class="leaderboards">
+                <div id="lb4" class="leaderboard">Connecting to server ...</div>
+                <div id="lb5" class="leaderboard">Connecting to server ...</div>
+            </div>
+        </div>
+        <div id="screen2">
+            <div class="centered">
+                <h1>Select class</h1>
+                <button id="custom-name-button" class="small">&gt; Use custom name &lt;</button>
+                <!-- Generated -->
+                <button id="custom-name-button" class="small" onclick="switchScreen(1)">Back</button>
+            </div>
+        </div>
+        <div id="screen3">
+            <div class="centered">
+                <h1>Select class number</h1>
+                <!-- Generated -->
+                <button id="custom-name-button" class="small" onclick="switchScreen(2)">Back</button>
+            </div>
+        </div>
+        <div id="screen4">
+            <div class="centered">
+                <h2><span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
+                <h2 id="timer">00:00.000</h2>
+                <div class="row">
+                    <button id="timer-start-button">Start</button>
+                    <button id="timer-cancel-button" onclick="websocket.send('!regcancel'); switchScreen(1);">Cancel</button>
+                </div>
+                <h2>When finished, press anywhere to stop the timer</h2>
+            </div>
+        </div>
+        <div id="screen5">
+            <div class="centered">
+                <h2><span class="trial-name"></span> (<span class="trial-ndisks"></span> disks)</h2>
+                <h1 class="trial-result"></h1>
+                <div class="row">
+                    <button id="result-confirm-button">Confirm</button>
+                    <button id="result-cancel-button">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="screen6">
+            <div class="centered">
+                <h1>Enter your name:</h1>
+                <input type="text" id="custom-name-input" placeholder="Your name here ...">
+                <div class="row">
+                    <button id="name-confirm-button">Confirm</button>
+                    <button class="screen-1-button">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<link rel="prefetch" href="/assets/bg1.jpg" as="image">
-<script src="/js/input.js"></script>
+    <link rel="prefetch" href="/assets/bg1.jpg" as="image">
+    <script src="/js/input.js"></script>
+</body>
+</html>

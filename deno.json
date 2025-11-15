@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "minify": "deno run --allow-read --allow-write --allow-env minify.ts",
+    "minify": "deno run --allow-read --allow-write --allow-env ./scripts/minify.ts",
     "dev": "deno run --watch main.ts"
   },
   "lint": {

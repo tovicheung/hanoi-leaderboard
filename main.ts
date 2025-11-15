@@ -658,17 +658,6 @@ app.post("/api/instance/clone", adminAuth, async (c) => {
     return bad(c, "Invalid request body.");
 });
 
-// app.post("/api/instance/import", adminAuth, async (c) => {
-//     const body = await c.req.json();
-//     if ("data" in body) {
-//         await setData(body.data);
-//         broadcast("!reload-all");
-//         await adminSendInstancesData();
-//         return ok(c);
-//     }
-//     return bad(c, "Invalid request body.");
-// });
-
 app.post("/api/config/update", adminAuth, async (c) => {
     const body = await c.req.json();
     for (const fieldName in config) {
