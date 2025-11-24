@@ -6,6 +6,20 @@ type Auth = { type: "none" }
     | { type: "token", token: string, expireIn: number }
     | { type: "elevated", timestamp: number }
 
+const channel = new BroadcastChannel("messages");
+
+channel.onmessage = async (event: MessageEvent) => {
+    if (event.data === "update") {
+        broadcastData();
+    } else if (event.data === "meta") {
+        broadcast(`@meta:${JSON.stringify(await getMeta())}`);
+    } else if (event.data.startsWith("!")) {
+        broadcast(event.data);
+    } else if (event.data === "refresh-all") {
+        broadcastData();
+    }
+};
+
 interface Client {
     socket: WebSocket,
     connectTimestamp: number,
@@ -233,6 +247,11 @@ function broadcast(msg: string) {
     });
 }
 
+async function broadcastData() {
+    const data = await getData();
+    broadcast(`DATA:${JSON.stringify(data)}`);
+}
+
 async function broadcastAndSaveData(leaderboards: HanoiData) {
     broadcast(`DATA:${JSON.stringify(leaderboards)}`);
     await setData(leaderboards);
@@ -442,6 +461,7 @@ function connectSocket(req: Request) {
                     broadcast(`!highlight-${JSON.stringify(obj.highlight)}`);
                 }
             }
+            channel.postMessage("update");
         }
         
         if (event.data.startsWith("@timeLimit:")) {
@@ -459,7 +479,9 @@ function connectSocket(req: Request) {
 
             await editMeta(meta => {
                 meta.timeLimits = timeLimits;
-            })
+            });
+
+            channel.postMessage("meta");
             
             return;
         }
@@ -476,6 +498,7 @@ function connectSocket(req: Request) {
 
         if (event.data.startsWith("!")) {
             broadcast(event.data);
+            channel.postMessage(event.data);
             return;
         }
 
@@ -483,6 +506,7 @@ function connectSocket(req: Request) {
         if (event.data == "refresh-all") {
             Object.values(leaderboards).forEach(l => l.sort((a, b) => a.score - b.score));
             await broadcastAndSaveData(leaderboards);
+            channel.postMessage(event.data);
             return;
         }
         if (event.data == "refresh") {
