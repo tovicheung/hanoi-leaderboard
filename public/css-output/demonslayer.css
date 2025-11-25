@@ -1,25 +1,21 @@
-
-@font-face {
+/*@font-face {
     font-family: "Blood Crow";
-    /* src: url("/assets/bloodcrowc.woff2") format("woff2"),
-        url("/assets/bloodcrowc.woff") format("woff"),
-        url("/assets/bloodcrowc.ttf") format("truetype"); */
     src: url("/assets/bloodcrow.ttf") format("truetype");
     font-weight: normal;
     font-style: normal;
     font-display: swap; 
-}
+}*/
 
 #title {
-    font-family: "Blood Crow";
+    font-family: "Audiowide";
     font-weight: normal;
-    font-size: 56px;
+    font-size: 52px;
 }
 
 .header {
-    font-family: "Blood Crow";
+    font-family: "Audiowide";
     font-weight: normal;
-    font-size: 36px;
+    font-size: 24px;
 }
 
 .record-avatar {

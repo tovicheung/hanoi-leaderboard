@@ -118,13 +118,13 @@
                 <button id="new-trial-4" onclick="trialOptions.ndisks = 4; switchScreen(2)">New trial (4)</button>
                 <button id="new-trial-5" onclick="trialOptions.ndisks = 5; switchScreen(2)">New trial (5)</button>
                 <button id="reload-this-button" class="small" onclick="window.location.reload()">Reload this</button>
-                <a href="/sync"><button class="small">Sync</button></a>
+                <!-- <a href="/sync"><button class="small">Sync</button></a> -->
                 <button class="small" onclick="document.body.requestFullscreen();">Fullscreen</button>
                 <a href="/admin"><button class="small">Admin</button></a>
                 <a href="/output"><button>Switch to output</button></a>
             </div>
             <div class="ctrl-row">
-                <h2 style="display: inline; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
+                <h2 style="display: none; font-size: 20px; color: blue"><span id="nclients"></span> connected</h2>
                 <button id="refresh-all-button" class="small">Refresh all</button>
                 <button id="reload-all-button" class="small">Reload all</button>
                 <button id="disconnect-all-button" class="small">Disconnect all output</button>
