@@ -220,7 +220,7 @@ function addRaw() {
 
 function sendNewRecord() {
     websocket.send("!regconfirm");
-    pushRecord(trialOptions.ndisks, trialOptions.name, score);
+    pushRecord(trialOptions.ndisks, trialOptions.name, score, true);
     switchScreen(1);
 }
 
