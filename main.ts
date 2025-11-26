@@ -6,18 +6,10 @@ type Auth = { type: "none" }
     | { type: "token", token: string, expireIn: number }
     | { type: "elevated", timestamp: number }
 
-const channel = new BroadcastChannel("messages");
+const channel = new BroadcastChannel("broadcasts");
 
 channel.onmessage = async (event: MessageEvent) => {
-    if (event.data === "update") {
-        broadcastData();
-    } else if (event.data === "meta") {
-        broadcast(`@meta:${JSON.stringify(await getMeta())}`);
-    } else if (event.data.startsWith("!")) {
-        broadcast(event.data);
-    } else if (event.data === "refresh-all") {
-        broadcastData();
-    }
+    broadcast(event.data);
 };
 
 interface Client {
@@ -245,6 +237,7 @@ function broadcast(msg: string) {
         if (c.socket.readyState == c.socket.CLOSED) return;
         c.socket.send(msg);
     });
+    channel.postMessage(msg);
 }
 
 async function broadcastData() {
@@ -352,7 +345,7 @@ function connectSocket(req: Request) {
     socket.addEventListener("open", async () => {
         socket.send(`@meta:${JSON.stringify(await getMeta())}`);
         socket.send(`DATA:${JSON.stringify(await getData())}`);
-        broadcast(`@nclients:${clients.size}`);
+        // broadcast(`@nclients:${clients.size}`);
         if (config.inputAccess == "everyone") {
             socket.send("AUTH:success");
         } else {
@@ -456,12 +449,11 @@ function connectSocket(req: Request) {
                 const leaderboards: HanoiData = obj.leaderboards;
                 Object.values(leaderboards).forEach(l => l.sort((a, b) => a.score - b.score));
                 await broadcastAndSaveData(leaderboards);
-
+                
                 if ("highlight" in obj && obj.highlight !== null && "id" in obj.highlight && "name" in obj.highlight) {
                     broadcast(`!highlight-${JSON.stringify(obj.highlight)}`);
                 }
             }
-            channel.postMessage("update");
         }
         
         if (event.data.startsWith("@timeLimit:")) {
@@ -480,8 +472,6 @@ function connectSocket(req: Request) {
             await editMeta(meta => {
                 meta.timeLimits = timeLimits;
             });
-
-            channel.postMessage("meta");
             
             return;
         }
@@ -498,7 +488,6 @@ function connectSocket(req: Request) {
 
         if (event.data.startsWith("!")) {
             broadcast(event.data);
-            channel.postMessage(event.data);
             return;
         }
 
@@ -506,7 +495,6 @@ function connectSocket(req: Request) {
         if (event.data == "refresh-all") {
             Object.values(leaderboards).forEach(l => l.sort((a, b) => a.score - b.score));
             await broadcastAndSaveData(leaderboards);
-            channel.postMessage(event.data);
             return;
         }
         if (event.data == "refresh") {
@@ -517,7 +505,7 @@ function connectSocket(req: Request) {
 
     socket.addEventListener("close", () => {
         clients.delete(clientId);
-        broadcast(`@nclients:${clients.size}`);
+        // broadcast(`@nclients:${clients.size}`);
         if (clientId === adminId) adminId = null;
         adminSendClientsData();
     })
