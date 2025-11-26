@@ -9,7 +9,7 @@ type Auth = { type: "none" }
 const channel = new BroadcastChannel("broadcasts");
 
 channel.onmessage = async (event: MessageEvent) => {
-    broadcast(event.data);
+    broadcast(event.data, false);
 };
 
 interface Client {
@@ -232,12 +232,12 @@ async function setData(leaderboards: HanoiData) {
 
 // SOCKET HELPERS
 
-function broadcast(msg: string) {
+function broadcast(msg: string, global: boolean = true) {
     clients.forEach(c => {
         if (c.socket.readyState == c.socket.CLOSED) return;
         c.socket.send(msg);
     });
-    channel.postMessage(msg);
+    if (global) channel.postMessage(msg);
 }
 
 async function broadcastData() {
