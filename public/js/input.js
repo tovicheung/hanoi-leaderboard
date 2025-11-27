@@ -210,7 +210,7 @@ function addRaw() {
     const name = prompt("Insert record (Step 2/3)\nEnter the name:");
     if (name === null) return;
     if (!checkName(name, `lb${ndisks}`)) return;
-    let score = prompt("Insert record (Step 3/3)\nEnter the time:\nLeave blank to enter the number of milliseconds directly");
+    let score = prompt("Insert record (Step 3/3)\nEnter the time (eg: 01:23.456):\nLeave blank to enter the number of milliseconds directly");
     if (score === null) return;
     if (score === "") {
         score = prompt("Insert record (Step 3/3)\nEnter the number of milliseconds:");
