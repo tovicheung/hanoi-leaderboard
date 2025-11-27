@@ -1,4 +1,4 @@
-This is a live leaderboard service used to host mathematics club events at my school.
+This is a live leaderboard system, which is a part of a mathematics club event at my school.
 
 ## Schema
 
