@@ -47,9 +47,10 @@ function switchScreen(n) {
 
     // temp
     if (n == 4) {
-        if (!checkName(trialOptions.name)) {
+        if (!checkName(trialOptions.name, `lb${trialOptions.ndisks}`)) {
             switchScreen(6);
             document.getElementById("custom-name-input").value = trialOptions.name;
+            return;
         }
         websocket.send(`!reginit-${trialOptions.ndisks}${trialOptions.name}`);
         document.querySelectorAll(".trial-name").forEach(e => e.innerText = trialOptions.name);
@@ -73,16 +74,13 @@ function connectionTest2() {
                 disp.innerHTML = `<span style='color: red'>Server returned an error<br>${response.status} ${response.statusText}</span>`;
                 actions.innerHTML = "* Do NOT reload anything.<br>"
                 + "* Test the connection again and again. (the server *should* restart soon)<br>"
-                + "* When the connection is finally resumed, reload everything.";
+                + "* If the issue persists, switch to the backup system.<br>";
             }
         })
         .catch(error => {
             disp.innerHTML = "<span style='color: red'>The server is unreachable";
             actions.innerHTML = "Check the internet connection on this device.<br>"
-                + "If it is not a problem with internet connection:<br>"
-                + "* Do NOT reload anything.<br>"
-                + "* Test the connection again and again. (the server *should* restart soon)<br>"
-                + "* When the connection is finally resumed, reload everything.";
+                + "If it is not a problem with internet connection, and the issue persists, switch to the backup system.<br>"
         });
 }
 
@@ -104,7 +102,7 @@ function connectionTest() {
             websocket.onmessage = oldOnMessage;
             clearTimeout(timeout);
             disp.innerHTML = "<span style='color: darkgreen'>No problems detected.</span>";
-            actions.innerText = "If the output computer is disconnected and fails to auto-reconnect, press Ctrl+Shift+R on the computer to fully reload.";
+            actions.innerText = "If there is issue with the output computer, reload it using Ctrl+Shift+R.";
             return;
         }
         return oldOnMessage(e);
@@ -169,17 +167,20 @@ function announce() {
     websocket.send(`!announcement-show:${msg}`);
 }
 
-function checkName(name) {
+function checkName(name, id) {
     let result = [];
+    let ids = [];
     for (const record of leaderboards.lb4) {
         if (record.name === name) {
             result.push({disks: 4, record});
+            ids.push("lb4");
             break;
         }
     }
     for (const record of leaderboards.lb5) {
         if (record.name === name) {
             result.push({disks: 5, record});
+            ids.push("lb5");
             break;
         }
     }
@@ -187,21 +188,28 @@ function checkName(name) {
         return true;
     }
 
-    msg = `The name '${name}' already exists:\n\n`
+    msg = `The name '${name}' already exists in the system:\n`
     for (const found of result) {
-        msg += `[${found.disks} DISKS]  ${found.record.name}  -  ${parseTime(found.record.score)}\n`
+        msg += `[${found.disks} disks]  ${found.record.name}  -  ${parseTime(found.record.score)}\n`
     }
-    msg += "\nClick OK if this is intentional.\nClick cancel to cancel the operation."
+    // msg += "\nClick OK if this is intentional.\nClick cancel to cancel the operation."
+    msg += "\n";
+    
+    if (ids.includes(id)) {
+        msg += `This name already exists in the leaderboard chosen (${id[2]} disks). If it is the same person, the system will automatically keep the best record.\n\n`
+    }
+    msg += "Click OK if this is the SAME person (if you are unsure, ask them if they have played already)\n";
+    msg += "Otherwise, click Cancel and choose another name.\n";
     
     return window.confirm(msg)
 }
 
 function addRaw() {
-    const ndisks = prompt("Insert record (Step 1/3)\n4 or 5 disks?");
+    const ndisks = prompt("Insert record (Step 1/3)\n4 or 5 disks? Enter a single digit.");
     if (ndisks !== "4" && ndisks !== "5") return;
     const name = prompt("Insert record (Step 2/3)\nEnter the name:");
     if (name === null) return;
-    if (!checkName(name)) return;
+    if (!checkName(name, `lb${ndisks}`)) return;
     let score = prompt("Insert record (Step 3/3)\nEnter the time:\nLeave blank to enter the number of milliseconds directly");
     if (score === null) return;
     if (score === "") {
@@ -352,7 +360,7 @@ function modifyRank(id, n) {
     const leaderboard = leaderboards[id];
     const name = prompt("Modify Record (Step 1/2)\nEdit the name:", leaderboard[n-1].name);
     if (name === null) return;
-    if (name != leaderboard[n-1].name && !checkName(name)) return;
+    if (name != leaderboard[n-1].name && !checkName(name, id)) return;
     const newTime = prompt("Modify Record (Step 2/2)\nEdit the time:\nLeave blank to edit the number of milliseconds directly", parseTime(leaderboard[n-1].score));
     if (newTime === null) return;
     let score;
@@ -407,7 +415,7 @@ function updateLeaderboard(id, leaderboard) {
         removeButton.innerText = "[Del]";
         removeButton._rank = rank;
         removeButton.onclick = e => {
-            if (!window.confirm(`Remove this record?\n${name}  -  ${score}`)) return;
+            if (!window.confirm(`Remove this record?\n[${id[2]} disks] ${name}  -  ${score}`)) return;
             removeRank(leaderboard, e.target._rank)
         };
         
@@ -419,7 +427,7 @@ function updateLeaderboard(id, leaderboard) {
         rank++;
     }
     if (leaderboard.length == 0) {
-        container.innerHTML += "<h2>empty</h2>";
+        container.innerHTML += "<h2>[no data]</h2>";
     }
     container.style.backgroundColor = "lightgreen";
     setTimeout(() => container.style.backgroundColor = "", 300);
@@ -532,31 +540,31 @@ document.addEventListener("DOMContentLoaded", () => {
         websocket.send("!reload-all");
     };
 
-    document.getElementById("disconnect-all-button").onclick = () => {
-        websocket.send("!disconnect-all-output");
-    };
+    // document.getElementById("disconnect-all-button").onclick = () => {
+    //     websocket.send("!disconnect-all-output");
+    // };
 
     document.getElementById("manual-input-button").onclick = () => {
         addRaw();
     };
 
-    document.getElementById("reset-l4-button").onclick = () => {
-        leaderboards.lb4 = [];
-        sendUpdate();
-    };
+    // document.getElementById("reset-l4-button").onclick = () => {
+    //     leaderboards.lb4 = [];
+    //     sendUpdate();
+    // };
+// 
+    // document.getElementById("reset-l5-button").onclick = () => {
+    //     leaderboards.lb5 = [];
+    //     sendUpdate();
+    // };
 
-    document.getElementById("reset-l5-button").onclick = () => {
-        leaderboards.lb5 = [];
-        sendUpdate();
-    };
-
-    document.getElementById("toggle-l4-button").onclick = () => {
-        websocket.send("!toggle-l4");
-    };
-
-    document.getElementById("toggle-l5-button").onclick = () => {
-        websocket.send("!toggle-l5");
-    };
+    // document.getElementById("toggle-l4-button").onclick = () => {
+    //     websocket.send("!toggle-l4");
+    // };
+// 
+    // document.getElementById("toggle-l5-button").onclick = () => {
+    //     websocket.send("!toggle-l5");
+    // };
 
     document.getElementById("adjust-height-button").onclick = () => {
         adjustHeight();

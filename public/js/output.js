@@ -267,7 +267,7 @@ function handleCommand(cmd) {
     }
 }
 
-let rowsPerPage = 7;
+let rowsPerPage = 6;
 const PAGE_DURATION_MS = 10000;
 const ANIMATION_DURATION_MS = 1000;
 
@@ -539,6 +539,8 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (theme == "demonslayer") {
         document.getElementById("lbs-gojo").style.display = "none";
+        
+        document.querySelectorAll(".lb-scroll").forEach(e => e.style.height = `${ROW_HEIGHT * rowsPerPage - 6}px`);
     } else {
         document.getElementById("lbs-demonslayer").style.display = "none";
     }
