@@ -205,7 +205,7 @@ app.post("/api/token/modify", adminAuth, async (c) => {
     return ok(c);
 });
 
-app.delete("/api/token/delete", adminAuth, async (c) => {
+app.post("/api/token/delete", adminAuth, async (c) => {
     const { token } = await c.req.json();
     if (typeof token !== "string") {
         return bad(c, "Invalid token name.");
