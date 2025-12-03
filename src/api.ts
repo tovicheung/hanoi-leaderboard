@@ -2,7 +2,7 @@ import { Hono, Context, Next } from "@hono/hono";
 import { serveStatic } from "@hono/hono/deno";
 import { HanoiData } from "./types.ts";
 import { config, updateConfig, getData, instanceExists, createInstance, switchInstance, getActiveName, kv, adminCreateToken, getTokensData, getAllInstanceNames } from "./db.ts";
-import { broadcastAndSaveData, adminSendServerConfig, connectSocket } from "./socket.ts";
+import { broadcastAndSaveData, connectSocket } from "./socket.ts";
 
 function validateHanoiData(data: any): string | null {
     if (!("lb4" in data)) {
@@ -43,6 +43,10 @@ function bad(c: Context, msg: string | null = null) {
 
 function ok(c: Context) {
     return c.text("Done", 200);
+}
+
+async function serverConfig(c: Context) {
+    return c.json(config);
 }
 
 async function instances(c: Context) {
@@ -96,7 +100,7 @@ app.post("/api/data", adminAuth, async (c) => {
 
 app.get("/api/instance", adminAuth, async (c) => {
     return instances(c);
-})
+});
 
 app.post("/api/instance/create", adminAuth, async (c) => {
     const body = await c.req.json();
@@ -169,7 +173,11 @@ app.post("/api/instance/clone", adminAuth, async (c) => {
     return bad(c, "Invalid request body.");
 });
 
-app.post("/api/config/update", adminAuth, async (c) => {
+app.get("/api/config", adminAuth, async (c) => {
+    return serverConfig(c);
+});
+
+app.post("/api/config", adminAuth, async (c) => {
     const body = await c.req.json();
     const newConfig = { ...config };
     for (const fieldName in config) {
@@ -179,8 +187,7 @@ app.post("/api/config/update", adminAuth, async (c) => {
         }
     }
     await updateConfig(newConfig);
-    adminSendServerConfig();
-    return ok(c);
+    return serverConfig(c);
 });
 
 app.post("/api/token/create", adminAuth, async (c) => {

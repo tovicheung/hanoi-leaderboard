@@ -59,6 +59,7 @@ websocket.onmessage = e => {
             document.getElementById("auth-msg").style.color = "green";
             loadAccessData();
             loadInstanceData();
+            loadConfig();
             document.querySelector(".tab-btn.warn").classList.remove("warn");
         } else if (e.data == "ADMIN:OVERRIDDEN") {
             document.getElementById("password").value = "";
@@ -69,15 +70,6 @@ websocket.onmessage = e => {
         } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
             const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
             updateClientData(data);
-        } else if (e.data.startsWith("ADMIN:SERVERCONFIG:")) {
-            serverConfig = JSON.parse(e.data.slice("ADMIN:SERVERCONFIG:".length));
-            setSegmentButtons("inputAccess", serverConfig.inputAccess);
-            if (serverConfig.backupUrl === null) {
-                document.getElementById("backup-url").innerText = "[unset]"
-            } else {
-                document.getElementById("backup-url").innerText = serverConfig.backupUrl;
-            }
-            document.getElementById("parent-url").innerText = serverConfig.parentUrl === null ? "[unset]" : serverConfig.parentUrl;
         }
     } else if (e.data == "pong") {
         report(`Server responded in ${parseTime(Date.now() - lastPing)}`, 1);
@@ -88,17 +80,13 @@ websocket.onmessage = e => {
     }
 }
 
-
-
 function setConnectionStatus(msg) {
     document.getElementById("connection-status").innerHTML = msg;
 }
 
-
 function checkAdmin() {
     websocket.send(`ADMIN:${__(document.getElementById("password").value)}`);
 }
-
 
 async function createNewInstance() {
     const name = prompt("Enter name for new instance:");
@@ -357,10 +345,6 @@ function updateClientData(data) {
     }
 }
 
-
-
-
-
 function showNotification(message, type, options = {}) {
     let color = type === null || type === undefined ? "white" : type ? "lightgreen" : "pink";
     const notif = document.createElement("div");
@@ -417,8 +401,28 @@ async function req(url, method, data) {
     return response;
 }
 
-function configUpdate(newConfig) {
-    req("/api/config/update", "POST", newConfig);
+async function loadConfig() {
+    const resp = await req("/api/config", "GET");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateConfig(data);
+}
+
+function updateConfig(config) {
+    setSegmentButtons("inputAccess", config.inputAccess);
+    if (config.backupUrl === null) {
+        document.getElementById("backup-url").innerText = "[unset]"
+    } else {
+        document.getElementById("backup-url").innerText = config.backupUrl;
+    }
+    document.getElementById("parent-url").innerText = config.parentUrl === null ? "[unset]" : config.parentUrl;
+}
+
+async function setConfig(newConfig) {
+    const resp = await req("/api/config", "POST", newConfig);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateConfig(data);
 }
 
 async function createToken() {
@@ -497,7 +501,7 @@ function modifyBackupUrl() {
     if (newUrl == "") {
         newUrl = null
     }
-    configUpdate({ backupUrl: newUrl });
+    setConfig({ backupUrl: newUrl });
 }
 
 function modifyParentUrl() {
@@ -506,9 +510,8 @@ function modifyParentUrl() {
     if (newUrl == "") {
         newUrl = null
     }
-    configUpdate({ parentUrl: newUrl });
+    setConfig({ parentUrl: newUrl });
 }
-
 
 function setupSegmentButtons(id, onchange) {
     const parent = document.getElementById(id);
@@ -525,5 +528,5 @@ function setSegmentButtons(id, value) {
 }
 
 setupSegmentButtons("inputAccess", value => {
-    configUpdate({ inputAccess: value });
+    setConfig({ inputAccess: value });
 });

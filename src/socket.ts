@@ -44,11 +44,6 @@ function getAdminSocket(): WebSocket | null {
     return clients.get(adminId)!.socket;
 }
 
-export function adminSendServerConfig() {
-    getAdminSocket()
-        ?.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
-}
-
 export function adminSendClientsData() {
     const data = [];
     for (const [id, client] of clients.entries()) {
@@ -118,7 +113,6 @@ export function connectSocket(req: Request) {
             clients.get(adminId)!.role = "Admin";
             clients.get(adminId)!.auth = { type: "admin" };
             socket.send("ADMIN:OK");
-            adminSendServerConfig();
             adminSendClientsData();
             return;
         }
