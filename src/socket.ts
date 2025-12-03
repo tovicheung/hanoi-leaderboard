@@ -49,14 +49,6 @@ export function adminSendServerConfig() {
         ?.send(`ADMIN:SERVERCONFIG:${JSON.stringify(config)}`);
 }
 
-export async function adminSendInstancesData() {
-    getAdminSocket()
-        ?.send(`ADMIN:INSTANCES:${JSON.stringify({
-            instances: await getAllInstanceNames(),
-            current: await getActiveName(),
-        })}`);
-}
-
 export function adminSendClientsData() {
     const data = [];
     for (const [id, client] of clients.entries()) {
@@ -105,7 +97,6 @@ export function connectSocket(req: Request) {
             socket.send("AUTH:required");
         }
         adminSendClientsData();
-        adminSendInstancesData();
     });
 
     socket.addEventListener("message", async (event) => {
@@ -129,7 +120,6 @@ export function connectSocket(req: Request) {
             socket.send("ADMIN:OK");
             adminSendServerConfig();
             adminSendClientsData();
-            await adminSendInstancesData();
             return;
         }
 

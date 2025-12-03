@@ -1,8 +1,8 @@
 import { Hono, Context, Next } from "@hono/hono";
 import { serveStatic } from "@hono/hono/deno";
 import { HanoiData } from "./types.ts";
-import { config, updateConfig, getData, instanceExists, createInstance, switchInstance, getActiveName, kv, adminCreateToken, getTokensData } from "./db.ts";
-import { broadcastAndSaveData, adminSendInstancesData, adminSendServerConfig, connectSocket } from "./socket.ts";
+import { config, updateConfig, getData, instanceExists, createInstance, switchInstance, getActiveName, kv, adminCreateToken, getTokensData, getAllInstanceNames } from "./db.ts";
+import { broadcastAndSaveData, adminSendServerConfig, connectSocket } from "./socket.ts";
 
 function validateHanoiData(data: any): string | null {
     if (!("lb4" in data)) {
@@ -43,6 +43,14 @@ function bad(c: Context, msg: string | null = null) {
 
 function ok(c: Context) {
     return c.text("Done", 200);
+}
+
+async function instances(c: Context) {
+    const data = {
+        instances: await getAllInstanceNames(),
+        current: await getActiveName(),
+    };
+    return c.json(data);
 }
 
 export const app = new Hono();
@@ -86,6 +94,10 @@ app.post("/api/data", adminAuth, async (c) => {
     return ok(c);
 });
 
+app.get("/api/instance", adminAuth, async (c) => {
+    return instances(c);
+})
+
 app.post("/api/instance/create", adminAuth, async (c) => {
     const body = await c.req.json();
     if ("name" in body && typeof body.name == "string") {
@@ -96,8 +108,7 @@ app.post("/api/instance/create", adminAuth, async (c) => {
             return bad(c, "Name is already in use.");
         }
         await createInstance(body.name);
-        await adminSendInstancesData();
-        return ok(c);
+        return instances(c);
     }
     return bad(c, "Invalid request body.");
 });
@@ -106,8 +117,7 @@ app.post("/api/instance/switch", adminAuth, async (c) => {
     const body = await c.req.json();
     if ("name" in body && typeof body.name == "string") {
         await switchInstance(body.name);
-        await adminSendInstancesData();
-        return ok(c);
+        return instances(c);
     }
     return bad(c, "Invalid request body.");
 });
@@ -123,8 +133,7 @@ app.delete("/api/instance/delete", adminAuth, async (c) => {
         }
         await kv.delete(["instances", body.name, "meta"]);
         await kv.delete(["instances", body.name, "data"]);
-        await adminSendInstancesData();
-        return ok(c);
+        return instances(c);
     }
     return bad(c, "Invalid request body.");
 });
@@ -150,9 +159,9 @@ app.post("/api/instance/clone", adminAuth, async (c) => {
             .set(["instances", to, "meta"], (await kv.get(["instances", from, "meta"])).value)
             .set(["instances", to, "data"], (await kv.get(["instances", from, "data"])).value)
             .commit();
-        await adminSendInstancesData();
+        
         if (result.ok) {
-            return ok(c);
+            return instances(c);
         } else {
             return bad(c, "KV write failed.");
         }

@@ -58,6 +58,7 @@ websocket.onmessage = e => {
             document.getElementById("auth-msg").innerText = "Authenticated";
             document.getElementById("auth-msg").style.color = "green";
             loadAccessData();
+            loadInstanceData();
             document.querySelector(".tab-btn.warn").classList.remove("warn");
         } else if (e.data == "ADMIN:OVERRIDDEN") {
             document.getElementById("password").value = "";
@@ -65,9 +66,6 @@ websocket.onmessage = e => {
             websocket.close();
             showNotification("This session is overridden by another session. Reload to reconnect.", type = 0, { duration: 5000 });
             return;
-        } else if (e.data.startsWith("ADMIN:INSTANCES:")) {
-            const instances = JSON.parse(e.data.slice("ADMIN:INSTANCES:".length));
-            updateInstances(instances);
         } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
             const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
             updateClientData(data);
@@ -102,10 +100,38 @@ function checkAdmin() {
 }
 
 
-function createNewInstance() {
+async function createNewInstance() {
     const name = prompt("Enter name for new instance:");
     if (name === null) return null;
-    req("/api/instance/create", "POST", { name });
+    const resp = await req("/api/instance/create", "POST", { name });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateInstances(data);
+}
+
+async function switchInstance(name) {
+    const resp = await req("/api/instance/switch", "POST", { name });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateInstances(data);
+}
+
+async function cloneInstance(name) {
+    const newName = prompt("Enter new name:");
+    if (newName === null) return;
+    const resp = await req("/api/instance/clone", "POST", { from: name, to: newName });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateInstances(data);
+}
+
+async function deleteInstance(name) {
+    const check = prompt("Type the instance name again to confirm deletion:");
+    if (check !== name) return;
+    const resp = await req("/api/instance/delete", "DELETE", { name });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateInstances(data);
 }
 
 function instanceImport() {
@@ -132,6 +158,7 @@ async function instanceExport() {
 }
 
 function updateInstances(data) {
+    console.log(999, data);
     const list = document.getElementById("instance-list");
     list.innerHTML = "";
     for (const name of data["instances"]) {
@@ -189,25 +216,21 @@ function updateInstances(data) {
         };
         
         // [Select]
-        li.querySelector("button:nth-child(1)").onclick = e => {
+        li.querySelector("button:nth-child(1)").onclick = async e => {
             e.stopPropagation();
-            req("/api/instance/switch", "POST", { name });
+            await switchInstance(name)
         };
 
         // [Clone]
-        li.querySelector("button:nth-child(2)").onclick = e => {
+        li.querySelector("button:nth-child(2)").onclick = async e => {
             e.stopPropagation();
-            const newName = prompt("Enter new name:");
-            if (newName === null) return;
-            req("/api/instance/clone", "POST", { from: name, to: newName });
+            await cloneInstance(name);
         };
 
         // [Delete]
-        li.querySelector("button:nth-child(3)").onclick = e => {
+        li.querySelector("button:nth-child(3)").onclick = async e => {
             e.stopPropagation();
-            const check = prompt("Type the instance name again to confirm deletion:");
-            if (check !== name) return;
-            req("/api/instance/delete", "DELETE", { name });
+            await deleteInstance(name);
         };
         list.appendChild(li);
     }
@@ -398,8 +421,6 @@ function configUpdate(newConfig) {
     req("/api/config/update", "POST", newConfig);
 }
 
-
-
 async function createToken() {
     const token = prompt("Enter access token (at least 4 chars):");
     if (token === null) return;
@@ -463,8 +484,12 @@ async function loadAccessData() {
     updateAccessData();
 }
 
-
-
+async function loadInstanceData() {
+    const resp = await req("/api/instance", "GET");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    updateInstances(data);
+}
 
 function modifyBackupUrl() {
     let newUrl = prompt("Enter new backup url:", serverConfig.backupUrl);
