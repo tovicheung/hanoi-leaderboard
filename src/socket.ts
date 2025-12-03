@@ -1,5 +1,5 @@
 import { Client, HanoiData, InstanceMeta } from "./types.ts";
-import { config, authCheckToken, getData, setData, getMeta, setMeta, getTimeLimits, getAllInstanceNames, getActiveName } from "./db.ts";
+import { config, authCheckToken, getData, setData, getMeta, setMeta, getTimeLimits } from "./db.ts";
 
 const channel = new BroadcastChannel("broadcasts");
 
@@ -10,7 +10,7 @@ channel.onmessage = (event: MessageEvent) => {
 export const clients = new Map<string, Client>();
 export let adminId: string | null = null;
 
-function broadcast(msg: string, global: boolean = true) {
+export function broadcast(msg: string, global: boolean = true) {
     clients.forEach(c => {
         if (c.socket.readyState == c.socket.CLOSED) return;
         c.socket.send(msg);

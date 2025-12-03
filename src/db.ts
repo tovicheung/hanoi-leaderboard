@@ -1,5 +1,6 @@
 import { Config, HanoiData, InstanceMeta, TimeLimits, TokensData } from "./types.ts";
 import { DEFAULT_CONFIG, isValidConfig } from "./config.ts";
+import { broadcast } from "./socket.ts";
 
 export const kv = await Deno.openKv();
 
@@ -73,7 +74,16 @@ export async function getAllInstanceNames() {
 
 export async function switchInstance(newInstance: string) {
     if (!await instanceExists(newInstance)) return;
+    
+    broadcast("!reload-all");
+    const oldConfig = { ...config };
+    const newConfig = { ...config };
+    newConfig.inputAccess = "none";
+    updateConfig(newConfig);
+
     await kv.set(["instanceName"], newInstance);
+    updateConfig(oldConfig);
+    broadcast("!reload-all");
 }
 
 export async function instanceExists(name: string) {
