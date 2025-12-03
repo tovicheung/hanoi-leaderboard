@@ -14,7 +14,7 @@ const _ = (str, seed = 0) => {
 };
 const __ = (str) => _(str, _(str));
 
-
+var serverConfig = {};
 const websocket = (() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
@@ -409,6 +409,7 @@ async function loadConfig() {
 }
 
 function updateConfig(config) {
+    serverConfig = config;
     setSegmentButtons("inputAccess", config.inputAccess);
     if (config.backupUrl === null) {
         document.getElementById("backup-url").innerText = "[unset]"
@@ -530,3 +531,12 @@ function setSegmentButtons(id, value) {
 setupSegmentButtons("inputAccess", value => {
     setConfig({ inputAccess: value });
 });
+
+async function ping() {
+    const start = Date.now();
+    await fetch(`${window.location.protocol}//${window.location.host}/ping`, {
+        method: "GET",
+    });
+    const end = Date.now();
+    showNotification(`Server responded in ${end - start}ms`, 1);
+}

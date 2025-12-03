@@ -17,7 +17,7 @@ Leaderboard data is stored in the following format:
 
 ## Authentication
 
-There are 3 types of authentication for websockets, as described in backend:
+There are 3 types of socket authentication, as described in the backend:
 
 ```ts
 type Auth = { type: "none" }
@@ -26,26 +26,26 @@ type Auth = { type: "none" }
     | { type: "elevated", timestamp: number }
 ```
 
-* **Admins** have full access to all features
+* **Admins** have full access to all features.
 
-    * Admins can create and control **tokens**.
+    * Admins can create and manage **tokens**.
 
-* Event helpers can use their **token** to authenticate and get input permission, allowing them to insert and modify leaderboard data (for the active leaderboard only).
+* Event helpers can use their **token** to authenticate and get input permission, allowing them to insert and modify active leaderboard data.
 
-* Admins can also **elevate** a session to temporarily grant them input permission via the admin dashblard.
+* Admins can also **elevate** a session to temporarily grant them input permission via the admin dashboard.
 
 
 ## HTTP API
-
-Public functions:
 
 * GET `/api/data`
 
     Returns the active leaderboard data.
 
-The following functions require the admin bearer token:
+The following methods require the admin bearer token:
 
 * POST `/api/data`
+
+* GET `/api/instance`
 
 * POST `/api/instance/create`
     
@@ -58,7 +58,7 @@ The following functions require the admin bearer token:
 
 * POST `/api/instance/switch`
 
-    Switch the active instance. Reloads all non-admin clients.
+    Switch the active instance. Reloads all non-admin clients. Returns updated data.
     ```json
     {
         "name": "My New Active Instance"
@@ -67,7 +67,7 @@ The following functions require the admin bearer token:
 
 * DELETE `/api/instance/delete`
 
-    Delete an instance. The instance to be deleted should not be the active instance.
+    Delete an instance. The instance to be deleted should not be the active instance. Returns updated data.
     ```json
     {
         "name": "My Unused Instance"
@@ -76,7 +76,7 @@ The following functions require the admin bearer token:
 
 * POST `/api/instance/clone`
 
-    Clones an instance.
+    Clones an instance. Returns updated data.
     ```json
     {
         "from": "Important Instance",
@@ -84,9 +84,11 @@ The following functions require the admin bearer token:
     }
     ```
 
+* GET `/api/config`
+
 * POST `/api/config/update`
 
-    Updates the configuration of the server. The json object should be a subset of the full configuration object.
+    Updates the configuration of the server. The json object should be a subset of the full configuration object. Returns updated data.
     ```json
     {
         "inputAccess": "restricted",
@@ -126,11 +128,11 @@ The following functions require the admin bearer token:
 
 ## Socket API
 
-The following communications are done through websocket:
-* leaderboard data updates (`DATA:`)
+The following communications are done via websocket:
+* active leaderboard data updates (`DATA:`)
 * authentication (`AUTH:`)
 * role reporting
 * cross-node communication (`!` and `@`)
-    * status of ongoing run
+    * live status of ongoing run
     * display controls
-* admin: live operations such as client management (`ADMIN:`)
+* live admin operations such as client management (`ADMIN:`)

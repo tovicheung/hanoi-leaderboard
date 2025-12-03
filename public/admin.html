@@ -418,7 +418,10 @@
             </div>
             <div id="tab-clients">
                 <h2>Connected Clients</h2>
-                <table>
+                <button class="btn" onclick="websocket.send('refresh-all')">Refresh all</button>
+                <button class="btn" onclick="websocket.send('!reload-all')">Reload all</button>
+                <button class="btn" onclick="ping()">Ping server</button>
+                <table style="margin-top: 10px;">
                     <thead>
                         <tr>
                             <th>Connected</th>
