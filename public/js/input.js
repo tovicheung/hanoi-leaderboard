@@ -8,6 +8,15 @@ function updateLeaderboards() {
         updateLeaderboard(id, leaderboards[id]);
     }
     updateTimeLimits();
+
+    const seen = new Set();
+    for (const id in leaderboards) {
+        for (const record of leaderboards[id]) {
+            seen.add(record.name);
+        }
+    }
+    
+    document.getElementById("unique-players").innerText = `${seen.size}`;
 }
 
 let timeLimits = {
