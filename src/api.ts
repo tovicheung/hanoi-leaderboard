@@ -1,7 +1,7 @@
 import { Hono, Context, Next } from "@hono/hono";
 import { serveStatic } from "@hono/hono/deno";
-import { HanoiData } from "./types.ts";
-import { config, updateConfig, getData, instanceExists, createInstance, switchInstance, getActiveName, kv, adminCreateToken, getTokensData, getAllInstanceNames } from "./db.ts";
+import { HanoiData, InstanceMeta } from "./types.ts";
+import { config, updateConfig, getData, instanceExists, createInstance, switchInstance, getActiveName, kv, adminCreateToken, getTokensData, getAllInstanceNames, getMeta } from "./db.ts";
 import { broadcastAndSaveData, connectSocket } from "./socket.ts";
 
 function validateHanoiData(data: any): string | null {
@@ -95,6 +95,39 @@ app.post("/api/data", adminAuth, async (c) => {
     }
     Object.values(body as HanoiData).forEach((l) => l.sort((a, b) => a.score - b.score));
     await broadcastAndSaveData(body);
+    return ok(c);
+});
+
+app.get("/api/meta", async (c) => {
+    const name = c.req.query("name");
+    if (name) {
+        const data = (await kv.get(["instances", name, "meta"])).value;
+        if (data === null) {
+            return bad(c, "Instance does not exist.");
+        }
+        return c.json(data);
+    }
+    return c.json(await getMeta());
+});
+
+app.post("/api/meta", adminAuth, async (c) => {
+    const name = c.req.query("name");
+    if (!name) {
+        return bad(c, "Name is not provided.");
+    }
+    if (!instanceExists(name)) {
+        return bad(c, "Instance does not exist.");
+    }
+
+    const meta = <InstanceMeta>(await kv.get(["instances", name, "meta"])).value;
+    const body = await c.req.json();
+    for (const key in body) {
+        if (key in meta) {
+            // @ts-ignore
+            meta[key] = body[key];
+        }
+    }
+    await kv.set(["instances", name, "meta"], meta);
     return ok(c);
 });
 

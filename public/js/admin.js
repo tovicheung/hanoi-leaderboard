@@ -145,8 +145,69 @@ async function instanceExport() {
     }
 }
 
+function check(target, value) {
+    return target === value ? "checked" : "";
+}
+
+class InstanceData extends HTMLElement {
+    async connectedCallback() {
+        this.innerHTML = "<p>Loading ...</p>";
+
+        const name = this.dataset.name;
+
+        const json = await (await req(`/api/data?name=${name}`, "GET")).json();
+        const meta = await (await req(`/api/meta?name=${name}`, "GET")).json();
+        this.innerHTML = `
+            <form>
+                <fieldset>
+                    <legend>Theme</legend>
+                    <label><input type="radio" name="theme" value="demonslayer" ${check(meta.theme, "demonslayer")}>Demon Slayer</label>
+                    <label><input type="radio" name="theme" value="gojo" ${check(meta.theme, "gojo")}>Gojo</label>
+                </fieldset>
+                <fieldset>
+                    <legend>Naming restrictions</legend>
+                    <label><input type="radio" name="naming" value="free" ${check(meta.naming, "free")}>Free</label>
+                    <label><input type="radio" name="naming" value="class/no" ${check(meta.naming, "class/no")}>Class & class no.</label>
+                </fieldset>
+                <button type="button" class="btn">Update</button>
+            </form>
+            <div class="instance-data-cols">
+                <div class="instance-data-col"></div>
+                <div class="instance-data-col"></div>
+            </div>
+        `;
+
+        this.querySelector("button").onclick = async e => {
+            const btn = e.target;
+            const form = btn.closest("form");
+            const theme = form.querySelector("input[name = 'theme']:checked")?.value;
+            const naming = form.querySelector("input[name = 'naming']:checked")?.value;
+            if (!theme || !naming) {
+                showNotification("Please select theme and naming", 0);
+                return;
+            }
+            await req(`/api/meta?name=${name}`, "POST", { theme, naming });
+        };
+
+        this.querySelectorAll(".instance-data-col").forEach((col, i) => {
+            const data = json[`lb${i+4}`];
+            for (let j = 0; j < Math.min(10, data.length); j++) {
+                const row = document.createElement("div");
+                row.classList.add("instance-data-row");
+                row.innerHTML = `
+                    <div class="instance-data-rank">${j+1}</div>
+                    <div class="instance-data-name">${data[j].name}</div>
+                    <div class="instance-data-score">${data[j].score}</div>
+                `;
+                col.appendChild(row);
+            }
+        });
+    }
+}
+
+customElements.define("instance-data", InstanceData);
+
 function updateInstances(data) {
-    console.log(999, data);
     const list = document.getElementById("instance-list");
     list.innerHTML = "";
     for (const name of data["instances"]) {
@@ -173,34 +234,10 @@ function updateInstances(data) {
 
         li.querySelector(".instance-top").onclick = () => {
             li.classList.toggle("expanded");
-            if (!li.classList.contains("expanded")) {
-                return;
+            if (li.classList.contains("expanded")) {
+                const btm = li.querySelector(".instance-bottom");
+                btm.innerHTML = `<instance-data data-name=${name}></instance-data>`;
             }
-            const btm = li.querySelector(".instance-bottom");
-            btm.innerHTML = "<p>Loading ...</p>";
-
-            req(`/api/data?name=${name}`, "GET")
-                .then(resp => {
-                    resp.json().then(json => {
-                        btm.innerHTML = `
-                            <div class="instance-data-col"></div>
-                            <div class="instance-data-col"></div>
-                        `;
-                        btm.querySelectorAll(".instance-data-col").forEach((col, i) => {
-                            const data = json[`lb${i+4}`];
-                            for (let j = 0; j < data.length; j++) {
-                                const row = document.createElement("div");
-                                row.classList.add("instance-data-row");
-                                row.innerHTML = `
-                                    <div class="instance-data-rank">${j+1}</div>
-                                    <div class="instance-data-name">${data[j].name}</div>
-                                    <div class="instance-data-score">${data[j].score}</div>
-                                `;
-                                col.appendChild(row);
-                            }
-                        });
-                    })
-                });
         };
         
         // [Select]

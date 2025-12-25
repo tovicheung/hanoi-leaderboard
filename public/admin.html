@@ -335,21 +335,14 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
         }
 
-        .instance-item {
-            transition: background-color 0.2s ease;
-        }
-
         .instance-bottom {
             overflow: hidden;
             transition: max-height 0.2s ease, padding 0.2s ease;
-            
-            display: flex;
-            gap: 10%;
         }
 
         .instance-item:not(.expanded) .instance-bottom {
-            max-height: 0;
-            padding: 0 12px;
+            max-height: 0px;
+            padding: 0px 12px;
         }
 
         .instance-item.expanded .instance-bottom {
@@ -359,6 +352,18 @@
 
         .instance-item.expanded {
             background-color: #fafafa
+        }
+
+        .instance-data-cols {
+            display: flex;
+            gap: 10%;
+        }
+
+        instance-data form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 24px;
         }
 
         .instance-data-col {
@@ -403,7 +408,7 @@
             <button class="tab-btn active warn" data-tab="auth">Auth</button>
             <button class="tab-btn" data-tab="clients">Clients</button>
             <button class="tab-btn" data-tab="config">Configuration</button>
-            <button class="tab-btn" data-tab="instances">Instances</button>
+            <button class="tab-btn" data-tab="instances">Database</button>
             <button class="tab-btn" data-tab="access-control">Tokens</button>
         </div>
         <div id="tab-content">
