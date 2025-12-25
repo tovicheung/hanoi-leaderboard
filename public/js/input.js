@@ -19,9 +19,12 @@ function updateLeaderboards() {
     document.getElementById("unique-players").innerText = `${seen.size}`;
 }
 
-let timeLimits = {
-    lb4: -1,
-    lb5: -1,
+const meta = {
+    timeLimits: {
+        lb4: -1,
+        lb5: -1,
+    },
+    naming: "free",
 };
 
 var leaderboards = {
@@ -50,11 +53,12 @@ function setStatus(msg, vanish = false) {
 
 function switchScreen(n) {
     for (const child of document.getElementById("container").children) {
-        child.style.display = "none";
+        if (child.tagName === "DIV") {
+            child.style.display = "none";
+        }
     }
     document.getElementById(`screen${n}`).style.display = "block";
 
-    // temp
     if (n == 4) {
         if (!checkName(trialOptions.name, `lb${trialOptions.ndisks}`)) {
             switchScreen(6);
@@ -259,7 +263,7 @@ function timerClickListener(obj) {
 }
 
 function startTimer() {
-    trialOptions.timeLimit = timeLimits[`lb${trialOptions.ndisks}`];
+    trialOptions.timeLimit = meta.timeLimits[`lb${trialOptions.ndisks}`];
     trialOptions.startTime = Date.now();
     trialOptions.timerInterval = setInterval(() => {
         document.getElementById("timer").innerText = parseTime(Date.now() - trialOptions.startTime);
@@ -301,8 +305,9 @@ websocket.onmessage = e => {
         if (e.data.startsWith("@nclients:")) {
             document.getElementById("nclients").innerText = e.data.slice(10);
         } else if (e.data.startsWith("@meta:")) {
-            const newData = JSON.parse(e.data.slice("@meta:".length));
-            timeLimits = newData.timeLimits;
+            const newMeta = JSON.parse(e.data.slice("@meta:".length));
+            meta.timeLimits = newMeta.timeLimits;
+            meta.naming = newMeta.naming;
             updateTimeLimits();
         }
     } else if (e.data.startsWith("!")) {
@@ -353,8 +358,8 @@ function timeLimitDisplay(timeLimit) {
 }
 
 function updateTimeLimits() {
-    for (const id in timeLimits) {
-        const timeLimit = timeLimits[id];
+    for (const id in meta.timeLimits) {
+        const timeLimit = meta.timeLimits[id];
         const elem = document.getElementById(`time-limit-${id}`);
         if (!elem) continue;
         if (timeLimit === -1) {
@@ -505,11 +510,18 @@ function millisToCoarseTime(millis) {
 
 function newTrial(n) {
     trialOptions.ndisks = n;
-    switchScreen(6);
+    if (meta.naming === "class/no") {
+        switchScreen(2);
+    } else {
+        switchScreen(6);
+    }
 }
 
 function useAccessToken() {
-    const token = prompt("Enter access token:");
+    // const token = prompt("Enter access token:");
+
+    const token = document.getElementById("access").value;
+    
     if (token === null) return;
     if (token.length < 4) return;
     websocket.send("AUTH:token:" + token);
@@ -524,7 +536,7 @@ function customName() {
 }
 
 function editTimeLimit(id) {
-    const newTimeLimit = prompt("Enter new time limit\nExamples: '4m' / '2m30s' / '1000' (1000 millis)\nEnter '-1' to remove time limit", timeLimits[id]);
+    const newTimeLimit = prompt("Enter new time limit\nExamples: '4m' / '2m30s' / '1000' (1000 millis)\nEnter '-1' to remove time limit", meta.timeLimits[id]);
     if (newTimeLimit === null) return;
     if (newTimeLimit.length == 0) return;
     if (newTimeLimit == "-1") {
@@ -600,7 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
         switchScreen(1);
     };
 
-    document.getElementById("action-use-access-token").onclick = useAccessToken;
+    document.getElementById("access-btn").onclick = useAccessToken;
 
     document.querySelectorAll(".screen-1-button").forEach(btn => btn.onclick = () => {
         switchScreen(1);
@@ -626,10 +638,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     switchScreen(1);
-
-    return;
-
-    // unused
 
     for (let i = 1; i <= 6; i++) {
         const row = document.createElement("div");

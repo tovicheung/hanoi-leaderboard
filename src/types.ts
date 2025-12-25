@@ -28,6 +28,7 @@ export interface TimeLimits {
 export interface InstanceMeta {
     timeLimits: TimeLimits;
     theme: string;
+    naming: string;
 }
 
 export interface LbRecord {

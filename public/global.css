@@ -88,6 +88,10 @@ h2 {
 }
 
 button {
+    cursor: pointer;
+}
+
+button.big {
     color: white;
     background-color: #322641;
     padding: 14px;
@@ -95,6 +99,21 @@ button {
     font-size: 24px;
     border-radius: 12px;
     cursor: pointer;
+}
+
+button.light {
+    color: black;
+    border-radius: 6px;
+    border: none;
+    padding: 8px 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+button.light:hover {
+    background: #d1d9e6;
 }
 
 button.outline {
