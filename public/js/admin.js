@@ -236,7 +236,7 @@ function updateInstances(data) {
             li.classList.toggle("expanded");
             if (li.classList.contains("expanded")) {
                 const btm = li.querySelector(".instance-bottom");
-                btm.innerHTML = `<instance-data data-name=${name}></instance-data>`;
+                btm.innerHTML = `<instance-data data-name="${name}"></instance-data>`;
             }
         };
         
@@ -421,6 +421,7 @@ document.getElementById("auth-form").onsubmit = e => {
 }
 
 async function req(url, method, data) {
+    // url = encodeURI(url);
     if (url.startsWith("/")) url = url.slice(1);
     const response = await fetch(`${window.location.protocol}//${window.location.host}/${url}`, {
         method,

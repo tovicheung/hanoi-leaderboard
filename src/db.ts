@@ -27,14 +27,6 @@ export async function setupKv() {
     if ((await kv.get(["instanceName"])).value === null) {
         await kv.set(["instanceName"], "_default");
     }
-
-    for (const name of await getAllInstanceNames()) {
-        const meta: any = (await kv.get(["instances", name, "meta"])).value;
-        if (!("naming" in meta)) {
-            meta.naming = "free";
-        }
-        await kv.set(["instances", name, "meta"], meta);
-    }
 }
 
 export async function updateConfig(newConfig: Config) {
