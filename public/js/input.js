@@ -332,6 +332,9 @@ websocket.onmessage = e => {
             localStorage.removeItem("token");
             switchScreen(999);
             setStatus("Server blocked input requests.");
+        } else if (e.data == "AUTH:no-input") {
+            switchScreen(999);
+            document.getElementById("helper-auth").style.display = "none";
         }
     } else if (e.data.startsWith("DATA:")) {
         const data = JSON.parse(e.data.slice("DATA:".length));

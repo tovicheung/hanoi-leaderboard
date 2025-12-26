@@ -116,9 +116,9 @@
                     <span>or</span>
                     <a class="action" href="/admin">Admin</a>
                 </p>-->
-                <div>
+                <div id="helper-auth">
                     <h2>For helpers:</h2>
-                    <form>
+                    <form onsubmit="return false"> <!-- here just to stop the warning -->
                         <input type="password" id="access" style="font-size: 32px; border: 1px solid gray;" autocomplete="false">
                         <button id="access-btn" class="light">Submit</button>
                     </form>

@@ -19,7 +19,9 @@ export function broadcast(msg: string, global: boolean = true) {
 }
 
 export async function broadcastAndSaveData(leaderboards: HanoiData) {
-    broadcast(`DATA:${JSON.stringify(leaderboards)}`);
+    if (config.outputAccess === "everyone") {
+        broadcast(`DATA:${JSON.stringify(leaderboards)}`);
+    }
     await setData(leaderboards);
 
     if (config.backupUrl == null) {
@@ -83,13 +85,19 @@ export function connectSocket(req: Request) {
     });
 
     socket.addEventListener("open", async () => {
-        socket.send(`@meta:${JSON.stringify(await getMeta())}`);
-        socket.send(`DATA:${JSON.stringify(await getData())}`);
         // broadcast(`@nclients:${clients.size}`);
-        if (config.inputAccess == "everyone") {
+        if (config.inputAccess === "everyone") {
             socket.send("AUTH:success");
-        } else {
+        } else if (config.inputAccess === "restricted") {
             socket.send("AUTH:required");
+        } else {
+            socket.send("AUTH:no-input");
+        }
+        if (config.outputAccess === "everyone") {
+            socket.send(`@meta:${JSON.stringify(await getMeta())}`);
+            socket.send(`DATA:${JSON.stringify(await getData())}`);
+        } else {
+            socket.send("AUTH:no-output");
         }
         adminSendClientsData();
     });
@@ -130,6 +138,8 @@ export function connectSocket(req: Request) {
                 if (c.auth.type == "admin") return;
                 c.auth = { type: "elevated", timestamp: Date.now() };
                 c.socket.send("AUTH:success");
+                socket.send(`@meta:${JSON.stringify(await getMeta())}`);
+                socket.send(`DATA:${JSON.stringify(await getData())}`);
                 adminSendClientsData();
             }
         }
@@ -146,6 +156,8 @@ export function connectSocket(req: Request) {
                 if (tokExpireIn) {
                     socket.send("AUTH:success");
                     clients.get(clientId)!.auth = { type: "token", token: token, expireIn: tokExpireIn };
+                    socket.send(`@meta:${JSON.stringify(await getMeta())}`);
+                    socket.send(`DATA:${JSON.stringify(await getData())}`);
                     adminSendClientsData();
                 } else {
                     socket.send("AUTH:failure");

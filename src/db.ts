@@ -30,6 +30,9 @@ export async function setupKv() {
 }
 
 export async function updateConfig(newConfig: Config) {
+    if (newConfig.inputAccess === "everyone") {
+        newConfig.outputAccess = "everyone";
+    }
     config = newConfig;
     await kv.set(["config"], config);
 }

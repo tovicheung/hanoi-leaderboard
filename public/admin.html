@@ -237,6 +237,7 @@
             display: inline-flex;
             flex-direction: row;
             gap: 0;
+            margin: 4px;
         }
 
         .segment > button {
@@ -447,7 +448,12 @@
                     <button value="restricted">Restricted</button>
                     <button value="everyone">Everyone</button>
                 </div>
-                <p>Output Access: everyone (uneditable)</p>
+                <br>
+                <p style="display: inline">Output Access:</p>
+                <div id="outputAccess" class="segment">
+                    <button value="restricted">Restricted</button>
+                    <button value="everyone">Everyone</button>
+                </div>
                 <hr>
                 
                 <p>Backup system: <span id="backup-url" class="code"></span><button class="btn" onclick="modifyBackupUrl()">Edit</button></p>

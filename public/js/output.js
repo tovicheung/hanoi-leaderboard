@@ -40,6 +40,8 @@ if (urlParams.get("theme") == "gojo") {
     theme = "gojo";
 }
 
+let ok = 1;
+
 function openSocket() {
     if (offline) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -58,6 +60,7 @@ function openSocket() {
 
     websocket.onclose = e => {
         console.log("DISCONNECTED");
+        if (!ok) return;
         if (fails >= MAX_TRIES) {
             offline = true;
             document.getElementById("loading-inner").innerHTML = "Offline mode";
@@ -113,6 +116,13 @@ function socketOnMessage(e) {
     }
     if (e.data.startsWith("!")) {
         handleCommand(e.data);
+        return;
+    }
+    if (e.data === "AUTH:no-output") {
+        document.getElementById("loading-inner").innerHTML = "Sorry, output is locked";
+        document.getElementById("loading").style.display = "block";
+        ok = 0;
+        websocket.close();
         return;
     }
     if (e.data.startsWith("AUTH:")) return;

@@ -75,7 +75,15 @@ const adminAuth = async (c: Context, next: Next) => {
     await next(); // auth ok
 };
 
-app.get("/api/data", async (c) => {
+// output access middleware
+const outputControl = async (c: Context, next: Next) => {
+    if (config.outputAccess !== "everyone") {
+        return c.body("Unauthorized", 401);
+    }
+    await next();
+}
+
+app.get("/api/data", outputControl, async (c) => {
     const name = c.req.query("name");
     if (name) {
         const data = (await kv.get(["instances", name, "data"])).value;
@@ -98,7 +106,7 @@ app.post("/api/data", adminAuth, async (c) => {
     return ok(c);
 });
 
-app.get("/api/meta", async (c) => {
+app.get("/api/meta", outputControl, async (c) => {
     const name = c.req.query("name");
     if (name) {
         const data = (await kv.get(["instances", name, "meta"])).value;

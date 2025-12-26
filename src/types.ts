@@ -11,14 +11,14 @@ export interface Client {
     userAgent: string | null;
 }
 
-export type AccessType = "everyone" | "restricted" | "none";
-
 export interface Config {
-    inputAccess: AccessType;
-    outputAccess: AccessType;
+    inputAccess: "everyone" | "restricted" | "none";
+    outputAccess: "everyone" | "restricted";
     backupUrl: string | null;
     parentUrl: string | null; // unused for now
 }
+
+// if inputAccess is everyone, outputAccess must be veryone
 
 export interface TimeLimits {
     lb4: number;

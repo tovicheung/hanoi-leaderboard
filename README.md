@@ -41,9 +41,15 @@ type Auth = { type: "none" }
 
     Returns the active leaderboard data.
 
+* GET `/api/neta`
+
+    Returns the active leaderboard data.
+
 The following methods require the admin bearer token:
 
 * POST `/api/data`
+
+* POST `/api/meta`
 
 * GET `/api/instance`
 

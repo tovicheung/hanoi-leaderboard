@@ -60,7 +60,7 @@ websocket.onmessage = e => {
             loadAccessData();
             loadInstanceData();
             loadConfig();
-            document.querySelector(".tab-btn.warn").classList.remove("warn");
+            document.querySelector(".tab-btn.warn")?.classList.remove("warn");
         } else if (e.data == "ADMIN:OVERRIDDEN") {
             document.getElementById("password").value = "";
             websocket.onclose = () => setConnectionStatus("<span style='color: red'>Overridden</span>");
@@ -401,12 +401,13 @@ function showNotification(message, type, options = {}) {
 }
 
 function showTab(tab) {
-    document.querySelectorAll("#tab-content > div").forEach(e => e.classList.remove("active"));
+    document.querySelectorAll("#tab-content > div.active").forEach(e => e.classList.remove("active"));
     document.getElementById(`tab-${tab}`).classList.add("active");
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
     });
 }
+
 document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.onclick = () => {
         showTab(btn.getAttribute("data-tab"));
@@ -449,11 +450,8 @@ async function loadConfig() {
 function updateConfig(config) {
     serverConfig = config;
     setSegmentButtons("inputAccess", config.inputAccess);
-    if (config.backupUrl === null) {
-        document.getElementById("backup-url").innerText = "[unset]"
-    } else {
-        document.getElementById("backup-url").innerText = config.backupUrl;
-    }
+    setSegmentButtons("outputAccess", config.outputAccess);
+    document.getElementById("backup-url").innerText = config.backupUrl === null ? "[unset]" : config.backupUrl;
     document.getElementById("parent-url").innerText = config.parentUrl === null ? "[unset]" : config.parentUrl;
 }
 
@@ -569,6 +567,11 @@ function setSegmentButtons(id, value) {
 setupSegmentButtons("inputAccess", value => {
     setConfig({ inputAccess: value });
 });
+
+setupSegmentButtons("outputAccess", value => {
+    setConfig({ outputAccess: value });
+});
+
 
 async function ping() {
     const start = Date.now();
