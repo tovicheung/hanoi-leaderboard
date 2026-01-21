@@ -552,6 +552,9 @@ function editTimeLimit(id) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("failure").style.display = "none";
+    document.getElementById("container").style.display = "";
+    
     document.getElementById("connection-test").style.display = "none";
     document.getElementById("new-trial-4").onclick = () => newTrial(4);
     document.getElementById("new-trial-5").onclick = () => newTrial(5);

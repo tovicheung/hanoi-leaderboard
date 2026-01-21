@@ -138,8 +138,12 @@ export function connectSocket(req: Request) {
                 if (c.auth.type == "admin") return;
                 c.auth = { type: "elevated", timestamp: Date.now() };
                 c.socket.send("AUTH:success");
-                socket.send(`@meta:${JSON.stringify(await getMeta())}`);
-                socket.send(`DATA:${JSON.stringify(await getData())}`);
+
+                if (config.outputAccess !== "everyone") {
+                    // only re-send data if not sent already
+                    socket.send(`@meta:${JSON.stringify(await getMeta())}`);
+                    socket.send(`DATA:${JSON.stringify(await getData())}`);
+                }
                 adminSendClientsData();
             }
         }
