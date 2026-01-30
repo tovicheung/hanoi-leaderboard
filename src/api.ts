@@ -53,6 +53,7 @@ async function instances(c: Context) {
     const data = {
         instances: await getAllInstanceNames(),
         current: await getActiveName(),
+        currentTheme: (await getMeta()).theme,
     };
     return c.json(data);
 }
@@ -119,9 +120,10 @@ app.get("/api/meta", outputControl, async (c) => {
 });
 
 app.post("/api/meta", adminAuth, async (c) => {
-    const name = c.req.query("name");
+    let name = c.req.query("name");
     if (!name) {
-        return bad(c, "Name is not provided.");
+        // return bad(c, "Name is not provided.");
+        name = await getActiveName();
     }
     if (!instanceExists(name)) {
         return bad(c, "Instance does not exist.");

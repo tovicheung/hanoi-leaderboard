@@ -207,7 +207,7 @@ class InstanceData extends HTMLElement {
 
 customElements.define("instance-data", InstanceData);
 
-function updateInstances(data) {
+function updateInstances(data, currentMeta) {
     const list = document.getElementById("instance-list");
     list.innerHTML = "";
     for (const name of data["instances"]) {
@@ -259,6 +259,9 @@ function updateInstances(data) {
         };
         list.appendChild(li);
     }
+
+    setSegmentButtons("theme", currentMeta.theme);
+    setSegmentButtons("naming", currentMeta.naming);
 
     // preload tab with its icons
     const tab = document.getElementById("tab-instances");
@@ -529,7 +532,12 @@ async function loadInstanceData() {
     const resp = await req("/api/instance", "GET");
     if (!resp.ok) return;
     const data = await resp.json();
-    updateInstances(data);
+    
+    const resp2 = await req("/api/meta", "GET", { name: data["current"] });
+    if (!resp2.ok) return;
+    const currentMeta = await resp2.json();
+
+    updateInstances(data, currentMeta);
 }
 
 function modifyBackupUrl() {
@@ -570,6 +578,16 @@ setupSegmentButtons("inputAccess", value => {
 
 setupSegmentButtons("outputAccess", value => {
     setConfig({ outputAccess: value });
+});
+
+setupSegmentButtons("theme", async value => {
+    await req("/api/meta", "POST", { theme: value });
+    loadInstanceData();
+});
+
+setupSegmentButtons("naming", async value => {
+    await req("/api/meta", "POST", { naming: value });
+    loadInstanceData();
 });
 
 

@@ -454,6 +454,12 @@
                     <button value="restricted">Restricted</button>
                     <button value="everyone">Everyone</button>
                 </div>
+                <br>
+                <!--<label for="theme">Display theme:</label>
+                <select name="theme" id="theme">
+                    <option value="demonslayer">Demon Slayer</option>
+                    <option value="gojo">Gojo</option>
+                </select>-->
                 <hr>
                 
                 <p>Backup system: <span id="backup-url" class="code"></span><button class="btn" onclick="modifyBackupUrl()">Edit</button></p>
@@ -466,6 +472,18 @@
                     <span style="margin-left: 12px;">Active:</span>
                     <button class="btn" onclick="instanceImport()">Import</button>
                     <button class="btn" onclick="instanceExport()">Export</button>
+                    
+                    <span style="margin-left: 12px;">Display theme:</span>
+                    <div id="theme" class="segment">
+                        <button value="demonslayer">Demon Slayer</button>
+                        <button value="gojo">Gojo</button>
+                    </div>
+                    
+                    <span style="margin-left: 12px;">Naming:</span>
+                    <div id="naming" class="segment">
+                        <button value="free">Unrestricted</button>
+                        <button value="class/no">Class &amp; no.</button>
+                    </div>
                 </div>
                 <ul id="instance-list">
                     <!-- Generated -->
