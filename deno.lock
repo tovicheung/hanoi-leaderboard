@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@bgub/eta@^4.5.0": "4.5.0",
     "jsr:@hono/hono@^4.10.4": "4.10.4",
     "jsr:@std/internal@^1.0.10": "1.0.10",
     "jsr:@std/path@^1.1.2": "1.1.2",
@@ -8,6 +9,9 @@
     "npm:terser@^5.44.0": "5.44.0"
   },
   "jsr": {
+    "@bgub/eta@4.5.0": {
+      "integrity": "3af12dad33888fddca0fc4330687e4eccc84695ec3abaf069d977281c5384c0f"
+    },
     "@hono/hono@4.10.4": {
       "integrity": "e54d00c4cf994e7ae297d7321793cf940656b9c5e934564c03ffc15499041b9e"
     },
@@ -91,6 +95,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@bgub/eta@^4.5.0",
       "jsr:@hono/hono@^4.10.4",
       "jsr:@std/path@^1.1.2",
       "npm:terser@^5.44.0"

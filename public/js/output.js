@@ -9,13 +9,13 @@ function parseTimeStyled(millis) {
 }
 
 function updateLeaderboards() {
-    if (true /*theme == "demonslayer"*/ ) {
+    if (theme == "demonslayer") {
         for (const id in leaderboards) {
             updateLeaderboardNew(id, leaderboards[id]);
         }
     } else {
-        updateLeaderboard("leaderboard1", leaderboard1);
-        updateLeaderboard("leaderboard2", leaderboard2);
+        updateLeaderboard("leaderboard1", leaderboards.lb4);
+        updateLeaderboard("leaderboard2", leaderboards.lb5);
     }
 }
 
@@ -32,13 +32,13 @@ var fails = 0;
 const MAX_TRIES = 5;
 var offline = false;
 
-var theme = "demonslayer";
+let theme;
 
-const currentUrl = new URL(window.location.href);
-const urlParams = currentUrl.searchParams;
-if (urlParams.get("theme") == "gojo") {
-    theme = "gojo";
-}
+// const currentUrl = new URL(window.location.href);
+// const urlParams = currentUrl.searchParams;
+// if (urlParams.get("theme") == "gojo") {
+//     theme = "gojo";
+// }
 
 let ok = 1;
 
@@ -81,8 +81,8 @@ function openSocket() {
 }
 
 const id2titles = {
-    lb4: "4 disks",
-    lb5: "5 disks",
+    leaderboard1: "4 disks",
+    leaderboard2: "5 disks",
 };
 
 var dotsInterval = 0;
@@ -110,7 +110,7 @@ function socketOnMessage(e) {
             //     window.location.reload();
             // }
             // manually reload if want change theme!
-            theme = newData.theme;
+            // theme = newData.theme;
         }
         return;
     }
@@ -483,8 +483,8 @@ function loadPage(lb, elem, page) {
 }
 
 function loadPages() {
-    loadPage(leaderboard1, document.getElementById("leaderboard1"), currentPages[0]);
-    loadPage(leaderboard2, document.getElementById("leaderboard2"), currentPages[1]);
+    loadPage(leaderboards.lb4, document.getElementById("leaderboard1"), currentPages[0]);
+    loadPage(leaderboards.lb5, document.getElementById("leaderboard2"), currentPages[1]);
 }
 
 function shiftPages() {
@@ -539,6 +539,8 @@ setTimeout(() => {
 }, 10000);
 
 document.addEventListener("DOMContentLoaded", () => {
+    theme = document.head.querySelector("meta[name = 'theme']").content;
+
     document.getElementById("title").innerText = title;
     
     document.getElementById("setup-fullscreen").onclick = () => {

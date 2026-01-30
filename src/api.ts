@@ -1,5 +1,6 @@
 import { Hono, Context, Next } from "@hono/hono";
 import { serveStatic } from "@hono/hono/deno";
+import { Eta } from "@bgub/eta";
 import { HanoiData, InstanceMeta } from "./types.ts";
 import { config, updateConfig, getData, instanceExists, createInstance, switchInstance, getActiveName, kv, adminCreateToken, getTokensData, getAllInstanceNames, getMeta } from "./db.ts";
 import { broadcastAndSaveData, connectSocket } from "./socket.ts";
@@ -284,25 +285,27 @@ app.get("/ping", (c) => {
     return ok(c);
 });
 
-app.get("/assets/bg", async (c) => {
-    const filePath = Deno.cwd() + "/public/assets/ds1.jpg"; // temp hard code
-    try {
-        const file = await Deno.open(filePath);
-        return c.body(file.readable);
-    } catch {
-        return c.notFound();
-    }
-});
+// All dynamic file access should be done by server side rendering (eta)
 
-app.get("/css-output", async (c) => {
-    const filePath = Deno.cwd() + "/public/css-output/demonslayer.css"; // temp hard code
-    try {
-        const file = await Deno.open(filePath);
-        return c.body(file.readable, 200, { 'Content-Type': 'text/css' });
-    } catch {
-        return c.notFound();
-    }
-});
+// app.get("/assets/bg", async (c) => {
+//     const filePath = Deno.cwd() + "/public/assets/ds1.jpg"; // temp hard code
+//     try {
+//         const file = await Deno.open(filePath);
+//         return c.body(file.readable);
+//     } catch {
+//         return c.notFound();
+//     }
+// });
+// 
+// app.get("/css-output", async (c) => {
+//     const filePath = Deno.cwd() + "/public/css-output/demonslayer.css"; // temp hard code
+//     try {
+//         const file = await Deno.open(filePath);
+//         return c.body(file.readable, 200, { 'Content-Type': 'text/css' });
+//     } catch {
+//         return c.notFound();
+//     }
+// });
 
 app.get("/ws", (c: Context) => {
     return connectSocket(c.req.raw); // raw request object
@@ -313,12 +316,24 @@ const MIN_JS = Deno.env.get("NO_MIN") === undefined;
 const routes: Record<string, string> = {
     "/": "/index.html",
     "/input": "/index.html",
-    "/output": "/output.html",
+    // "/output": "/output.html",
     "/admin": "/admin.html",
     "/sync": "/sync.html",
     "/disconnected": "/disconnected.html", // unused
     "/admin/legacy": "/admin_legacy.html",
 };
+
+const eta = new Eta({
+    cache: true,
+    views: `${Deno.cwd()}/public/`,
+});
+
+app.get("/output", async (c) => {
+  const rendered = eta.render("output.eta", { 
+    theme: (await getMeta()).theme,
+  });
+  return c.body(rendered, { headers: { "content-type": "text/html" } });
+});
 
 app.use(
     serveStatic({

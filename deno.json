@@ -9,6 +9,7 @@
     ]
   },
   "imports": {
+    "@bgub/eta": "jsr:@bgub/eta@^4.5.0",
     "@hono/hono": "jsr:@hono/hono@^4.10.4",
     "@std/path": "jsr:@std/path@^1.1.2",
     "terser": "npm:terser@^5.44.0"

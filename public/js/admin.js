@@ -66,6 +66,8 @@ websocket.onmessage = e => {
             websocket.onclose = () => setConnectionStatus("<span style='color: red'>Overridden</span>");
             websocket.close();
             showNotification("This session is overridden by another session. Reload to reconnect.", type = 0, { duration: 5000 });
+            document.getElementById("auth-msg").innerText = "Session overridden";
+            document.getElementById("auth-msg").style.color = "red";
             return;
         } else if (e.data.startsWith("ADMIN:CLIENTS:")) {
             const data = JSON.parse(e.data.slice("ADMIN:CLIENTS:".length));
